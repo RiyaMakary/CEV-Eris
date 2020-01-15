@@ -17,7 +17,7 @@
 		contraband_enabled = SC.can_order_contraband
 
 /obj/item/weapon/circuitboard/supplycomp/attackby(obj/item/I as obj, mob/user as mob)
-	if(istype(I,/obj/item/device/multitool))
+	if(istype(I,/obj/item/weapon/tool/multitool))
 		var/catastasis = src.contraband_enabled
 		var/opposite_catastasis
 		if(catastasis)
@@ -35,5 +35,5 @@
 			if("Cancel")
 				return
 			else
-				user << "DERP! BUG! Report this (And what you were doing to cause it) to Agouri"
+				to_chat(user, "DERP! BUG! Report this (And what you were doing to cause it) to Agouri")
 	return

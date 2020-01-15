@@ -46,31 +46,21 @@
 	overlays += I
 	turn_off()	//so engine verbs are correctly set
 
-/obj/vehicle/train/cargo/engine/Move(var/turf/destination)
+/obj/vehicle/train/cargo/engine/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	if(on && cell.charge < charge_use)
 		turn_off()
 		update_stats()
 		if(load && is_train_head())
-			load << "The drive motor briefly whines, then drones to a stop."
+			to_chat(load, "The drive motor briefly whines, then drones to a stop.")
 
 	if(is_train_head() && !on)
 		return 0
 
 	//space check ~no flying space trains sorry
-	if(on && istype(destination, /turf/space))
+	if(on && istype(NewLoc, /turf/space))
 		return 0
 
 	return ..()
-
-/obj/vehicle/train/cargo/trolley/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if(open && istype(W, /obj/item/weapon/wirecutters))
-		passenger_allowed = !passenger_allowed
-		user.visible_message(
-			SPAN_NOTICE("[user] [passenger_allowed ? "cuts" : "mends"] a cable in [src]."),
-			SPAN_NOTICE("You [passenger_allowed ? "cut" : "mend"] the load limiter cable.")
-		)
-	else
-		..()
 
 /obj/vehicle/train/cargo/engine/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(istype(W, /obj/item/weapon/key/cargo_train))
@@ -155,6 +145,15 @@
 	for(var/i = 0, i < rand(1,3), i++)
 		H.apply_damage(rand(1,5), BRUTE, pick(parts))
 
+	var/damage = rand(1,3)
+	H.damage_through_armor( 2  * damage, BRUTE, BP_HEAD, ARMOR_MELEE)
+	H.damage_through_armor( 2  * damage, BRUTE, BP_CHEST, ARMOR_MELEE)
+	H.damage_through_armor(0.5 * damage, BRUTE, BP_L_LEG, ARMOR_MELEE)
+	H.damage_through_armor(0.5 * damage, BRUTE, BP_R_LEG, ARMOR_MELEE)
+	H.damage_through_armor(0.5 * damage, BRUTE, BP_L_ARM, ARMOR_MELEE)
+	H.damage_through_armor(0.5 * damage, BRUTE, BP_R_ARM, ARMOR_MELEE)
+
+
 /obj/vehicle/train/cargo/trolley/RunOver(var/mob/living/carbon/human/H)
 	..()
 	attack_log += text("\[[time_stamp()]\] <font color='red'>ran over [H.name] ([H.ckey])</font>")
@@ -164,7 +163,7 @@
 
 	if(is_train_head() && ishuman(load))
 		var/mob/living/carbon/human/D = load
-		D << "\red \b You ran over [H]!"
+		to_chat(D, "\red \b You ran over [H]!")
 		visible_message("<B>\red \The [src] ran over [H]!</B>")
 		attack_log += text("\[[time_stamp()]\] <font color='red'>ran over [H.name] ([H.ckey]), driven by [D.name] ([D.ckey])</font>")
 		msg_admin_attack("[D.name] ([D.ckey]) ran over [H.name] ([H.ckey]). (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[src.x];Y=[src.y];Z=[src.z]'>JMP</a>)")
@@ -195,8 +194,8 @@
 	if(!ishuman(usr))
 		return
 
-	user << "The power light is [on ? "on" : "off"].\nThere are[key ? "" : " no"] keys in the ignition."
-	user << "The charge meter reads [cell? round(cell.percent(), 0.01) : 0]%"
+	to_chat(user, "The power light is [on ? "on" : "off"].\nThere are[key ? "" : " no"] keys in the ignition.")
+	to_chat(user, "The charge meter reads [cell? round(cell.percent(), 0.01) : 0]%")
 
 /obj/vehicle/train/cargo/engine/verb/start_engine()
 	set name = "Start engine"
@@ -207,17 +206,17 @@
 		return
 
 	if(on)
-		usr << "The engine is already running."
+		to_chat(usr, "The engine is already running.")
 		return
 
 	turn_on()
 	if (on)
-		usr << "You start [src]'s engine."
+		to_chat(usr, "You start [src]'s engine.")
 	else
 		if(cell.charge < charge_use)
-			usr << "[src] is out of power."
+			to_chat(usr, "[src] is out of power.")
 		else
-			usr << "[src]'s engine won't start."
+			to_chat(usr, "[src]'s engine won't start.")
 
 /obj/vehicle/train/cargo/engine/verb/stop_engine()
 	set name = "Stop engine"
@@ -228,12 +227,12 @@
 		return
 
 	if(!on)
-		usr << "The engine is already stopped."
+		to_chat(usr, "The engine is already stopped.")
 		return
 
 	turn_off()
 	if (!on)
-		usr << "You stop [src]'s engine."
+		to_chat(usr, "You stop [src]'s engine.")
 
 /obj/vehicle/train/cargo/engine/verb/remove_key()
 	set name = "Remove key"
@@ -371,7 +370,6 @@
 	else
 		move_delay = max(0, (-car_limit * active_engines) + train_length - active_engines)	//limits base overweight so you cant overspeed trains
 		move_delay *= (1 / max(1, active_engines)) * 2 										//overweight penalty (scaled by the number of engines)
-		move_delay += config.run_speed 														//base reference speed
 		move_delay *= 1.1																	//makes cargo trains 10% slower than running when not overweight
 
 /obj/vehicle/train/cargo/trolley/update_car(var/train_length, var/active_engines)

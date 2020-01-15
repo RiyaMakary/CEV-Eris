@@ -1,9 +1,17 @@
+/*
+ * Contains
+ * /obj/item/mecha_parts/mecha_equipment/tool/sleeper
+ * /obj/item/mecha_parts/mecha_equipment/tool/cable_layer
+ * /obj/item/mecha_parts/mecha_equipment/tool/syringe_gun
+ */
+
 /obj/item/mecha_parts/mecha_equipment/tool/sleeper
 	name = "mounted sleeper"
 	desc = "A sleeper. Mountable to an exosuit. (Can be attached to: Medical Exosuits)"
 	icon = 'icons/obj/Cryogenic2.dmi'
 	icon_state = "sleeper_0"
 	origin_tech = list(TECH_DATA = 2, TECH_BIO = 3)
+	matter = list(MATERIAL_STEEL = 20, MATERIAL_GLASS = 10)
 	energy_drain = 20
 	range = MELEE
 	equip_cooldown = 20
@@ -23,6 +31,7 @@
 		qdel(pr_mech_sleeper)
 		for(var/atom/movable/AM in src)
 			AM.forceMove(get_turf(src))
+		occupant = null
 		return ..()
 
 	Exit(atom/movable/O)
@@ -103,15 +112,15 @@
 
 	Topic(href,href_list)
 		..()
-		var/datum/topic_input/filter = new /datum/topic_input(href,href_list)
-		if(filter.get("eject"))
+		var/datum/topic_input/m_filter = new /datum/topic_input(href,href_list)
+		if(m_filter.get("eject"))
 			go_out()
-		if(filter.get("view_stats"))
+		if(m_filter.get("view_stats"))
 			chassis.occupant << browse(get_occupant_stats(),"window=msleeper")
 			onclose(chassis.occupant, "msleeper")
 			return
-		if(filter.get("inject"))
-			inject_reagent(filter.getType("inject",/datum/reagent),filter.getObj("source"))
+		if(m_filter.get("inject"))
+			inject_reagent(m_filter.getType("inject",/datum/reagent),m_filter.getObj("source"))
 		return
 
 	proc/get_occupant_stats()
@@ -200,7 +209,7 @@
 
 /datum/global_iterator/mech_sleeper
 
-	process(var/obj/item/mecha_parts/mecha_equipment/tool/sleeper/S)
+	Process(var/obj/item/mecha_parts/mecha_equipment/tool/sleeper/S)
 		if(!S.chassis)
 			S.set_ready_state(1)
 			return stop()
@@ -369,7 +378,7 @@
 /obj/item/mecha_parts/mecha_equipment/tool/syringe_gun
 	name = "syringe gun"
 	desc = "Exosuit-mounted chem synthesizer with syringe gun. Reagents inside are held in stasis, so no reactions will occur. (Can be attached to: Medical Exosuits)"
-	icon = 'icons/obj/gun.dmi'
+	icon = 'icons/obj/guns/launcher.dmi'
 	icon_state = "syringegun"
 	var/list/syringes
 	var/list/known_reagents
@@ -383,16 +392,22 @@
 	range = MELEE|RANGED
 	equip_cooldown = 10
 	origin_tech = list(TECH_MATERIAL = 3, TECH_BIO = 4, TECH_MAGNET = 4, TECH_DATA = 3)
+	matter = list(MATERIAL_STEEL = 15, MATERIAL_GLASS = 20)
 	required_type = /obj/mecha/medical
 
 	New()
 		..()
-		flags |= NOREACT
+		reagent_flags |= NO_REACT
 		syringes = new
 		known_reagents = list("inaprovaline"="Inaprovaline","anti_toxin"="Dylovene")
 		processed_reagents = new
 		create_reagents(max_volume)
 		synth = new (list(src),0)
+
+	Destroy()
+		QDEL_NULL_LIST(syringes)
+		QDEL_NULL(synth)
+		return ..()
 
 	detach()
 		synth.stop()
@@ -400,7 +415,7 @@
 
 	critfail()
 		..()
-		flags &= ~NOREACT
+		reagent_flags &= ~NO_REACT
 		return
 
 	get_equip_info()
@@ -471,19 +486,19 @@
 
 	Topic(href,href_list)
 		..()
-		var/datum/topic_input/filter = new (href,href_list)
-		if(filter.get("toggle_mode"))
+		var/datum/topic_input/m_filter = new (href,href_list)
+		if(m_filter.get("toggle_mode"))
 			mode = !mode
 			update_equip_info()
 			return
-		if(filter.get("select_reagents"))
+		if(m_filter.get("select_reagents"))
 			processed_reagents.len = 0
 			var/m = 0
 			var/message
 			for(var/i=1 to known_reagents.len)
 				if(m>=synth_speed)
 					break
-				var/reagent = filter.get("reagent_[i]")
+				var/reagent = m_filter.get("reagent_[i]")
 				if(reagent && (reagent in known_reagents))
 					message = "[m ? ", " : null][known_reagents[reagent]]"
 					processed_reagents += reagent
@@ -495,14 +510,14 @@
 				occupant_message("Reagent processing started.")
 				log_message("Reagent processing started.")
 			return
-		if(filter.get("show_reagents"))
+		if(m_filter.get("show_reagents"))
 			chassis.occupant << browse(get_reagents_page(),"window=msyringegun")
-		if(filter.get("purge_reagent"))
-			var/reagent = filter.get("purge_reagent")
+		if(m_filter.get("purge_reagent"))
+			var/reagent = m_filter.get("purge_reagent")
 			if(reagent)
 				reagents.del_reagent(reagent)
 			return
-		if(filter.get("purge_all"))
+		if(m_filter.get("purge_all"))
 			reagents.clear_reagents()
 			return
 		return
@@ -628,7 +643,7 @@
 /datum/global_iterator/mech_synth
 	delay = 100
 
-	process(var/obj/item/mecha_parts/mecha_equipment/tool/syringe_gun/S)
+	Process(var/obj/item/mecha_parts/mecha_equipment/tool/syringe_gun/S)
 		if(!S.chassis)
 			return stop()
 		var/energy_drain = S.energy_drain*10

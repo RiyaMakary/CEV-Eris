@@ -13,7 +13,7 @@
 	desc = "It looks pretty sciency."
 	icon = 'icons/obj/rig_modules.dmi'
 	icon_state = "module"
-	matter = list(DEFAULT_WALL_MATERIAL = 20000, "plastic" = 30000, "glass" = 5000)
+	matter = list(MATERIAL_STEEL = 15, MATERIAL_PLASTIC = 20, MATERIAL_GLASS = 5)
 
 	var/damage = 0
 	var/obj/item/weapon/rig/holder
@@ -34,7 +34,7 @@
 
 	var/use_power_cost = 0              // Power used when single-use ability called.
 	var/active_power_cost = 0           // Power used when turned on.
-	var/passive_power_cost = 0          // Power used when turned off.
+	var/passive_power_cost = 0        // Power used when turned off.
 
 	var/list/charges                    // Associative list of charge types and remaining numbers.
 	var/charge_selected                 // Currently selected option used for charge dispensing.
@@ -54,32 +54,40 @@
 
 	var/list/stat_rig_module/stat_modules = new()
 
+/obj/item/rig_module/Destroy()
+	if (holder)
+		holder.uninstall(src)
+		holder = null
+	return ..()
+
+
+
 /obj/item/rig_module/examine()
 	..()
 	switch(damage)
 		if(0)
-			usr << "It is undamaged."
+			to_chat(usr, "It is undamaged.")
 		if(1)
-			usr << "It is badly damaged."
+			to_chat(usr, "It is badly damaged.")
 		if(2)
-			usr << "It is almost completely destroyed."
+			to_chat(usr, "It is almost completely destroyed.")
 
 /obj/item/rig_module/attackby(obj/item/W as obj, mob/user as mob)
 
 	if(istype(W,/obj/item/stack/nanopaste))
 
 		if(damage == 0)
-			user << "There is no damage to mend."
+			to_chat(user, "There is no damage to mend.")
 			return
 
-		user << "You start mending the damaged portions of \the [src]..."
+		to_chat(user, "You start mending the damaged portions of \the [src]...")
 
 		if(!do_after(user,30,src) || !W || !src)
 			return
 
 		var/obj/item/stack/nanopaste/paste = W
 		damage = 0
-		user << "You mend the damage to [src] with [W]."
+		to_chat(user, "You mend the damage to [src] with [W].")
 		paste.use(1)
 		return
 
@@ -87,23 +95,23 @@
 
 		switch(damage)
 			if(0)
-				user << "There is no damage to mend."
+				to_chat(user, "There is no damage to mend.")
 				return
 			if(2)
-				user << "There is no damage that you are capable of mending with such crude tools."
+				to_chat(user, "There is no damage that you are capable of mending with such crude tools.")
 				return
 
 		var/obj/item/stack/cable_coil/cable = W
 		if(!cable.amount >= 5)
-			user << "You need five units of cable to repair \the [src]."
+			to_chat(user, "You need five units of cable to repair \the [src].")
 			return
 
-		user << "You start mending the damaged portions of \the [src]..."
+		to_chat(user, "You start mending the damaged portions of \the [src]...")
 		if(!do_after(user,30,src) || !W || !src)
 			return
 
 		damage = 1
-		user << "You mend some of damage to [src] with [W], but you will need more advanced tools to fix it completely."
+		to_chat(user, "You mend some of damage to [src] with [W], but you will need more advanced tools to fix it completely.")
 		cable.use(5)
 		return
 	..()
@@ -134,36 +142,55 @@
 	stat_modules +=	new/stat_rig_module/select(src)
 	stat_modules +=	new/stat_rig_module/charge(src)
 
-// Called when the module is installed into a suit.
-/obj/item/rig_module/proc/installed(var/obj/item/weapon/rig/new_holder)
-	holder = new_holder
+
+//Called before the module is installed in a suit
+//Return FALSE to deny the installation
+/obj/item/rig_module/proc/can_install(var/obj/item/weapon/rig/rig, var/mob/user, var/feedback = FALSE)
+	return TRUE
+
+//Called before the module is removed from a suit
+//Return FALSE to deny the removal
+/obj/item/rig_module/proc/can_uninstall(var/obj/item/weapon/rig/rig, var/mob/user, var/feedback = FALSE)
+	return TRUE
+
+// Called after the module is installed into a suit. The holder var is already set to the new suit
+/obj/item/rig_module/proc/installed(var/mob/living/user)
 	return
+
+// Called after the module is removed from a suit.
+//The holder var is already set null
+//Former contains the suit we came from
+/obj/item/rig_module/proc/uninstalled(var/obj/item/weapon/rig/former, var/mob/living/user)
+	return
+
+
+
 
 //Proc for one-use abilities like teleport.
 /obj/item/rig_module/proc/engage()
 
 	if(damage >= 2)
-		usr << SPAN_WARNING("The [interface_name] is damaged beyond use!")
+		to_chat(usr, SPAN_WARNING("The [interface_name] is damaged beyond use!"))
 		return 0
 
 	if(world.time < next_use)
-		usr << SPAN_WARNING("You cannot use the [interface_name] again so soon.")
+		to_chat(usr, SPAN_WARNING("You cannot use the [interface_name] again so soon."))
 		return 0
 
 	if(!holder || holder.canremove)
-		usr << SPAN_WARNING("The suit is not initialized.")
+		to_chat(usr, SPAN_WARNING("The suit is not initialized."))
 		return 0
 
-	if(usr.lying || usr.stat || usr.stunned || usr.paralysis || usr.weakened)
-		usr << SPAN_WARNING("You cannot use the suit in this state.")
+	if(holder.wearer.lying || holder.wearer.stat || holder.wearer.stunned || holder.wearer.paralysis || holder.wearer.weakened)
+		to_chat(usr, SPAN_WARNING("You cannot use the suit in this state."))
 		return 0
 
 	if(holder.wearer && holder.wearer.lying)
-		usr << SPAN_WARNING("The suit cannot function while the wearer is prone.")
+		to_chat(usr, SPAN_WARNING("The suit cannot function while the wearer is prone."))
 		return 0
 
 	if(holder.security_check_enabled && !holder.check_suit_access(usr))
-		usr << SPAN_DANGER("Access denied.")
+		to_chat(usr, SPAN_DANGER("Access denied."))
 		return 0
 
 	if(!holder.check_power_cost(usr, use_power_cost, 0, src, (istype(usr,/mob/living/silicon ? 1 : 0) ) ) )
@@ -208,14 +235,9 @@
 
 	return 1
 
-// Called when the module is uninstalled from a suit.
-/obj/item/rig_module/proc/removed()
-	deactivate()
-	holder = null
-	return
 
 // Called by the hardsuit each rig process tick.
-/obj/item/rig_module/process()
+/obj/item/rig_module/Process()
 	if(active)
 		return active_power_cost
 	else
@@ -253,6 +275,12 @@
 	..()
 	src.module = module
 
+/stat_rig_module/Destroy()
+	if(module)
+		module.stat_modules -= src
+		module = null
+	return ..()
+
 /stat_rig_module/proc/AddHref(var/list/href_list)
 	return
 
@@ -267,6 +295,7 @@
 							)
 		AddHref(href_list)
 		module.holder.Topic(usr, href_list)
+		return TRUE
 
 /stat_rig_module/DblClick()
 	return Click()

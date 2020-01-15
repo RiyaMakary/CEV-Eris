@@ -3,6 +3,7 @@
 	desc = "It measures something."
 	icon = 'icons/obj/meter.dmi'
 	icon_state = "meterX"
+	layer = GAS_PUMP_LAYER
 	var/obj/machinery/atmospherics/pipe/target = null
 	anchored = 1.0
 	power_channel = ENVIRON
@@ -16,11 +17,12 @@
 	src.target = locate(/obj/machinery/atmospherics/pipe) in loc
 	return 1
 
-/obj/machinery/meter/initialize()
+/obj/machinery/meter/Initialize()
+	. = ..()
 	if (!target)
 		src.target = locate(/obj/machinery/atmospherics/pipe) in loc
 
-/obj/machinery/meter/process()
+/obj/machinery/meter/Process()
 	if(!target)
 		icon_state = "meterX"
 		return 0
@@ -50,7 +52,7 @@
 		icon_state = "meter4"
 
 	if(frequency)
-		var/datum/radio_frequency/radio_connection = radio_controller.return_frequency(frequency)
+		var/datum/radio_frequency/radio_connection = SSradio.return_frequency(frequency)
 
 		if(!radio_connection) return
 
@@ -83,7 +85,7 @@
 	else
 		t += "The connect error light is blinking."
 
-	user << t
+	to_chat(user, t)
 
 /obj/machinery/meter/Click()
 
@@ -94,10 +96,10 @@
 	return ..()
 
 /obj/machinery/meter/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
-	if (!istype(W, /obj/item/weapon/wrench))
+	if (!istype(W, /obj/item/weapon/tool/wrench))
 		return ..()
 	playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
-	user << SPAN_NOTICE("You begin to unfasten \the [src]...")
+	to_chat(user, SPAN_NOTICE("You begin to unfasten \the [src]..."))
 	if (do_after(user, 40, src))
 		user.visible_message( \
 			SPAN_NOTICE("\The [user] unfastens \the [src]."), \
@@ -114,7 +116,8 @@
 	return 1
 
 
-/obj/machinery/meter/turf/initialize()
+/obj/machinery/meter/turf/Initialize()
+	. = ..()
 	if (!target)
 		src.target = loc
 

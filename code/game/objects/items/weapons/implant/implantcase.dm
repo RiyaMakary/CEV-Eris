@@ -10,6 +10,7 @@
 	throw_range = 5
 	w_class = ITEM_SIZE_TINY
 	var/obj/item/weapon/implant/implant = null
+	matter = list(MATERIAL_STEEL = 1, MATERIAL_GLASS = 3)
 
 /obj/item/weapon/implantcase/New()
 	..()
@@ -43,15 +44,13 @@
 		if(!implant.allow_reagents)
 			return
 		if(implant.reagents.total_volume >= implant.reagents.maximum_volume)
-			user << SPAN_WARNING("\The [src] is full.")
+			to_chat(user, SPAN_WARNING("\The [src] is full."))
 		else
 			spawn(5)
 				I.reagents.trans_to_obj(implant, 5)
-				user << SPAN_NOTICE("You inject 5 units of the solution. The syringe now contains [I.reagents.total_volume] units.")
+				to_chat(user, SPAN_NOTICE("You inject 5 units of the solution. The syringe now contains [I.reagents.total_volume] units."))
 	else if (istype(I, /obj/item/weapon/implanter))
 		var/obj/item/weapon/implanter/M = I
-		if(implant.is_external())
-			return
 		if(M.implant)
 			if (implant || M.implant.implanted)
 				return
@@ -61,9 +60,12 @@
 			update_icon()
 			M.update_icon()
 		else
-			if(implant && !M.implant)
+			if(implant && !implant.is_external() && !M.implant)
 				implant.forceMove(M)
 				M.implant = implant
 				implant = null
 				update_icon()
 				M.update_icon()
+	else if (istype(I, /obj/item/weapon/implant) && !implant && user.unEquip(I, src))
+		implant = I
+		update_icon()

@@ -8,7 +8,7 @@
 	opacity = 0
 	anchored = 1
 	density = 0
-	layer = OBJ_LAYER + 0.9
+	layer = EDGED_TURF_LAYER
 	mouse_opacity = 0
 	animate_movement = 0
 	var/amount = 3
@@ -21,10 +21,10 @@
 	metal = ismetal
 	playsound(src, 'sound/effects/bubbles2.ogg', 80, 1, -3)
 	spawn(3 + metal * 3)
-		process()
+		Process()
 		checkReagents()
 	spawn(120)
-		processing_objects.Remove(src)
+		STOP_PROCESSING(SSobj, src)
 		sleep(30)
 		if(metal)
 			var/obj/structure/foamedmetal/M = new(src.loc)
@@ -42,7 +42,7 @@
 		for(var/obj/O in T)
 			reagents.touch_obj(O)
 
-/obj/effect/effect/foam/process()
+/obj/effect/effect/foam/Process()
 	if(--amount < 0)
 		return
 
@@ -114,7 +114,7 @@
 			F.amount += amount
 			return
 
-		F = PoolOrNew(/obj/effect/effect/foam, list(location, metal))
+		F = new(location, metal)
 		F.amount = amount
 
 		if(!metal) // don't carry other chemicals if a metal foam
@@ -135,6 +135,7 @@
 	density = 1
 	opacity = 1 // changed in New()
 	anchored = 1
+	layer = EDGED_TURF_LAYER
 	name = "foamed metal"
 	desc = "A lightweight foamed metal wall."
 	var/metal = 1 // 1 = aluminum, 2 = iron
@@ -146,7 +147,7 @@
 /obj/structure/foamedmetal/Destroy()
 	density = 0
 	update_nearby_tiles(1)
-	..()
+	. = ..()
 
 /obj/structure/foamedmetal/proc/updateicon()
 	if(metal == 1)
@@ -169,7 +170,7 @@
 		)
 		qdel(src)
 	else
-		user << SPAN_NOTICE("You hit the metal foam but bounce off it.")
+		to_chat(user, SPAN_NOTICE("You hit the metal foam but bounce off it."))
 	return
 
 /obj/structure/foamedmetal/affect_grab(var/mob/living/user, var/mob/living/target)
@@ -189,7 +190,7 @@
 		)
 		qdel(src)
 	else
-		user << SPAN_NOTICE("You hit the metal foam to no effect.")
+		to_chat(user, SPAN_NOTICE("You hit the metal foam to no effect."))
 
 /obj/structure/foamedmetal/CanPass(atom/movable/mover, turf/target, height=1.5, air_group = 0)
 	if(air_group)

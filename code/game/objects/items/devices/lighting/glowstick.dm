@@ -16,12 +16,12 @@
 		light_color = color
 	..()
 
-/obj/item/device/lighting/glowstick/process()
+/obj/item/device/lighting/glowstick/Process()
 	if(--fuel <= 0)
 		burn_out()
 
 /obj/item/device/lighting/glowstick/proc/burn_out()
-	processing_objects -= src
+	STOP_PROCESSING(SSobj, src)
 	on = FALSE
 	update_icon()
 	if(ismob(loc))
@@ -47,7 +47,7 @@
 		set_light(brightness_on)
 	else
 		icon_state = initial(icon_state)
-	update_held_icon()
+	update_wear_icon()
 
 /obj/item/device/lighting/glowstick/attack_self(mob/user)
 	if(turn_on(user))
@@ -58,15 +58,15 @@
 
 /obj/item/device/lighting/glowstick/turn_on(mob/user)
 	if(fuel <= 0)
-		user << SPAN_NOTICE("The [src] is spent.")
+		to_chat(user, SPAN_NOTICE("The [src] is spent."))
 		return
 	if(on)
-		user << SPAN_NOTICE("The [src] is already lit.")
+		to_chat(user, SPAN_NOTICE("The [src] is already lit."))
 		return
 
 	. = ..()
 	if(.)
-		processing_objects += src
+		START_PROCESSING(SSobj, src)
 
 /obj/item/device/lighting/glowstick/red
 	name = "red glowstick"

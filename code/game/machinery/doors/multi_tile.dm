@@ -6,7 +6,7 @@
 	..()
 	SetBounds()
 
-/obj/machinery/door/airlock/multi_tile/Move()
+/obj/machinery/door/airlock/multi_tile/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	. = ..()
 	SetBounds()
 
@@ -30,7 +30,7 @@
 	icon = 'icons/obj/doors/Door2x1metal.dmi'
 	assembly_type = /obj/structure/door_assembly/multi_tile
 
-/obj/machinery/door/airlock/multi_tile/metal/New()
+/obj/machinery/door/airlock/multi_tile/New()
 	..()
 	if(src.dir > 3)
 		f5 = new/obj/machinery/filler_object(src.loc)
@@ -46,7 +46,7 @@
 /obj/machinery/door/airlock/multi_tile/metal/Destroy()
 	qdel(f5)
 	qdel(f6)
-	..()
+	. = ..()
 
 /obj/machinery/filler_object
 	name = ""

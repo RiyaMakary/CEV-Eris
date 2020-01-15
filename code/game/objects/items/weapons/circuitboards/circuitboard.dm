@@ -10,6 +10,8 @@
 	icon_state = "id_mod"
 	item_state = "electronic"
 	origin_tech = list(TECH_DATA = 2)
+	matter = list(MATERIAL_PLASTIC = 2, MATERIAL_STEEL = 2)
+	matter_reagents = list("silicon" = 10)
 	density = 0
 	anchored = 0
 	w_class = ITEM_SIZE_SMALL
@@ -18,6 +20,7 @@
 	throwforce = WEAPON_FORCE_HARMLESS
 	throw_speed = 3
 	throw_range = 15
+
 	var/build_path = null
 	var/frame_type = FRAME_DEFAULT
 	var/board_type = "computer"

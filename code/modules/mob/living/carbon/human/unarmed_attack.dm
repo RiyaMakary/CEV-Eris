@@ -28,11 +28,11 @@ var/global/list/sparring_attack_cache = list()
 		return 0
 
 	// Check if they have a functioning hand.
-	var/obj/item/organ/external/E = user.organs_by_name[BP_L_HAND]
+	var/obj/item/organ/external/E = user.organs_by_name[BP_L_ARM]
 	if(E && !E.is_stump())
 		return 1
 
-	E = user.organs_by_name[BP_R_HAND]
+	E = user.organs_by_name[BP_R_ARM]
 	if(E && !E.is_stump())
 		return 1
 
@@ -41,23 +41,23 @@ var/global/list/sparring_attack_cache = list()
 /datum/unarmed_attack/proc/get_unarmed_damage()
 	return damage
 
-/datum/unarmed_attack/proc/apply_effects(var/mob/living/carbon/human/user,var/mob/living/carbon/human/target,var/armour,var/attack_damage,var/zone)
+/datum/unarmed_attack/proc/apply_effects(var/mob/living/carbon/human/user,var/mob/living/carbon/human/target,var/attack_damage,var/zone)
 
 	if(target.stat == DEAD)
 		return
 
 	var/stun_chance = rand(0, 100)
 
-	if(attack_damage >= 5 && armour < 2 && !(target == user) && stun_chance <= attack_damage * 5) // 25% standard chance
+	if(attack_damage >= 5 && !(target == user) && stun_chance <= attack_damage * 5) // 25% standard chance
 		switch(zone) // strong punches can have effects depending on where they hit
-			if(BP_HEAD, "mouth", O_EYES)
+			if(BP_HEAD, BP_MOUTH, BP_EYES)
 				// Induce blurriness
 				target.visible_message(
 					SPAN_DANGER("[target] looks momentarily disoriented."),
 					SPAN_DANGER("You see stars.")
 				)
-				target.apply_effect(attack_damage*2, EYE_BLUR, armour)
-			if(BP_L_ARM, BP_L_HAND)
+				target.apply_effect(attack_damage*2, EYE_BLUR)
+			if(BP_L_ARM)
 				if (target.l_hand)
 					// Disarm left hand
 					//Urist McAssistant dropped the macguffin with a scream just sounds odd. Plus it doesn't work with NO_PAIN
@@ -65,7 +65,7 @@ var/global/list/sparring_attack_cache = list()
 						SPAN_DANGER("\The [target.l_hand] was knocked right out of [target]'s grasp!")
 					)
 					target.drop_l_hand()
-			if(BP_R_ARM, BP_R_HAND)
+			if(BP_R_ARM)
 				if (target.r_hand)
 					// Disarm right hand
 					target.visible_message(
@@ -84,23 +84,23 @@ var/global/list/sparring_attack_cache = list()
 						target.visible_message(SPAN_DANGER("[target] slams into [T]!"))
 					if(prob(50))
 						target.set_dir(reverse_dir[target.dir])
-					target.apply_effect(attack_damage * 0.4, WEAKEN, armour)
+					target.apply_effect(attack_damage * 0.4, WEAKEN)
 			if(BP_GROIN)
 				target.visible_message(
 					SPAN_WARNING("[target] looks like \he is in pain!"),
 					SPAN_WARNING((target.gender=="female") ? "Oh god that hurt!" : "Oh no, not your[pick("testicles", "crown jewels", "clockweights", "family jewels", "marbles", "bean bags", "teabags", "sweetmeats", "goolies")]!")
 				)
-				target.apply_effects(stutter = attack_damage * 2, agony = attack_damage* 3, blocked = armour)
-			if(BP_L_LEG , BP_L_FOOT, BP_R_LEG, BP_R_FOOT)
+				target.apply_effects(stutter = attack_damage * 2, agony = attack_damage* 3)
+			if(BP_L_LEG, BP_R_LEG)
 				if(!target.lying)
 					target.visible_message(SPAN_WARNING("[target] gives way slightly."))
-					target.apply_effect(attack_damage*3, AGONY, armour)
-	else if(attack_damage >= 5 && !(target == user) && (stun_chance + attack_damage * 5 >= 100) && armour < 2) // Chance to get the usual throwdown as well (25% standard chance)
+					target.apply_effect(attack_damage*3, AGONY)
+	else if(attack_damage >= 5 && !(target == user) && (stun_chance + attack_damage * 5 >= 100) ) // Chance to get the usual throwdown as well (25% standard chance)
 		if(!target.lying)
 			target.visible_message("<span class='danger'>[target] [pick("slumps", "falls", "drops")] down to the ground!</span>")
 		else
 			target.visible_message(SPAN_DANGER("[target] has been weakened!"))
-		target.apply_effect(3, WEAKEN, armour)
+		target.apply_effect(3, WEAKEN)
 
 /datum/unarmed_attack/proc/show_attack(var/mob/living/carbon/human/user, var/mob/living/carbon/human/target, var/zone, var/attack_damage)
 	var/obj/item/organ/external/affecting = target.get_organ(zone)
@@ -108,11 +108,11 @@ var/global/list/sparring_attack_cache = list()
 	playsound(user.loc, attack_sound, 25, 1, -1)
 
 /datum/unarmed_attack/proc/handle_eye_attack(var/mob/living/carbon/human/user, var/mob/living/carbon/human/target)
-	var/obj/item/organ/internal/eyes/eyes = target.internal_organs_by_name[O_EYES]
+	var/obj/item/organ/internal/eyes/eyes = target.internal_organs_by_name[BP_EYES]
 	eyes.take_damage(rand(3,4), 1)
 
 	user.visible_message(SPAN_DANGER("[user] presses \his [eye_attack_text] into [target]'s [eyes.name]!"))
-	target << SPAN_DANGER("You experience[(target.species.flags & NO_PAIN)? "" : " immense pain as you feel" ] [eye_attack_text_victim] being pressed into your [eyes.name][(target.species.flags & NO_PAIN)? "." : "!"]")
+	to_chat(target, SPAN_DANGER("You experience[(target.species.flags & NO_PAIN)? "" : " immense pain as you feel" ] [eye_attack_text_victim] being pressed into your [eyes.name][(target.species.flags & NO_PAIN)? "." : "!"]"))
 
 /datum/unarmed_attack/bite
 	attack_verb = list("bit")
@@ -126,7 +126,7 @@ var/global/list/sparring_attack_cache = list()
 
 	if (user.wear_mask && (istype(user.wear_mask, /obj/item/clothing/mask/muzzle) || istype(user.wear_mask, /obj/item/weapon/grenade)))
 		return 0
-	if (user == target && zone in list(BP_HEAD, "eyes", "mouth"))
+	if (user == target && zone in list(BP_HEAD, "eyes", BP_MOUTH))
 		return 0
 	return 1
 
@@ -141,7 +141,7 @@ var/global/list/sparring_attack_cache = list()
 	var/obj/item/organ/external/affecting = target.get_organ(zone)
 	var/organ = affecting.name
 
-	attack_damage = Clamp(attack_damage, 1, 5) // We expect damage input of 1 to 5 for this proc. But we leave this check juuust in case.
+	attack_damage = CLAMP(attack_damage, 1, 5) // We expect damage input of 1 to 5 for this proc. But we leave this check juuust in case.
 
 	if(target == user)
 		user.visible_message(SPAN_DANGER("[user] [pick(attack_verb)] \himself in the [organ]!"))
@@ -149,7 +149,7 @@ var/global/list/sparring_attack_cache = list()
 
 	if(!target.lying)
 		switch(zone)
-			if(BP_HEAD, "mouth", O_EYES)
+			if(BP_HEAD, BP_MOUTH, BP_EYES)
 				// ----- HEAD ----- //
 				switch(attack_damage)
 					if(1 to 2)
@@ -195,11 +195,11 @@ var/global/list/sparring_attack_cache = list()
 	if(!zone in (BP_LEGS + BP_GROIN))
 		return 0
 
-	var/obj/item/organ/external/E = user.organs_by_name[BP_L_FOOT]
+	var/obj/item/organ/external/E = user.organs_by_name[BP_L_LEG]
 	if(E && !E.is_stump())
 		return 1
 
-	E = user.organs_by_name[BP_R_FOOT]
+	E = user.organs_by_name[BP_R_LEG]
 	if(E && !E.is_stump())
 		return 1
 
@@ -215,7 +215,7 @@ var/global/list/sparring_attack_cache = list()
 	var/obj/item/organ/external/affecting = target.get_organ(zone)
 	var/organ = affecting.name
 
-	attack_damage = Clamp(attack_damage, 1, 5)
+	attack_damage = CLAMP(attack_damage, 1, 5)
 
 	switch(attack_damage)
 		if(1 to 2)	user.visible_message(SPAN_DANGER("[user] threw [target] a glancing [pick(attack_noun)] to the [organ]!")) //it's not that they're kicking lightly, it's that the kick didn't quite connect
@@ -236,14 +236,14 @@ var/global/list/sparring_attack_cache = list()
 	if(!istype(target))
 		return 0
 
-	if (!user.lying && (target.lying || (zone in list(BP_L_FOOT, BP_R_FOOT))))
+	if (!user.lying && (target.lying || (zone in list(BP_L_LEG, BP_R_LEG))))
 		if(target.grabbed_by == user && target.lying)
 			return 0
-		var/obj/item/organ/external/E = user.organs_by_name[BP_L_FOOT]
+		var/obj/item/organ/external/E = user.organs_by_name[BP_L_LEG]
 		if(E && !E.is_stump())
 			return 1
 
-		E = user.organs_by_name[BP_R_FOOT]
+		E = user.organs_by_name[BP_R_LEG]
 		if(E && !E.is_stump())
 			return 1
 
@@ -258,7 +258,7 @@ var/global/list/sparring_attack_cache = list()
 	var/organ = affecting.name
 	var/obj/item/clothing/shoes = user.shoes
 
-	attack_damage = Clamp(attack_damage, 1, 5)
+	attack_damage = CLAMP(attack_damage, 1, 5)
 
 	switch(attack_damage)
 		if(1 to 4)

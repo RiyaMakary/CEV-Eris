@@ -10,7 +10,7 @@
 	var/access_security = 0
 	var/access_engine = 0
 	var/access_atmos = 0
-	var/access_medical = 0
+	var/access_moebius = 0
 	var/access_clown = 0
 	var/access_mime = 0
 	var/access_janitor = 0
@@ -46,7 +46,7 @@
 /obj/item/weapon/cartridge/medical
 	name = "\improper Med-U cartridge"
 	icon_state = "cart-m"
-	access_medical = 1
+	access_moebius = 1
 
 /obj/item/weapon/cartridge/chemistry
 	name = "\improper ChemWhiz cartridge"
@@ -58,15 +58,15 @@
 	icon_state = "cart-s"
 	access_security = 1
 
-/obj/item/weapon/cartridge/security/initialize()
+/obj/item/weapon/cartridge/security/Initialize()
 	radio = new /obj/item/radio/integrated/beepsky(src)
-	..()
+	. = ..()
 
 /obj/item/weapon/cartridge/detective
 	name = "\improper D.E.T.E.C.T. cartridge"
 	icon_state = "cart-s"
 	access_security = 1
-	access_medical = 1
+	access_moebius = 1
 
 
 /obj/item/weapon/cartridge/janitor
@@ -110,13 +110,13 @@
 	access_reagent_scanner = 1
 	access_atmos = 1
 
-/obj/item/weapon/cartridge/signal/initialize()
-    radio = new /obj/item/radio/integrated/signal(src)
-    ..()
+/obj/item/weapon/cartridge/signal/Initialize()
+	radio = new /obj/item/radio/integrated/signal(src)
+	. = ..()
 
 /obj/item/weapon/cartridge/signal/Destroy()
 	qdel(radio)
-	..()
+	. = ..()
 
 /obj/item/weapon/cartridge/quartermaster
 	name = "\improper Asters Guild Parts & Vendors cartridge"
@@ -124,9 +124,9 @@
 	icon_state = "cart-q"
 	access_quartermaster = 1
 
-/obj/item/weapon/cartridge/quartermaster/initialize()
+/obj/item/weapon/cartridge/quartermaster/Initialize()
 	radio = new /obj/item/radio/integrated/mule(src)
-	..()
+	. = ..()
 
 /obj/item/weapon/cartridge/head
 	name = "\improper Easy-Record DELUXE"
@@ -141,8 +141,9 @@
 	access_janitor = 1
 	access_security = 1
 
-/obj/item/weapon/cartridge/hop/initialize()
+/obj/item/weapon/cartridge/hop/Initialize()
 	radio = new /obj/item/radio/integrated/mule(src)
+	. = ..()
 
 /obj/item/weapon/cartridge/hos
 	name = "\improper R.O.B.U.S.T. DELUXE"
@@ -150,9 +151,9 @@
 	access_status_display = 1
 	access_security = 1
 
-/obj/item/weapon/cartridge/hos/initialize()
+/obj/item/weapon/cartridge/hos/Initialize()
 	radio = new /obj/item/radio/integrated/beepsky(src)
-	..()
+	. = ..()
 
 /obj/item/weapon/cartridge/ce
 	name = "\improper Power-On DELUXE"
@@ -166,7 +167,7 @@
 	icon_state = "cart-cmo"
 	access_status_display = 1
 	access_reagent_scanner = 1
-	access_medical = 1
+	access_moebius = 1
 
 /obj/item/weapon/cartridge/rd
 	name = "\improper Signal Ace DELUXE"
@@ -175,9 +176,9 @@
 	access_reagent_scanner = 1
 	access_atmos = 1
 
-/obj/item/weapon/cartridge/rd/initialize()
+/obj/item/weapon/cartridge/rd/Initialize()
 	radio = new /obj/item/radio/integrated/signal(src)
-	..()
+	. = ..()
 
 /obj/item/weapon/cartridge/captain
 	name = "\improper Value-PAK cartridge"
@@ -187,7 +188,7 @@
 	access_janitor = 1
 	access_engine = 1
 	access_security = 1
-	access_medical = 1
+	access_moebius = 1
 	access_reagent_scanner = 1
 	access_status_display = 1
 	access_atmos = 1
@@ -202,7 +203,7 @@
 
 /obj/item/weapon/cartridge/proc/post_status(var/command, var/data1, var/data2)
 
-	var/datum/radio_frequency/frequency = radio_controller.return_frequency(1435)
+	var/datum/radio_frequency/frequency = SSradio.return_frequency(1435)
 	if(!frequency) return
 
 	var/datum/signal/status_signal = new
@@ -263,7 +264,7 @@
 		var/list/sensors = list()
 		var/obj/machinery/power/sensor/MS = null
 
-		for(var/obj/machinery/power/sensor/S in machines)
+		for(var/obj/machinery/power/sensor/S in SSmachines.machinery)
 			sensors.Add(list(list("name_tag" = S.name_tag)))
 			if(S.name_tag == selected_sensor)
 				MS = S
@@ -392,17 +393,17 @@
 
 	if(mode==47)
 		var/supplyData[0]
-		var/datum/shuttle/ferry/supply/shuttle = supply_controller.shuttle
+		var/datum/shuttle/autodock/ferry/supply/shuttle = SSsupply.shuttle
 		if (shuttle)
 			supplyData["shuttle_moving"] = shuttle.has_arrive_time()
 			supplyData["shuttle_eta"] = shuttle.eta_minutes()
 			supplyData["shuttle_loc"] = shuttle.at_station() ? "Station" : "Dock"
 		var/supplyOrderCount = 0
 		var/supplyOrderData[0]
-		for(var/S in supply_controller.shoppinglist)
+		for(var/S in SSsupply.shoppinglist)
 			var/datum/supply_order/SO = S
 
-			supplyOrderData[++supplyOrderData.len] = list("Number" = SO.ordernum, "Name" = rhtml_encode(SO.object.name), "ApprovedBy" = SO.orderedby, "Comment" = rhtml_encode(SO.comment))
+			supplyOrderData[++supplyOrderData.len] = list("Number" = SO.id, "Name" = rhtml_encode(SO.object.name), "ApprovedBy" = SO.orderer, "Comment" = rhtml_encode(SO.reason))
 		if(!supplyOrderData.len)
 			supplyOrderData[++supplyOrderData.len] = list("Number" = null, "Name" = null, "OrderedBy"=null)
 
@@ -411,10 +412,10 @@
 
 		var/requestCount = 0
 		var/requestData[0]
-		for(var/S in supply_controller.requestlist)
+		for(var/S in SSsupply.requestlist)
 			var/datum/supply_order/SO = S
 			requestCount++
-			requestData[++requestData.len] = list("Number" = SO.ordernum, "Name" = rhtml_encode(SO.object.name), "OrderedBy" = SO.orderedby, "Comment" = rhtml_encode(SO.comment))
+			requestData[++requestData.len] = list("Number" = SO.id, "Name" = rhtml_encode(SO.object.name), "OrderedBy" = SO.orderer, "Comment" = rhtml_encode(SO.reason))
 		if(!requestData.len)
 			requestData[++requestData.len] = list("Number" = null, "Name" = null, "orderedBy" = null, "Comment" = null)
 

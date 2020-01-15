@@ -1,11 +1,13 @@
 /obj/effect/projectile
 	icon = 'icons/effects/projectiles.dmi'
 	icon_state = "bolt"
-	layer = 20
+	layer = ABOVE_MOB_LAYER
 
 /obj/effect/projectile/New(var/turf/location)
+	init_plane()
 	if(istype(location))
 		loc = location
+	update_plane()
 
 /obj/effect/projectile/proc/set_transform(var/matrix/M)
 	if(istype(M))

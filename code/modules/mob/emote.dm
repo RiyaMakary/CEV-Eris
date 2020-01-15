@@ -3,7 +3,7 @@
 //m_type == 2 --> audible
 /mob/proc/custom_emote(var/m_type=1,var/message = null)
 	if(usr && stat || !use_me && usr == src)
-		src << "You are unable to emote."
+		to_chat(src, "You are unable to emote.")
 		return
 
 	var/muzzled = istype(src.wear_mask, /obj/item/clothing/mask/muzzle) || istype(src.wear_mask, /obj/item/weapon/grenade)
@@ -23,56 +23,21 @@
 	if (message)
 		log_emote("[name]/[key] : [message]")
 
- //Hearing gasp and such every five seconds is not good emotes were not global for a reason.
- // Maybe some people are okay with that.
-
-		for(var/mob/M in player_list)
-			if (!M.client)
-				continue //skip monkeys and leavers
-			if (isnewplayer(M))
-				continue
-			if(findtext(message," snores.")) //Because we have so many sleeping people.
-				break
-			if(M.stat == DEAD && M.is_preference_enabled(/datum/client_preference/ghost_sight) && !(M in viewers(src,null)))
-				M.show_message(message, m_type)
-
-		if (m_type & 1)
-			var/list/see = get_mobs_or_objects_in_view(world.view,src) | viewers(get_turf(src), null)
-			for(var/I in see)
-				if(isobj(I))
-					spawn(0)
-						if(I) //It's possible that it could be deleted in the meantime.
-							var/obj/O = I
-							O.see_emote(src, message, 1)
-				else if(ismob(I))
-					var/mob/M = I
-					M.show_message(message, 1)
-
-		else if (m_type & 2)
-			var/list/hear = get_mobs_or_objects_in_view(world.view,src)
-			for(var/I in hear)
-				if(isobj(I))
-					spawn(0)
-						if(I) //It's possible that it could be deleted in the meantime.
-							var/obj/O = I
-							O.see_emote(src, message, 2)
-				else if(ismob(I))
-					var/mob/M = I
-					M.show_message(message, 2)
+		send_emote(message, m_type)
 
 /mob/proc/emote_dead(var/message)
 
 	if(client.prefs.muted & MUTE_DEADCHAT)
-		src << SPAN_DANGER("You cannot send deadchat emotes (muted).")
+		to_chat(src, SPAN_DANGER("You cannot send deadchat emotes (muted)."))
 		return
 
-	if(!is_preference_enabled(/datum/client_preference/show_dsay))
-		src << SPAN_DANGER("You have deadchat muted.")
+	if(get_preference_value(/datum/client_preference/show_dsay) == GLOB.PREF_HIDE)
+		to_chat(src, SPAN_DANGER("You have deadchat muted."))
 		return
 
 	if(!src.client.holder)
 		if(!config.dsay_allowed)
-			src << SPAN_DANGER("Deadchat is globally muted.")
+			to_chat(src, SPAN_DANGER("Deadchat is globally muted."))
 			return
 
 
@@ -85,3 +50,33 @@
 	if(input)
 		log_emote("Ghost/[src.key] : [input]")
 		say_dead_direct(input, src)
+
+//This is a central proc that all emotes are run through. This handles sending the messages to living mobs
+/mob/proc/send_emote(var/message, var/type)
+	var/list/messageturfs = list()//List of turfs we broadcast to.
+	var/list/messagemobs = list()//List of living mobs nearby who can hear it, and distant ghosts who've chosen to hear it
+	var/list/messagemobs_neardead = list()//List of nearby ghosts who can hear it. Those that qualify ONLY go in this list
+	for (var/turf in view(world.view, get_turf(src)))
+		messageturfs += turf
+
+	for(var/mob/M in GLOB.player_list)
+		if (!M.client || istype(M, /mob/new_player))
+			continue
+		if(get_turf(M) in messageturfs)
+			if (istype(M, /mob/observer))
+				messagemobs_neardead += M
+				continue
+			else if (istype(M, /mob/living) && !(type == 2 && (sdisabilities & DEAF || ear_deaf)))
+				messagemobs += M
+		else if(src.client)
+			if  (M.stat == DEAD && (M.get_preference_value(/datum/client_preference/ghost_ears) == GLOB.PREF_ALL_SPEECH))
+				messagemobs += M
+				continue
+
+	for (var/mob/N in messagemobs)
+		N.show_message(message, type)
+
+	message = "<B>[message]</B>"
+
+	for (var/mob/O in messagemobs_neardead)
+		O.show_message(message, type)

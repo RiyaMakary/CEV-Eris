@@ -13,9 +13,9 @@
 		return 1
 	if(feedback)
 		if(status[1] == HUMAN_EATING_NO_MOUTH)
-			src << "Where do you intend to put \the [food]? You don't have a mouth!"
+			to_chat(src, "Where do you intend to put \the [food]? You don't have a mouth!")
 		else if(status[1] == HUMAN_EATING_BLOCKED_MOUTH)
-			src << SPAN_WARNING("\The [status[2]] is in the way!")
+			to_chat(src, SPAN_WARNING("\The [status[2]] is in the way!"))
 	return 0
 
 /mob/living/carbon/human/can_force_feed(var/feeder, var/food, var/feedback = 1)
@@ -24,9 +24,9 @@
 		return 1
 	if(feedback)
 		if(status[1] == HUMAN_EATING_NO_MOUTH)
-			feeder << "Where do you intend to put \the [food]? \The [src] doesn't have a mouth!"
+			to_chat(feeder, "Where do you intend to put \the [food]? \The [src] doesn't have a mouth!")
 		else if(status[1] == HUMAN_EATING_BLOCKED_MOUTH)
-			feeder << SPAN_WARNING("\The [status[2]] is in the way!")
+			to_chat(feeder, SPAN_WARNING("\The [status[2]] is in the way!"))
 	return 0
 
 /mob/living/carbon/human/proc/can_eat_status()
@@ -56,11 +56,11 @@
 		process_glasses(glasses)
 	if(istype(src.wear_mask, /obj/item/clothing/mask))
 		add_clothing_protection(wear_mask)
-	if(istype(back,/obj/item/weapon/rig))
-		process_rig(back)
+	if(istype(wearing_rig,/obj/item/weapon/rig))
+		process_rig(wearing_rig)
 
-/mob/living/carbon/human/proc/process_glasses(var/obj/item/clothing/glasses/G)
-	if(G && G.active)
+/mob/living/carbon/human/proc/process_glasses(var/obj/item/clothing/glasses/G, var/forceActive)
+	if(G && (G.active || forceActive))
 		equipment_darkness_modifier += G.darkness_view
 		equipment_vision_flags |= G.vision_flags
 		equipment_prescription = equipment_prescription || G.prescription
@@ -82,9 +82,16 @@
 	if(O.helmet && O.helmet == head && (O.helmet.body_parts_covered & EYES))
 		if((O.offline && O.offline_vision_restriction == 2) || (!O.offline && O.vision_restriction == 2))
 			equipment_tint_total += TINT_BLIND
-	if(O.visor && O.visor.active && O.visor.vision && O.visor.vision.glasses && (!O.helmet || (head && O.helmet == head)))
-		process_glasses(O.visor.vision.glasses)
+	var/obj/item/clothing/glasses/G = O.getCurrentGlasses()
+	if(G && O.visor.active)
+		process_glasses(G,1)
 
-/mob/living/carbon/human/proc/get_core_implant()
-	var/obj/item/weapon/implant/external/core_implant/C = locate(/obj/item/weapon/implant/external/core_implant, src)
-	return C
+/mob/living/carbon/human/reset_layer()
+	if(hiding)
+		set_plane(HIDING_MOB_PLANE)
+		layer = HIDING_MOB_LAYER
+	else if(lying)
+		set_plane(LYING_HUMAN_PLANE)
+		layer = LYING_HUMAN_LAYER
+	else
+		..()

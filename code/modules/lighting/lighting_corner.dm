@@ -17,6 +17,15 @@
 	var/lum_g = 0
 	var/lum_b = 0
 
+	var/needs_update = FALSE
+
+	var/cache_r  = 0
+	var/cache_g  = 0
+	var/cache_b  = 0
+	var/cache_mx = 0
+
+	var/update_gen = 0
+
 /datum/lighting_corner/New(var/turf/new_turf, var/diagonal)
 	. = ..()
 
@@ -37,6 +46,9 @@
 	// Diagonal one is easy.
 	T = get_step(new_turf, diagonal)
 	if(T) // In case we're on the map's border.
+		if (!T.corners)
+			T.corners = list(null, null, null, null)
+
 		masters[T]   = diagonal
 		i            = LIGHTING_CORNER_DIAGONAL.Find(turn(diagonal, 180))
 		T.corners[i] = src
@@ -44,6 +56,9 @@
 	// Now the horizontal one.
 	T = get_step(new_turf, horizontal)
 	if(T) // Ditto.
+		if (!T.corners)
+			T.corners = list(null, null, null, null)
+
 		masters[T]   = ((T.x > x) ? EAST : WEST) | ((T.y > y) ? NORTH : SOUTH) // Get the dir based on coordinates.
 		i            = LIGHTING_CORNER_DIAGONAL.Find(turn(masters[T], 180))
 		T.corners[i] = src
@@ -51,18 +66,20 @@
 	// And finally the vertical one.
 	T = get_step(new_turf, vertical)
 	if(T)
+		if (!T.corners)
+			T.corners = list(null, null, null, null)
+
 		masters[T]   = ((T.x > x) ? EAST : WEST) | ((T.y > y) ? NORTH : SOUTH) // Get the dir based on coordinates.
 		i            = LIGHTING_CORNER_DIAGONAL.Find(turn(masters[T], 180))
 		T.corners[i] = src
 
-	spawn() // Lighting overlays get initialized AFTER corners, so this spawn() will make sure the activity (which checks for overlays) is updated after the overlays are generated.
-		update_active()
+	update_active()
 
 /datum/lighting_corner/proc/update_active()
 	active = FALSE
-	for(var/TT in masters)
+	for (var/TT in masters)
 		var/turf/T = TT
-		if(T.dynamic_lighting)
+		if (T.lighting_overlay)
 			active = TRUE
 			return
 
@@ -72,13 +89,35 @@
 	lum_g += delta_g
 	lum_b += delta_b
 
-	for(var/TT in masters)
+	if (!needs_update)
+		needs_update = TRUE
+		global.lighting_update_corners += src
+
+/datum/lighting_corner/proc/update_overlays()
+	// Cache these values a head of time so 4 individual lighting overlays don't all calculate them individually.
+	var/lum_r = src.lum_r
+	var/lum_g = src.lum_g
+	var/lum_b = src.lum_b
+	var/mx = max(lum_r, lum_g, lum_b) // Scale it so 1 is the strongest lum, if it is above 1.
+	. = 1 // factor
+	if (mx > 1)
+		. = 1 / mx
+
+	else if (mx < LIGHTING_SOFT_THRESHOLD)
+		. = 0 // 0 means soft lighting.
+
+	cache_r  = lum_r * . || LIGHTING_SOFT_THRESHOLD
+	cache_g  = lum_g * . || LIGHTING_SOFT_THRESHOLD
+	cache_b  = lum_b * . || LIGHTING_SOFT_THRESHOLD
+	cache_mx = mx
+
+	for (var/TT in masters)
 		var/turf/T = TT
-		if(T.lighting_overlay)
-			#ifdef LIGHTING_INSTANT_UPDATES
-			T.lighting_overlay.update_overlay()
-			#else
-			if(!T.lighting_overlay.needs_update)
-				T.lighting_overlay.needs_update = TRUE
-				lighting_update_overlays += T.lighting_overlay
-			#endif
+		var/atom/movable/lighting_overlay/O = T.lighting_overlay
+		if (O && !O.needs_update)
+			O.needs_update = TRUE
+			global.lighting_update_overlays += O
+
+
+/datum/lighting_corner/dummy/New()
+	return

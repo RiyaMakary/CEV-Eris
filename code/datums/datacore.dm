@@ -21,6 +21,7 @@ var/global/ManifestJSON
 	var/list/med = new()
 	var/list/sci = new()
 	var/list/car = new()
+	var/list/chr = new()
 	var/list/civ = new()
 	var/list/bot = new()
 	var/list/misc = new()
@@ -46,7 +47,7 @@ var/global/ManifestJSON
 
 		if(OOC)
 			var/active = 0
-			for(var/mob/M in player_list)
+			for(var/mob/M in GLOB.player_list)
 				if(M.real_name == name && M.client && M.client.inactivity <= 10 * 60 * 10)
 					active = 1
 					break
@@ -74,6 +75,9 @@ var/global/ManifestJSON
 		if(real_rank in cargo_positions)
 			car[name] = rank
 			department = 1
+		if(real_rank in church_positions)
+			chr[name] = rank
+			department = 1
 		if(real_rank in civilian_positions)
 			civ[name] = rank
 			department = 1
@@ -81,10 +85,10 @@ var/global/ManifestJSON
 			misc[name] = rank
 
 	// Synthetics don't have actual records, so we will pull them from here.
-/*	for(var/mob/living/silicon/ai/ai in mob_list)
+/*	for(var/mob/living/silicon/ai/ai in SSmobs.mob_list)
 		bot[ai.name] = "Artificial Intelligence"
 
-	for(var/mob/living/silicon/robot/robot in mob_list)
+	for(var/mob/living/silicon/robot/robot in SSmobs.mob_list)
 		// No combat/syndicate cyborgs, no drones.
 		if(robot.module && robot.module.hide_on_manifest)
 			continue
@@ -123,9 +127,14 @@ var/global/ManifestJSON
 			dat += "<tr[even ? " class='alt'" : ""]><td>[name]</td><td>[sci[name]]</td><td>[isactive[name]]</td></tr>"
 			even = !even
 	if(car.len > 0)
-		dat += "<tr><th colspan=3>Cargo</th></tr>"
+		dat += "<tr><th colspan=3>Guild</th></tr>"
 		for(name in car)
 			dat += "<tr[even ? " class='alt'" : ""]><td>[name]</td><td>[car[name]]</td><td>[isactive[name]]</td></tr>"
+			even = !even
+	if(chr.len > 0)
+		dat += "<tr><th colspan=3>Church</th></tr>"
+		for(name in chr)
+			dat += "<tr[even ? " class='alt'" : ""]><td>[name]</td><td>[chr[name]]</td><td>[isactive[name]]</td></tr>"
 			even = !even
 	if(civ.len > 0)
 		dat += "<tr><th colspan=3>Civilian</th></tr>"
@@ -145,7 +154,7 @@ var/global/ManifestJSON
 
 /datum/datacore/proc/manifest()
 	spawn()
-		for(var/mob/living/carbon/human/H in player_list)
+		for(var/mob/living/carbon/human/H in GLOB.player_list)
 			manifest_inject(H)
 		return
 
@@ -177,10 +186,10 @@ var/global/ManifestJSON
 		G.fields["age"]			= H.age
 		G.fields["fingerprint"]	= md5(H.dna.uni_identity)
 		G.fields["pay_account"]	= H.mind.initial_account.account_number
+		G.fields["email"]		= H.mind.initial_email_login["login"]
 		G.fields["p_stat"]		= "Active"
 		G.fields["m_stat"]		= "Stable"
 		G.fields["sex"]			= H.gender
-		G.fields["religion"]	= H.religion
 		if(H.gen_record && !jobban_isbanned(H, "Records"))
 			G.fields["notes"] = H.gen_record
 
@@ -210,7 +219,6 @@ var/global/ManifestJSON
 		L.fields["b_dna"]		= H.dna.unique_enzymes
 		L.fields["enzymes"]		= H.dna.SE // Used in respawning
 		L.fields["identity"]	= H.dna.UI // "
-		L.fields["religion"]	= H.religion
 		L.fields["image"]		= getFlatIcon(H)	//This is god-awful
 		if(H.exploit_record && !jobban_isbanned(H, "Records"))
 			L.fields["exploit_record"] = H.exploit_record
@@ -227,12 +235,12 @@ var/global/ManifestJSON
 	var/icon/preview_icon = new(H.stand_icon)
 	var/icon/temp
 
-	var/datum/sprite_accessory/hair_style = hair_styles_list[H.h_style]
+	var/datum/sprite_accessory/hair_style = GLOB.hair_styles_list[H.h_style]
 	if(hair_style)
 		temp = new/icon(hair_style.icon, hair_style.icon_state)
 		temp.Blend(H.hair_color, ICON_ADD)
 
-	hair_style = facial_hair_styles_list[H.h_style]
+	hair_style = GLOB.facial_hair_styles_list[H.h_style]
 	if(hair_style)
 		var/icon/facial = new/icon(hair_style.icon, hair_style.icon_state)
 		facial.Blend(H.facial_color, ICON_ADD)
@@ -241,19 +249,15 @@ var/global/ManifestJSON
 	preview_icon.Blend(temp, ICON_OVERLAY)
 
 
-	var/datum/job/J = job_master.GetJob(H.mind.assigned_role)
+	var/datum/job/J = SSjob.GetJob(H.mind.assigned_role)
 	if(J)
 		var/t_state
-		var/obj/item/clothing/under/UF = J.uniform
-		t_state = initial(UF.icon_state)
-		temp = new /icon(H.body_build.get_mob_icon("uniform", t_state), t_state)
+		temp = new /icon('icons/inventory/uniform/mob.dmi', t_state)
 
-		var/obj/item/clothing/shoes/SH = J.shoes
-		t_state = initial(SH.icon_state)
-		temp.Blend(new /icon(H.body_build.get_mob_icon("shoes", t_state), t_state), ICON_OVERLAY)
+		temp.Blend(new /icon('icons/inventory/feet/mob.dmi', t_state), ICON_OVERLAY)
 	else
-		temp = new /icon(H.body_build.get_mob_icon("uniform", "grey"), "grey")
-		temp.Blend(new /icon(H.body_build.get_mob_icon("shoes", "black"), "black"), ICON_OVERLAY)
+		temp = new /icon('icons/inventory/uniform/mob.dmi', "grey")
+		temp.Blend(new /icon('icons/inventory/feet/mob.dmi', "black"), ICON_OVERLAY)
 
 	preview_icon.Blend(temp, ICON_OVERLAY)
 
@@ -287,7 +291,6 @@ var/global/ManifestJSON
 	G.fields["p_stat"] = "Active"
 	G.fields["m_stat"] = "Stable"
 	G.fields["species"] = "Human"
-	G.fields["religion"]	= "Unknown"
 	G.fields["photo_front"]	= front
 	G.fields["photo_side"]	= side
 	G.fields["notes"] = "No notes found."
@@ -351,14 +354,14 @@ var/global/ManifestJSON
 		if(R.fields[field] == value)
 			return R
 
-/proc/GetAssignment(var/mob/living/carbon/human/H)
+/*/proc/GetAssignment(var/mob/living/carbon/human/H)
 	if(H.mind.assigned_role)
 		return H.mind.assigned_role
 	else if(H.job)
 		return H.job
 	else
 		return "Unassigned"
-
+*/
 /var/list/acting_rank_prefixes = list("acting", "temporary", "interim", "provisional")
 
 /proc/make_list_rank(rank)
@@ -375,6 +378,7 @@ var/global/ManifestJSON
 	var/eng[0]
 	var/med[0]
 	var/sci[0]
+	var/chr[0]
 	var/civ[0]
 	var/bot[0]
 	var/misc[0]
@@ -417,6 +421,12 @@ var/global/ManifestJSON
 			if(depthead && sci.len != 1)
 				sci.Swap(1, sci.len)
 
+		if(real_rank in church_positions)
+			chr[++chr.len] = list("name" = name, "rank" = rank, "active" = isactive)
+			department = 1
+			if(depthead && chr.len != 1)
+				chr.Swap(1, chr.len)
+
 		if(real_rank in civilian_positions)
 			civ[++civ.len] = list("name" = name, "rank" = rank, "active" = isactive)
 			department = 1
@@ -437,9 +447,10 @@ var/global/ManifestJSON
 		"eng" = eng,
 		"med" = med,
 		"sci" = sci,
+		"chr" = chr,
 		"civ" = civ,
 		"bot" = bot,
 		"misc" = misc
 		)
-	ManifestJSON = list2json(PDA_Manifest)
+	ManifestJSON = json_encode(PDA_Manifest)
 	return

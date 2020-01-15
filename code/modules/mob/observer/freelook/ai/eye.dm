@@ -42,7 +42,7 @@
 /mob/living/silicon/ai/proc/create_eyeobj(var/newloc)
 	if(eyeobj) destroy_eyeobj()
 	if(!newloc) newloc = src.loc
-	eyeobj = PoolOrNew(/mob/observer/eye/aiEye, newloc)
+	eyeobj = new /mob/observer/eye/aiEye(newloc)
 	eyeobj.owner = src
 	eyeobj.name = "[src.name] (AI Eye)" // Give it a name
 	if(client) client.eye = eyeobj
@@ -58,7 +58,7 @@
 
 /mob/living/silicon/ai/Destroy()
 	destroy_eyeobj()
-	..()
+	. = ..()
 
 /atom/proc/move_camera_by_click()
 	if(isAI(usr))
@@ -94,4 +94,4 @@
 		return
 
 	eyeobj.acceleration = !eyeobj.acceleration
-	usr << "Camera acceleration has been toggled [eyeobj.acceleration ? "on" : "off"]."
+	to_chat(usr, "Camera acceleration has been toggled [eyeobj.acceleration ? "on" : "off"].")

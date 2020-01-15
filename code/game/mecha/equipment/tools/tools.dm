@@ -1,3 +1,28 @@
+/*
+ * Contains
+ * /obj/item/mecha_parts/mecha_equipment/tool/hydraulic_clamp
+ * /obj/item/mecha_parts/mecha_equipment/tool/drill
+ * /obj/item/mecha_parts/mecha_equipment/tool/drill/diamonddrill
+ * /obj/item/mecha_parts/mecha_equipment/tool/extinguisher
+ * /obj/item/mecha_parts/mecha_equipment/tool/rcd
+ * /obj/item/mecha_parts/mecha_equipment/teleporter
+ * /obj/item/mecha_parts/mecha_equipment/wormhole_generator
+ * /obj/item/mecha_parts/mecha_equipment/gravcatapult
+ * /obj/item/mecha_parts/mecha_equipment/armor_booster
+ * /obj/item/mecha_parts/mecha_equipment/armor_booster/anticcw_armor_booster
+ * /obj/item/mecha_parts/mecha_equipment/armor_booster/antiproj_armor_booster
+ * /obj/item/mecha_parts/mecha_equipment/repair_droid
+ * /obj/item/mecha_parts/mecha_equipment/tesla_energy_relay
+ * /obj/item/mecha_parts/mecha_equipment/generator
+ * /obj/item/mecha_parts/mecha_equipment/generator/nuclear
+ * /obj/item/mecha_parts/mecha_equipment/tool/safety_clamp
+ * /obj/item/mecha_parts/mecha_equipment/tool/passenger
+ * /obj/item/mecha_parts/mecha_equipment/thruster
+ */
+
+/obj/item/mecha_parts/mecha_equipment/tool
+	matter = list(MATERIAL_STEEL = 15)
+
 /obj/item/mecha_parts/mecha_equipment/tool/hydraulic_clamp
 	name = "hydraulic clamp"
 	icon_state = "mecha_clamp"
@@ -130,6 +155,7 @@
 	desc = "This is an upgraded version of the drill that'll pierce the heavens! (Can be attached to: Combat and Engineering Exosuits)"
 	icon_state = "mecha_diamond_drill"
 	origin_tech = list(TECH_MATERIAL = 4, TECH_ENGINEERING = 3)
+	matter = list(MATERIAL_STEEL = 15, MATERIAL_DIAMOND = 3)
 	equip_cooldown = 20
 	force = 15
 
@@ -224,7 +250,7 @@
 
 			for(var/a = 1 to 5)
 				spawn(0)
-					var/obj/effect/effect/water/W = PoolOrNew(/obj/effect/effect/water, get_turf(chassis))
+					var/obj/effect/effect/water/W = new(get_turf(chassis))
 					var/turf/my_target
 					if(a == 1)
 						my_target = T
@@ -257,6 +283,7 @@
 	equip_cooldown = 10
 	energy_drain = 250
 	range = MELEE|RANGED
+	matter = list(MATERIAL_PLASTEEL = 20, MATERIAL_PLASMA = 15, MATERIAL_URANIUM = 15)
 	var/mode = 0 //0 - deconstruct, 1 - wall or floor, 2 - airlock.
 	var/disabled = 0 //malf
 
@@ -356,7 +383,7 @@
 	name = "teleporter"
 	desc = "An exosuit module that allows exosuits to teleport to any position in view."
 	icon_state = "mecha_teleport"
-	origin_tech = list(TECH_BLUESPACE = 10)
+	origin_tech = list(TECH_BLUESPACE = 6)
 	equip_cooldown = 150
 	energy_drain = 1000
 	range = RANGED
@@ -409,7 +436,7 @@
 			return
 		chassis.use_power(energy_drain)
 		set_ready_state(0)
-		PoolOrNew(/obj/effect/portal/wormhole, list(get_turf(target), target_turf, rand(150, 300)))
+		new /obj/effect/portal/wormhole(get_turf(target), rand(150, 300), target_turf)
 		do_after_cooldown()
 
 /obj/item/mecha_parts/mecha_equipment/gravcatapult
@@ -536,7 +563,8 @@
 	name = "\improper CCW armor booster"
 	desc = "Close-combat armor booster. Boosts exosuit armor against armed melee attacks. Requires energy to operate."
 	icon_state = "mecha_abooster_ccw"
-	origin_tech = list(TECH_MATERIAL = 3)
+	origin_tech = list(TECH_MATERIAL = 4)
+	matter = list(MATERIAL_STEEL = 20, MATERIAL_SILVER = 5)
 	deflect_coeff = 1.15
 	damage_coeff = 0.8
 	melee = 1
@@ -560,6 +588,7 @@
 	desc = "Ranged-weaponry armor booster. Boosts exosuit armor against ranged attacks. Completely blocks taser shots, but requires energy to operate."
 	icon_state = "mecha_abooster_proj"
 	origin_tech = list(TECH_MATERIAL = 4)
+	matter = list(MATERIAL_STEEL = 20, MATERIAL_GOLD = 5)
 	deflect_coeff = 1.15
 	damage_coeff = 0.8
 	melee = 0
@@ -585,6 +614,7 @@
 	equip_cooldown = 20
 	energy_drain = 100
 	range = 0
+	matter = list(MATERIAL_STEEL = 10, MATERIAL_GOLD = 10, MATERIAL_SILVER = 2, MATERIAL_GLASS = 5)
 	var/health_boost = 2
 	var/datum/global_iterator/pr_repair_droid
 	var/icon/droid_overlay
@@ -599,7 +629,7 @@
 	Destroy()
 		qdel(pr_repair_droid)
 		pr_repair_droid = null
-		..()
+		. = ..()
 
 	attach(obj/mecha/M as obj)
 		..()
@@ -641,7 +671,7 @@
 
 /datum/global_iterator/mecha_repair_droid
 
-	process(var/obj/item/mecha_parts/mecha_equipment/repair_droid/RD as obj)
+	Process(var/obj/item/mecha_parts/mecha_equipment/repair_droid/RD as obj)
 		if(!RD.chassis)
 			stop()
 			RD.set_ready_state(1)
@@ -676,6 +706,7 @@
 	desc = "Wirelessly drains energy from any available power channel in area. The performance index is quite low."
 	icon_state = "tesla"
 	origin_tech = list(TECH_MAGNET = 4, TECH_ILLEGAL = 2)
+	matter = list(MATERIAL_STEEL = 10, MATERIAL_GOLD = 2, MATERIAL_SILVER = 3, MATERIAL_GLASS = 2)
 	equip_cooldown = 10
 	energy_drain = 0
 	range = 0
@@ -692,7 +723,7 @@
 	Destroy()
 		qdel(pr_energy_relay)
 		pr_energy_relay = null
-		..()
+		. = ..()
 
 	detach()
 		pr_energy_relay.stop()
@@ -729,7 +760,7 @@
 
 /datum/global_iterator/mecha_energy_relay
 
-	process(var/obj/item/mecha_parts/mecha_equipment/tesla_energy_relay/ER)
+	Process(var/obj/item/mecha_parts/mecha_equipment/tesla_energy_relay/ER)
 		if(!ER.chassis || ER.chassis.hasInternalDamage(MECHA_INT_SHORT_CIRCUIT))
 			stop()
 			ER.set_ready_state(1)
@@ -764,13 +795,14 @@
 	equip_cooldown = 10
 	energy_drain = 0
 	range = MELEE
+	matter = list(MATERIAL_STEEL = 10, MATERIAL_SILVER = 5, MATERIAL_GLASS = 1)
 	var/datum/global_iterator/pr_mech_generator
 	var/coeff = 100
 	var/obj/item/stack/material/fuel
-	var/max_fuel = 150000
-	var/fuel_per_cycle_idle = 100
-	var/fuel_per_cycle_active = 500
-	var/power_per_cycle = 20
+	var/max_fuel = 120
+	var/fuel_per_cycle_idle = 1
+	var/fuel_per_cycle_active = 5
+	var/power_per_cycle = 25
 
 	New()
 		..()
@@ -780,7 +812,7 @@
 	Destroy()
 		qdel(pr_mech_generator)
 		pr_mech_generator = null
-		..()
+		. = ..()
 
 	proc/init()
 		fuel = new /obj/item/stack/material/plasma(src)
@@ -809,7 +841,7 @@
 	get_equip_info()
 		var/output = ..()
 		if(output)
-			return "[output] \[[fuel]: [round(fuel.amount*fuel.perunit,0.1)] cm<sup>3</sup>\] - <a href='?src=\ref[src];toggle=1'>[pr_mech_generator.active()?"Dea":"A"]ctivate</a>"
+			return "[output] \[[fuel]: [fuel.amount] sheets\] - <a href='?src=\ref[src];toggle=1'>[pr_mech_generator.active()?"Dea":"A"]ctivate</a>"
 		return
 
 	action(target)
@@ -828,9 +860,9 @@
 
 	proc/load_fuel(var/obj/item/stack/material/P)
 		if(P.type == fuel.type && P.amount)
-			var/to_load = max(max_fuel - fuel.amount*fuel.perunit,0)
+			var/to_load = max(max_fuel - fuel.amount,0)
 			if(to_load)
-				var/units = min(max(round(to_load / P.perunit),1),P.amount)
+				var/units = min(to_load, P.amount)
 				if(units)
 					fuel.amount += units
 					P.use(units)
@@ -844,7 +876,7 @@
 		if(isnull(result))
 			user.visible_message("[user] tries to shove [weapon] into [src]. What a dumb-ass.",SPAN_WARNING("[fuel] traces minimal. [weapon] cannot be used as fuel."))
 		else if(!result)
-			user << "Unit is full."
+			to_chat(user, "Unit is full.")
 		else
 			user.visible_message("[user] loads [src] with [fuel].","[result] unit\s of [fuel] successfully loaded.")
 		return
@@ -867,7 +899,7 @@
 
 /datum/global_iterator/mecha_generator
 
-	process(var/obj/item/mecha_parts/mecha_equipment/generator/EG)
+	Process(var/obj/item/mecha_parts/mecha_equipment/generator/EG)
 		if(!EG.chassis)
 			stop()
 			EG.set_ready_state(1)
@@ -888,7 +920,7 @@
 		if(cur_charge<EG.chassis.cell.maxcharge)
 			use_fuel = EG.fuel_per_cycle_active
 			EG.chassis.give_power(EG.power_per_cycle)
-		EG.fuel.amount -= min(use_fuel/EG.fuel.perunit,EG.fuel.amount)
+		EG.fuel.amount -= min(use_fuel,EG.fuel.amount)
 		EG.update_equip_info()
 		return 1
 
@@ -898,6 +930,7 @@
 	desc = "Generates power using uranium. Pollutes the environment."
 	icon_state = "tesla"
 	origin_tech = list(TECH_POWER = 3, TECH_ENGINEERING = 3)
+	matter = list(MATERIAL_STEEL = 10, MATERIAL_SILVER = 5, MATERIAL_GLASS = 10)
 	max_fuel = 50000
 	fuel_per_cycle_idle = 10
 	fuel_per_cycle_active = 30
@@ -916,11 +949,11 @@
 
 /datum/global_iterator/mecha_generator/nuclear
 
-	process(var/obj/item/mecha_parts/mecha_equipment/generator/nuclear/EG)
+	Process(var/obj/item/mecha_parts/mecha_equipment/generator/nuclear/EG)
 		if(..())
 			for(var/mob/living/carbon/M in view(EG.chassis))
 				if(ishuman(M))
-					M.apply_effect((EG.rad_per_cycle*3),IRRADIATE,0)
+					M.apply_effect((EG.rad_per_cycle*3),IRRADIATE)
 				else
 					M.apply_effect(EG.rad_per_cycle, IRRADIATE)
 		return 1
@@ -993,6 +1026,7 @@
 	desc = "A mountable passenger compartment for exo-suits. Rather cramped."
 	icon_state = "mecha_abooster_ccw"
 	origin_tech = list(TECH_ENGINEERING = 1, TECH_BIO = 1)
+	matter = list(MATERIAL_STEEL = 20, MATERIAL_GLASS = 5)
 	energy_drain = 10
 	range = MELEE
 	equip_cooldown = 20
@@ -1003,7 +1037,7 @@
 /obj/item/mecha_parts/mecha_equipment/tool/passenger/destroy()
 	for(var/atom/movable/AM in src)
 		AM.forceMove(get_turf(src))
-		AM << SPAN_DANGER("You tumble out of the destroyed [src.name]!")
+		to_chat(AM, SPAN_DANGER("You tumble out of the destroyed [src.name]!"))
 	return ..()
 
 /obj/item/mecha_parts/mecha_equipment/tool/passenger/Exit(atom/movable/O)
@@ -1020,9 +1054,9 @@
 			log_message("\The [user] boarded.")
 			occupant_message("\The [user] boarded.")
 		else if(src.occupant != user)
-			user << SPAN_WARNING("[src.occupant] was faster. Try better next time, loser.")
+			to_chat(user, SPAN_WARNING("[src.occupant] was faster. Try better next time, loser."))
 	else
-		user << "You stop entering the exosuit."
+		to_chat(user, "You stop entering the exosuit.")
 
 /obj/item/mecha_parts/mecha_equipment/tool/passenger/verb/eject()
 	set name = "Eject"
@@ -1032,7 +1066,7 @@
 
 	if(usr != occupant)
 		return
-	occupant << "You climb out from \the [src]."
+	to_chat(occupant, "You climb out from \the [src].")
 	go_out()
 	occupant_message("[occupant] disembarked.")
 	log_message("[occupant] disembarked.")
@@ -1094,18 +1128,18 @@
 		return
 
 	if (!isturf(usr.loc))
-		usr << SPAN_DANGER("You can't reach the passenger compartment from here.")
+		to_chat(usr, SPAN_DANGER("You can't reach the passenger compartment from here."))
 		return
 
 	if(iscarbon(usr))
 		var/mob/living/carbon/C = usr
 		if(C.handcuffed)
-			usr << SPAN_DANGER("Kinda hard to climb in while handcuffed don't you think?")
+			to_chat(usr, SPAN_DANGER("Kinda hard to climb in while handcuffed don't you think?"))
 			return
 
 	for(var/mob/living/carbon/slime/M in range(1,usr))
 		if(M.Victim == usr)
-			usr << SPAN_DANGER("You're too busy getting your life sucked out of you.")
+			to_chat(usr, SPAN_DANGER("You're too busy getting your life sucked out of you."))
 			return
 
 	//search for a valid passenger compartment
@@ -1125,102 +1159,13 @@
 	//didn't find anything
 	switch (feedback)
 		if (OCCUPIED)
-			usr << SPAN_DANGER("The passenger compartment is already occupied!")
+			to_chat(usr, SPAN_DANGER("The passenger compartment is already occupied!"))
 		if (LOCKED)
-			usr << SPAN_WARNING("The passenger compartment hatch is locked!")
+			to_chat(usr, SPAN_WARNING("The passenger compartment hatch is locked!"))
 		if (OCCUPIED|LOCKED)
-			usr << SPAN_DANGER("All of the passenger compartments are already occupied or locked!")
+			to_chat(usr, SPAN_DANGER("All of the passenger compartments are already occupied or locked!"))
 		if (0)
-			usr << SPAN_WARNING("\The [src] doesn't have a passenger compartment.")
+			to_chat(usr, SPAN_WARNING("\The [src] doesn't have a passenger compartment."))
 
 #undef LOCKED
 #undef OCCUPIED
-
-/obj/item/mecha_parts/mecha_equipment/jetpack
-	name = "jetpack"
-	desc = "Using directed ion bursts and cunning solar wind reflection technique, this device enables controlled space flight."
-	icon_state = "mecha_equip"
-	equip_cooldown = 5
-	energy_drain = 50
-	var/wait = 0
-	var/datum/effect/effect/system/ion_trail_follow/ion_trail
-
-
-	can_attach(obj/mecha/M as obj)
-		if(!locate(src.type) in M.equipment)
-			return ..()
-
-	attach(obj/mecha/M as obj)
-		..()
-		if(!ion_trail)
-			ion_trail = new
-		ion_trail.set_up(chassis)
-		return
-
-	proc/toggle()
-		if(!chassis)
-			return
-		!equip_ready? turn_off() : turn_on()
-		return equip_ready
-
-	proc/turn_on()
-		set_ready_state(0)
-		ion_trail.start()
-		occupant_message("Activated")
-		log_message("Activated")
-
-	proc/turn_off()
-		set_ready_state(1)
-		ion_trail.stop()
-		occupant_message("Deactivated")
-		log_message("Deactivated")
-
-	proc/do_move(direction)
-		if(!action_checks())
-			return chassis.do_move(direction)
-		var/move_result = 0
-		if(chassis.hasInternalDamage(MECHA_INT_CONTROL_LOST))
-			move_result = step_rand(chassis)
-		else if(chassis.dir!=direction)
-			chassis.set_dir(direction)
-			move_result = 1
-		else
-			move_result	= step(chassis,direction)
-			if(chassis.occupant)
-				for(var/obj/effect/speech_bubble/B in range(1, chassis))
-					if(B.parent == chassis.occupant)
-						B.loc = chassis.loc
-		if(move_result)
-			wait = 1
-			chassis.use_power(energy_drain)
-			if(!chassis.pr_inertial_movement.active())
-				chassis.pr_inertial_movement.start(list(chassis,direction))
-			else
-				chassis.pr_inertial_movement.set_process_args(list(chassis,direction))
-			do_after_cooldown()
-			return 1
-		return 0
-
-	action_checks()
-		if(equip_ready || wait)
-			return 0
-		if(energy_drain && !chassis.has_charge(energy_drain))
-			return 0
-		if(chassis.check_for_support())
-			return 0
-		return 1
-
-	get_equip_info()
-		if(!chassis) return
-		return "<span style=\"color:[equip_ready?"#0f0":"#f00"];\">*</span>&nbsp;[src.name] \[<a href=\"?src=\ref[src];toggle=1\">Toggle</a>\]"
-
-
-	Topic(href,href_list)
-		..()
-		if(href_list["toggle"])
-			toggle()
-
-	do_after_cooldown()
-		sleep(equip_cooldown)
-		wait = 0
-		return 1

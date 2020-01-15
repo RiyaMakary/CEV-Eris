@@ -5,26 +5,40 @@
 	icon_state = "stunbaton"
 	item_state = "baton"
 	slot_flags = SLOT_BELT
-	force = WEAPON_FORCE_PAINFULL
+	force = WEAPON_FORCE_PAINFUL
 	sharp = 0
 	edge = 0
-	throwforce = WEAPON_FORCE_PAINFULL
+	throwforce = WEAPON_FORCE_PAINFUL
 	w_class = ITEM_SIZE_NORMAL
 	origin_tech = list(TECH_COMBAT = 2)
 	attack_verb = list("beaten")
-	var/stunforce = 0
-	var/agonyforce = 60
+	price_tag = 500
+	var/stunforce = 10
+	var/agonyforce = 30
 	var/status = FALSE		//whether the thing is on or not
 	var/hitcost = 100
 	var/obj/item/weapon/cell/cell = null
 	var/suitable_cell = /obj/item/weapon/cell/medium
+	structure_damage_factor = STRUCTURE_DAMAGE_BLUNT
 
-/obj/item/weapon/melee/baton/New()
-	..()
+/obj/item/weapon/melee/baton/Initialize()
+	. = ..()
 	if(!cell && suitable_cell)
 		cell = new suitable_cell(src)
 	update_icon()
-	return
+
+/obj/item/weapon/melee/baton/Destroy()
+	QDEL_NULL(cell)
+	return ..()
+
+/obj/item/weapon/melee/baton/get_cell()
+	return cell
+
+/obj/item/weapon/melee/baton/handle_atom_del(atom/A)
+	..()
+	if(A == cell)
+		cell = null
+		update_icon()
 
 /obj/item/weapon/melee/baton/proc/deductcharge(var/power_drain)
 	if(cell)
@@ -44,7 +58,7 @@
 		icon_state = "[initial(name)]"
 
 	if(icon_state == "[initial(name)]_active")
-		set_light(1.5, 1, "#FF6A00")
+		set_light(1.5, 1, COLOR_LIGHTING_ORANGE_BRIGHT)
 	else
 		set_light(0)
 
@@ -53,27 +67,28 @@
 		return
 
 	if(cell)
-		user <<SPAN_NOTICE("The baton is [round(cell.percent())]% charged.")
+		to_chat(user, SPAN_NOTICE("The baton is [round(cell.percent())]% charged."))
 	if(!cell)
-		user <<SPAN_WARNING("The baton does not have a power source installed.")
+		to_chat(user, SPAN_WARNING("The baton does not have a power source installed."))
 
 /obj/item/weapon/melee/baton/attack_self(mob/user)
 	if(cell && cell.charge > hitcost)
 		status = !status
-		user << "<span class='notice'>[src] is now [status ? "on" : "off"].</span>"
+		to_chat(user, SPAN_NOTICE("[src] is now [status ? "on" : "off"]."))
+		tool_qualities = status ? list(QUALITY_PULSING = 1) : null
 		playsound(loc, "sparks", 75, 1, -1)
 		update_icon()
 	else
 		status = FALSE
 		if(!cell)
-			user << SPAN_WARNING("[src] does not have a power source!")
+			to_chat(user, SPAN_WARNING("[src] does not have a power source!"))
 		else
-			user << SPAN_WARNING("[src] is out of charge.")
+			to_chat(user, SPAN_WARNING("[src] is out of charge."))
 	add_fingerprint(user)
 
 /obj/item/weapon/melee/baton/attack(mob/M, mob/user)
 	if(status && (CLUMSY in user.mutations) && prob(50))
-		user << SPAN_DANGER("You accidentally hit yourself with the [src]!")
+		to_chat(user, SPAN_DANGER("You accidentally hit yourself with the [src]!"))
 		user.Weaken(30)
 		deductcharge(hitcost)
 		return
@@ -162,3 +177,4 @@
 	hitcost = 150
 	attack_verb = list("poked")
 	slot_flags = null
+	structure_damage_factor = STRUCTURE_DAMAGE_NORMAL

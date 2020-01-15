@@ -3,7 +3,11 @@
 	icon_state = "spark"
 	damage = 0
 	damage_type = BURN
-	check_armour = "energy"
+	check_armour = ARMOR_ENERGY
+	mob_hit_sound = list('sound/effects/gore/sear.ogg')
+	hitsound_wall = 'sound/weapons/guns/misc/laser_searwall.ogg'
+
+	heat = 100
 
 
 //releases a burst of light on impact or after travelling a distance
@@ -45,6 +49,7 @@
 /obj/item/projectile/energy/electrode
 	name = "electrode"
 	icon_state = "spark"
+	mob_hit_sound = list('sound/weapons/tase.ogg')
 	nodamage = 1
 	taser_effect = 1
 	agony = 40
@@ -76,7 +81,7 @@
 /obj/item/projectile/energy/bolt
 	name = "bolt"
 	icon_state = "cbbolt"
-	damage = 10
+	damage = 25
 	damage_type = TOX
 	nodamage = 0
 	agony = 40
@@ -85,7 +90,7 @@
 
 /obj/item/projectile/energy/bolt/large
 	name = "largebolt"
-	damage = 20
+	damage = 30
 
 
 /obj/item/projectile/energy/neurotoxin
@@ -98,6 +103,6 @@
 /obj/item/projectile/energy/plasma
 	name = "plasma bolt"
 	icon_state = "energy"
-	damage = 20
+	damage = 10
 	damage_type = TOX
-	irradiate = 20
+	irradiate = 30

@@ -142,7 +142,7 @@
 			inputting = 1
 		// else inputting = 0, as set in process()
 
-/obj/machinery/power/smes/process()
+/obj/machinery/power/smes/Process()
 	if(stat & BROKEN)	return
 	if(failure_timer)	// Disabled by gridcheck.
 		failure_timer--
@@ -208,7 +208,7 @@
 //Will return 1 on failure
 /obj/machinery/power/smes/proc/make_terminal(const/mob/user)
 	if (user.loc == loc)
-		user << SPAN_WARNING("You must not be on the same tile as the [src].")
+		to_chat(user, SPAN_WARNING("You must not be on the same tile as the [src]."))
 		return 1
 
 	//Direction the terminal will face to
@@ -220,13 +220,13 @@
 			tempDir = WEST
 	var/turf/tempLoc = get_step(src, reverse_direction(tempDir))
 	if (istype(tempLoc, /turf/space))
-		user << SPAN_WARNING("You can't build a terminal on space.")
+		to_chat(user, SPAN_WARNING("You can't build a terminal on space."))
 		return 1
 	else if (istype(tempLoc))
 		if(!tempLoc.is_plating())
-			user << SPAN_WARNING("You must remove the floor plating first.")
+			to_chat(user, SPAN_WARNING("You must remove the floor plating first."))
 			return 1
-	user << SPAN_NOTICE("You start adding cable to the [src].")
+	to_chat(user, SPAN_NOTICE("You start adding cable to the [src]."))
 	if(do_after(user, 50, src))
 		terminal = new /obj/machinery/power/terminal(tempLoc)
 		terminal.set_dir(tempDir)
@@ -241,35 +241,54 @@
 	return 0
 
 
-/obj/machinery/power/smes/attack_ai(mob/user)
-	add_hiddenprint(user)
-	ui_interact(user)
-
 /obj/machinery/power/smes/attack_hand(mob/user)
 	add_fingerprint(user)
 	ui_interact(user)
 
 
-/obj/machinery/power/smes/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
-	if(istype(W, /obj/item/weapon/screwdriver))
-		if(!open_hatch)
-			open_hatch = 1
-			user << SPAN_NOTICE("You open the maintenance hatch of [src].")
-			return 0
-		else
-			open_hatch = 0
-			user << SPAN_NOTICE("You close the maintenance hatch of [src].")
-			return 0
+/obj/machinery/power/smes/attackby(var/obj/item/I, var/mob/user)
+	var/list/usable_qualities = list(QUALITY_SCREW_DRIVING,QUALITY_WIRE_CUTTING,QUALITY_PRYING,QUALITY_PULSING)
+
+	var/tool_type = I.get_tool_type(user, usable_qualities, src)
+	if(tool_type == QUALITY_SCREW_DRIVING)
+		if(I.use_tool(user, src, WORKTIME_NORMAL, tool_type, FAILCHANCE_EASY, required_stat = STAT_MEC))
+			open_hatch = !open_hatch
+			to_chat(user, SPAN_NOTICE("You [open_hatch ? "open" : "close"] the maintenance hatch of \the [src] with [I]."))
+		return
 
 	if (!open_hatch)
-		user << SPAN_WARNING("You need to open access hatch on [src] first!")
+		to_chat(user, SPAN_WARNING("You need to open access hatch on [src] first!"))
 		return 0
 
-	if(istype(W, /obj/item/stack/cable_coil) && !terminal && !building_terminal)
+	if(tool_type == QUALITY_WIRE_CUTTING)
+		if(terminal && !building_terminal && open_hatch)
+			var/turf/tempTDir = terminal.loc
+			if (istype(tempTDir))
+				if(!tempTDir.is_plating())
+					to_chat(user, SPAN_WARNING("You must remove the floor plating first."))
+					return
+			if(I.use_tool(user, src, WORKTIME_NORMAL, tool_type, FAILCHANCE_EASY, required_stat = STAT_MEC))
+				building_terminal = 1
+				if (prob(50) && electrocute_mob(usr, terminal.powernet, terminal))
+					var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
+					s.set_up(5, 1, src)
+					s.start()
+					building_terminal = 0
+					if(usr.stunned)
+						return
+				new /obj/item/stack/cable_coil(loc,10)
+				user.visible_message(\
+					SPAN_NOTICE("[user.name] remove the cables and dismantled the power terminal."),\
+					SPAN_NOTICE("You remove the cables and dismantle the power terminal."))
+				qdel(terminal)
+				building_terminal = 0
+		return
+
+	if(istype(I, /obj/item/stack/cable_coil) && !terminal && !building_terminal)
 		building_terminal = 1
-		var/obj/item/stack/cable_coil/CC = W
+		var/obj/item/stack/cable_coil/CC = I
 		if (CC.get_amount() <= 10)
-			user << SPAN_WARNING("You need more cables.")
+			to_chat(user, SPAN_WARNING("You need more cables."))
 			building_terminal = 0
 			return 0
 		if (make_terminal(user))
@@ -284,33 +303,9 @@
 		stat = 0
 		return 0
 
-	else if(istype(W, /obj/item/weapon/wirecutters) && terminal && !building_terminal)
-		building_terminal = 1
-		var/turf/tempTDir = terminal.loc
-		if (istype(tempTDir))
-			if(!tempTDir.is_plating())
-				user << SPAN_WARNING("You must remove the floor plating first.")
-			else
-				user << SPAN_NOTICE("You begin to cut the cables...")
-				playsound(get_turf(src), 'sound/items/Deconstruct.ogg', 50, 1)
-				if(do_after(user, 50, src))
-					if (prob(50) && electrocute_mob(usr, terminal.powernet, terminal))
-						var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
-						s.set_up(5, 1, src)
-						s.start()
-						building_terminal = 0
-						if(usr.stunned)
-							return 0
-					new /obj/item/stack/cable_coil(loc,10)
-					user.visible_message(\
-						SPAN_NOTICE("[user.name] cut the cables and dismantled the power terminal."),\
-						SPAN_NOTICE("You cut the cables and dismantle the power terminal."))
-					qdel(terminal)
-		building_terminal = 0
-		return 0
-	return 1
+	return tool_type || 1
 
-/obj/machinery/power/smes/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/power/smes/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 
 	if(stat & BROKEN)
 		return
@@ -332,7 +327,7 @@
 
 
 	// update the ui if it exists, returns null if no ui is passed/found
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		// the ui does not exist, so we'll create a new() one
         // for a list of parameters and their descriptions see the code docs in \code\modules\nano\nanoui.dm
@@ -382,6 +377,7 @@
 		output_level = max(0, min(output_level_max, output_level))	// clamp to range
 
 	investigate_log("input/output; <font color='[input_level>output_level?"green":"red"][input_level]/[output_level]</font> | Output-mode: [output_attempt?"<font color='green'>on</font>":"<font color='red'>off</font>"] | Input-mode: [input_attempt?"<font color='green'>auto</font>":"<font color='red'>off</font>"] by [usr.key]","singulo")
+	playsound(loc, 'sound/machines/machine_switch.ogg', 100, 1)
 
 	return 1
 
@@ -389,7 +385,7 @@
 	failure_timer = max(failure_timer, duration)
 
 /obj/machinery/power/smes/proc/ion_act()
-	if(src.z in config.station_levels)
+	if(isStationLevel(src.z))
 		if(prob(1)) //explosion
 			for(var/mob/M in viewers(src))
 				M.show_message("\red The [src.name] is making strange noises!", 3, "\red You hear sizzling electronics.", 2)
@@ -418,14 +414,51 @@
 			energy_fail(rand(0, 30))
 
 /obj/machinery/power/smes/proc/inputting(var/do_input)
+	if(do_input)
+		to_chat(usr, "[src] input mode set to auto.")
+	else
+		to_chat(usr, "[src] output mode set to off.")
 	input_attempt = do_input
 	if(!input_attempt)
 		inputting = 0
 
 /obj/machinery/power/smes/proc/outputting(var/do_output)
+	if(do_output)
+		to_chat(usr, "[src] output mode set to online.")
+	else
+		to_chat(usr, "[src] output mode set to offline.")
 	output_attempt = do_output
 	if(!output_attempt)
 		outputting = 0
+
+// Proc: toggle_input()
+// Parameters: None
+// Description: Switches the input on/off depending on previous setting
+/obj/machinery/power/smes/proc/toggle_input()
+	inputting(!input_attempt)
+	update_icon()
+
+// Proc: toggle_output()
+// Parameters: None
+// Description: Switches the output on/off depending on previous setting
+/obj/machinery/power/smes/proc/toggle_output()
+	outputting(!output_attempt)
+	update_icon()
+
+// Proc: set_input()
+// Parameters: 1 (new_input - New input value in Watts)
+// Description: Sets input setting on this SMES. Trims it if limits are exceeded.
+/obj/machinery/power/smes/proc/set_input(var/new_input = 0)
+	input_level = between(0, new_input, input_level_max)
+	update_icon()
+
+// Proc: set_output()
+// Parameters: 1 (new_output - New output value in Watts)
+// Description: Sets output setting on this SMES. Trims it if limits are exceeded.
+/obj/machinery/power/smes/proc/set_output(var/new_output = 0)
+	output_level = between(0, new_output, output_level_max)
+	update_icon()
+
 
 /obj/machinery/power/smes/emp_act(severity)
 	if(prob(50))
@@ -451,6 +484,6 @@
 	output_level = 250000
 	should_be_mapped = 1
 
-/obj/machinery/power/smes/magical/process()
+/obj/machinery/power/smes/magical/Process()
 	charge = 5000000
 	..()

@@ -8,6 +8,7 @@
 	throw_range = 15
 	sharp = 1
 	edge =  1
+	embed_mult = 5 //We want these to embed
 
 /obj/item/weapon/material/star/New()
 	..()
@@ -21,4 +22,4 @@
 		M.adjustToxLoss(rand(20,40))
 
 /obj/item/weapon/material/star/ninja
-	default_material = "uranium"
+	default_material = null

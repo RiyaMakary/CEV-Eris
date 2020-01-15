@@ -4,9 +4,9 @@ obj/machinery/atmospherics/pipe/simple/heat_exchanging
 	icon_state = "intact"
 	pipe_icon = "hepipe"
 	color = "#404040"
-	level = 2
+	level = ABOVE_PLATING_LEVEL
 	connect_types = CONNECT_TYPE_HE
-	layer = 2.41
+	layer = GAS_PIPE_VISIBLE_LAYER
 	var/initialize_directions_he
 	var/surface = 2	//surface area in m^2
 	var/icon_temperature = T20C //stop small changes in temperature causing an icon refresh
@@ -23,7 +23,8 @@ obj/machinery/atmospherics/pipe/simple/heat_exchanging/New()
 	// BubbleWrap END
 	color = "#404040" //we don't make use of the fancy overlay system for colours, use this to set the default.
 
-obj/machinery/atmospherics/pipe/simple/heat_exchanging/initialize()
+obj/machinery/atmospherics/pipe/simple/heat_exchanging/atmos_init()
+	..()
 	normalize_dir()
 	var/node1_dir
 	var/node2_dir
@@ -50,7 +51,7 @@ obj/machinery/atmospherics/pipe/simple/heat_exchanging/initialize()
 	return
 
 
-obj/machinery/atmospherics/pipe/simple/heat_exchanging/process()
+obj/machinery/atmospherics/pipe/simple/heat_exchanging/Process()
 	if(!parent)
 		..()
 	else
@@ -107,10 +108,9 @@ obj/machinery/atmospherics/pipe/simple/heat_exchanging/junction
 	icon = 'icons/atmos/junction.dmi'
 	icon_state = "intact"
 	pipe_icon = "hejunction"
-	level = 2
+	level = ABOVE_PLATING_LEVEL
 	connect_types = CONNECT_TYPE_REGULAR|CONNECT_TYPE_HE
 	minimum_temperature_difference = 300
-	thermal_conductivity = WALL_HEAT_TRANSFER_COEFFICIENT
 
 	// BubbleWrap
 obj/machinery/atmospherics/pipe/simple/heat_exchanging/junction/New()
@@ -130,7 +130,7 @@ obj/machinery/atmospherics/pipe/simple/heat_exchanging/junction/New()
 			initialize_directions_he = WEST
 	// BubbleWrap END
 
-obj/machinery/atmospherics/pipe/simple/heat_exchanging/junction/initialize()
+obj/machinery/atmospherics/pipe/simple/heat_exchanging/junction/atmos_init()
 	for(var/obj/machinery/atmospherics/target in get_step(src, initialize_directions))
 		if(target.initialize_directions & get_dir(target, src))
 			node1 = target

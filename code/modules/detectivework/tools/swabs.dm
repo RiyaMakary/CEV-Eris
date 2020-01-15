@@ -2,6 +2,7 @@
 	name = "swab kit"
 	desc = "A sterilized cotton swab and vial used to take forensic samples."
 	icon_state = "swab"
+	price_tag = 5
 	var/gsr = 0
 	var/list/dna
 	var/used
@@ -21,39 +22,39 @@
 	var/sample_type
 
 	if(H.wear_mask)
-		user << SPAN_WARNING("\The [H] is wearing a mask.")
+		to_chat(user, SPAN_WARNING("\The [H] is wearing a mask."))
 		return
 
 	if(!H.dna || !H.dna.unique_enzymes)
-		user << SPAN_WARNING("They don't seem to have DNA!")
+		to_chat(user, SPAN_WARNING("They don't seem to have DNA!"))
 		return
 
 	if(user != H && H.a_intent != I_HELP && !H.lying)
 		user.visible_message(SPAN_DANGER("\The [user] tries to take a swab sample from \the [H], but they move away."))
 		return
 
-	if(user.targeted_organ == "mouth")
+	if(user.targeted_organ == BP_MOUTH)
 		if(!H.organs_by_name[BP_HEAD])
-			user << SPAN_WARNING("They don't have a head.")
+			to_chat(user, SPAN_WARNING("They don't have a head."))
 			return
 		if(!H.check_has_mouth())
-			user << SPAN_WARNING("They don't have a mouth.")
+			to_chat(user, SPAN_WARNING("They don't have a mouth."))
 			return
 		user.visible_message("[user] swabs \the [H]'s mouth for a saliva sample.")
 		dna = list(H.dna.unique_enzymes)
 		sample_type = "DNA"
 
-	else if(user.targeted_organ == BP_R_HAND || user.targeted_organ == BP_L_HAND)
+	else if(user.targeted_organ == BP_R_ARM || user.targeted_organ == BP_L_ARM)
 		var/has_hand
-		var/obj/item/organ/external/O = H.organs_by_name[BP_R_HAND]
+		var/obj/item/organ/external/O = H.organs_by_name[BP_R_ARM]
 		if(istype(O) && !O.is_stump())
 			has_hand = 1
 		else
-			O = H.organs_by_name[BP_L_HAND]
+			O = H.organs_by_name[BP_L_ARM]
 			if(istype(O) && !O.is_stump())
 				has_hand = 1
 		if(!has_hand)
-			user << SPAN_WARNING("They don't have any hands.")
+			to_chat(user, SPAN_WARNING("They don't have any hands."))
 			return
 		user.visible_message("[user] swabs [H]'s palm for a sample.")
 		sample_type = "GSR"
@@ -72,7 +73,7 @@
 		return
 
 	if(is_used())
-		user << SPAN_WARNING("This swab has already been used.")
+		to_chat(user, SPAN_WARNING("This swab has already been used."))
 		return
 
 	add_fingerprint(user)
@@ -85,7 +86,7 @@
 
 	var/choice
 	if(!choices.len)
-		user << SPAN_WARNING("There is no evidence on \the [A].")
+		to_chat(user, SPAN_WARNING("There is no evidence on \the [A]."))
 		return
 	else if(choices.len == 1)
 		choice = choices[1]
@@ -104,7 +105,7 @@
 	else if(choice == "Gunshot Residue")
 		var/obj/item/clothing/B = A
 		if(!istype(B) || !B.gunshot_residue)
-			user << SPAN_WARNING("There is no residue on \the [A].")
+			to_chat(user, SPAN_WARNING("There is no residue on \the [A]."))
 			return
 		gsr = B.gunshot_residue
 		sample_type = "residue"

@@ -16,7 +16,7 @@
 
 // If PC is not null header template is loaded. Use PC.get_header_data() to get relevant nanoui data from it. All data entries begin with "PC_...."
 // In future it may be expanded to other modular computer devices.
-/datum/nano_module/power_monitor/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = default_state)
+/datum/nano_module/power_monitor/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS, var/datum/topic_state/state = default_state)
 	var/list/data = host.initial_data()
 
 	var/list/sensors = list()
@@ -36,7 +36,7 @@
 	if(focus)
 		data["focus"] = focus.return_reading_data()
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "power_monitor.tmpl", "Power Monitoring Console", 800, 500, state = state)
 		if(host.update_layout()) // This is necessary to ensure the status bar remains updated along with rest of the UI.
@@ -51,7 +51,7 @@
 	var/turf/T = get_turf(nano_host())
 	if(!T) // Safety check
 		return
-	for(var/obj/machinery/power/sensor/S in machines)
+	for(var/obj/machinery/power/sensor/S in SSmachines.machinery)
 		if((T && S.loc.z == T.z) || (S.long_range)) // Consoles have range on their Z-Level. Sensors with long_range var will work between Z levels.
 			if(S.name_tag == "#UNKN#") // Default name. Shouldn't happen!
 				warning("Powernet sensor with unset ID Tag! [S.x]X [S.y]Y [S.z]Z")

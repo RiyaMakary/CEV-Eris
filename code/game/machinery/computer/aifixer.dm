@@ -3,7 +3,7 @@
 	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "rd_key"
 	icon_screen = "ai-fixer"
-	light_color = "#a97faa"
+	light_color = COLOR_LIGHTING_PURPLE_MACHINERY
 	circuit = /obj/item/weapon/circuitboard/aifixer
 	req_one_access = list(access_robotics, access_heads)
 	var/mob/living/silicon/ai/occupant = null
@@ -19,8 +19,8 @@
 		return
 
 	// Transfer over the AI.
-	transfer << "You have been uploaded to a stationary terminal. Sadly, there is no remote access from here."
-	user << "<span class='notice'>Transfer successful:</span> [transfer.name] ([rand(1000,9999)].exe) installed and executed successfully. Local copy has been removed."
+	to_chat(transfer, "You have been uploaded to a stationary terminal. Sadly, there is no remote access from here.")
+	to_chat(user, "<span class='notice'>Transfer successful:</span> [transfer.name] ([rand(1000,9999)].exe) installed and executed successfully. Local copy has been removed.")
 
 	transfer.loc = src
 	transfer.cancel_camera()
@@ -37,7 +37,7 @@
 	if(istype(I, /obj/item/device/aicard))
 
 		if(stat & (NOPOWER|BROKEN))
-			user << "This terminal isn't functioning right now."
+			to_chat(user, "This terminal isn't functioning right now.")
 			return
 
 		var/obj/item/device/aicard/card = I
@@ -46,7 +46,7 @@
 
 		if(istype(comp_ai))
 			if(active)
-				user << "<span class='danger'>ERROR:</span> Reconstruction in progress."
+				to_chat(user, "<span class='danger'>ERROR:</span> Reconstruction in progress.")
 				return
 			card.grab_ai(comp_ai, user)
 			if(!(locate(/mob/living/silicon/ai) in src)) occupant = null
@@ -58,9 +58,6 @@
 		return
 	..()
 	return
-
-/obj/machinery/computer/aifixer/attack_ai(var/mob/user as mob)
-	return attack_hand(user)
 
 /obj/machinery/computer/aifixer/attack_hand(var/mob/user as mob)
 	if(..())
@@ -92,7 +89,7 @@
 	onclose(user, "computer")
 	return
 
-/obj/machinery/computer/aifixer/process()
+/obj/machinery/computer/aifixer/Process()
 	if(..())
 		src.updateDialog()
 		return
@@ -112,8 +109,8 @@
 			if (src.occupant.health >= 0 && src.occupant.stat == DEAD)
 				src.occupant.stat = CONSCIOUS
 				src.occupant.lying = 0
-				dead_mob_list -= src.occupant
-				living_mob_list += src.occupant
+				GLOB.dead_mob_list -= src.occupant
+				GLOB.living_mob_list += src.occupant
 				src.overlays -= image('icons/obj/computer.dmi', "ai-fixer-404")
 				src.overlays += image('icons/obj/computer.dmi', "ai-fixer-full")
 				src.occupant.add_ai_verbs()

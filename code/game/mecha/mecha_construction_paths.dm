@@ -16,38 +16,29 @@
 
 
 /datum/construction/reversible/mecha/custom_action(index, diff, atom/used_atom, mob/user)
-	if(istype(used_atom, /obj/item/weapon/weldingtool))
-		var/obj/item/weapon/weldingtool/W = used_atom
-		if (W.remove_fuel(0, user))
-			playsound(holder, 'sound/items/Welder2.ogg', 50, 1)
-		else
-			return 0
-	else if(istype(used_atom, /obj/item/weapon/wrench))
-		playsound(holder, 'sound/items/Ratchet.ogg', 50, 1)
-
-	else if(istype(used_atom, /obj/item/weapon/screwdriver))
-		playsound(holder, 'sound/items/Screwdriver.ogg', 50, 1)
-
-	else if(istype(used_atom, /obj/item/weapon/wirecutters))
-		playsound(holder, 'sound/items/Wirecutter.ogg', 50, 1)
+	var/list/step = steps[index]
+	var/key = diff == FORWARD ? "key" : "backkey"
+	if(!ispath(step[key]))
+		if(istype(used_atom, /obj/item))
+			var/obj/item/I = used_atom
+			return I.use_tool(user, holder, WORKTIME_NORMAL, step[key], FAILCHANCE_NORMAL, required_stat = STAT_MEC)
 
 	else if(istype(used_atom, /obj/item/stack/cable_coil))
 		var/obj/item/stack/cable_coil/C = used_atom
 		if(C.use(4))
 			playsound(holder, 'sound/items/Deconstruct.ogg', 50, 1)
 		else
-			user << ("There's not enough cable to finish the task.")
+			to_chat(user, ("There's not enough cable to finish the task."))
 			return 0
 	else if(istype(used_atom, /obj/item/stack))
 		var/obj/item/stack/S = used_atom
 		if(S.get_amount() < 5)
-			user << ("There's not enough material in this stack.")
+			to_chat(user, ("There's not enough material in this stack."))
 			return 0
 		else
 			S.use(5)
 	else if(istype(used_atom, /obj/item/weapon/stock_parts))
 		var/obj/item/weapon/stock_parts/S = used_atom
-		var/list/step = steps[index]
 		if(S.rating < step["rating"])
 			return 0
 		usr.drop_from_inventory(S, holder)
@@ -84,59 +75,59 @@
 	result = /obj/mecha/working/ripley
 	steps = list(
 		//1
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="External armor is wrenched."),
 		//2
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="External armor is installed."),
 		//3
 		list("key"=/obj/item/stack/material/plasteel,
-			"backkey"=/obj/item/weapon/weldingtool,
+			"backkey"=QUALITY_WELDING,
 			"desc"="Internal armor is welded."),
 		//4
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="Internal armor is wrenched"),
 		//5
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Internal armor is installed"),
 		//6
 		list("key"=/obj/item/stack/material/steel,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Peripherals control module is secured"),
 		//7
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Peripherals control module is installed"),
 		//8
-		list("key"=/obj/item/weapon/circuitboard/mecha/ripley/peripherals,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/peripherals,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Central control module is secured"),
 		//9
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Central control module is installed"),
 		//10
-		list("key"=/obj/item/weapon/circuitboard/mecha/ripley/main,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/main,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is adjusted"),
 		//11
-		list("key"=/obj/item/weapon/wirecutters,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=QUALITY_WIRE_CUTTING,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is added"),
 		//12
 		list("key"=/obj/item/stack/cable_coil,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The hydraulic systems are active."),
 		//13
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are connected."),
 		//14
-		list("key"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are disconnected.")
 	)
 
@@ -218,7 +209,7 @@
 						"[user] removes the central control module from [holder].",
 						"You remove the central computer mainboard from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/ripley/main(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/main(get_turf(holder))
 					holder.icon_state = "ripley4"
 			if(8)
 				if(diff==FORWARD)
@@ -246,7 +237,7 @@
 						"[user] removes the peripherals control module from [holder].",
 						"You remove the peripherals control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/ripley/peripherals(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/peripherals(get_turf(holder))
 					holder.icon_state = "ripley6"
 			if(6)
 				if(diff==FORWARD)
@@ -356,85 +347,85 @@
 	result = /obj/mecha/combat/gygax
 	steps = list(
 		//1
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="External armor is wrenched."),
 		//2
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="External armor is installed."),
 		//3
 		list("key"=/obj/item/mecha_parts/part/gygax_armour,
-			"backkey"=/obj/item/weapon/weldingtool,
+			"backkey"=QUALITY_WELDING,
 			"desc"="Internal armor is welded."),
 		//4
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="Internal armor is wrenched"),
 		//5
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Internal armor is installed"),
 		//6
 		list("key"=/obj/item/stack/material/steel,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Advanced capacitor is secured"),
 		//7
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Advanced capacitor is installed"),
 		//8
 		list("key"=/obj/item/weapon/stock_parts/capacitor,
 			"rating" = 2,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Advanced scanner module is secured"),
 		//9
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Advanced scanner module is installed"),
 		//10
 		list("key"=/obj/item/weapon/stock_parts/scanning_module,
 			"rating" = 2,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Targeting module is secured"),
 		//11
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Targeting module is installed"),
 		//12
-		list("key"=/obj/item/weapon/circuitboard/mecha/gygax/targeting,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/targeting,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Peripherals control module is secured"),
 		//13
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Peripherals control module is installed"),
 		//14
-		list("key"=/obj/item/weapon/circuitboard/mecha/gygax/peripherals,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/peripherals,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Central control module is secured"),
 		//15
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Central control module is installed"),
 		//16
-		list("key"=/obj/item/weapon/circuitboard/mecha/gygax/main,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/main,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is adjusted"),
 		//17
-		list("key"=/obj/item/weapon/wirecutters,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=QUALITY_WIRE_CUTTING,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is added"),
 		//18
 		list("key"=/obj/item/stack/cable_coil,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The hydraulic systems are active."),
 		//19
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are connected."),
 		//20
-		list("key"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are disconnected.")
 		)
 
@@ -516,7 +507,7 @@
 						"[user] removes the central control module from [holder].",
 						"You remove the central computer mainboard from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/gygax/main(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/main(get_turf(holder))
 					holder.icon_state = "gygax4"
 			if(14)
 				if(diff==FORWARD)
@@ -544,7 +535,7 @@
 						"[user] removes the peripherals control module from [holder].",
 						"You remove the peripherals control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/gygax/peripherals(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/peripherals(get_turf(holder))
 					holder.icon_state = "gygax6"
 			if(12)
 				if(diff==FORWARD)
@@ -572,7 +563,7 @@
 						"[user] removes the weapon control module from [holder].",
 						"You remove the weapon control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/gygax/targeting(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/targeting(get_turf(holder))
 					holder.icon_state = "gygax8"
 			if(10)
 				if(diff==FORWARD)
@@ -757,63 +748,63 @@
 	result = /obj/mecha/working/ripley/firefighter
 	steps = list(
 		//1
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="External armor is wrenched."),
 		//2
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="External armor is installed."),
 		//3
 		list("key"=/obj/item/stack/material/plasteel,
-			"backkey"=/obj/item/weapon/crowbar,
+			"backkey"=QUALITY_PRYING,
 			"desc"="External armor is being installed."),
 		//4
 		list("key"=/obj/item/stack/material/plasteel,
-			"backkey"=/obj/item/weapon/weldingtool,
+			"backkey"=QUALITY_WELDING,
 			"desc"="Internal armor is welded."),
 		//5
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="Internal armor is wrenched"),
 		//6
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Internal armor is installed"),
 		//7
 		list("key"=/obj/item/stack/material/plasteel,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Peripherals control module is secured"),
 		//8
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Peripherals control module is installed"),
 		//9
-		list("key"=/obj/item/weapon/circuitboard/mecha/ripley/peripherals,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/peripherals,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Central control module is secured"),
 		//10
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Central control module is installed"),
 		//11
-		list("key"=/obj/item/weapon/circuitboard/mecha/ripley/main,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/main,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is adjusted"),
 		//12
-		list("key"=/obj/item/weapon/wirecutters,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=QUALITY_WIRE_CUTTING,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is added"),
 		//13
 		list("key"=/obj/item/stack/cable_coil,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The hydraulic systems are active."),
 		//14
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are connected."),
 		//15
-		list("key"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are disconnected.")
 	)
 
@@ -895,7 +886,7 @@
 						"[user] removes the central control module from [holder].",
 						"You remove the central computer mainboard from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/ripley/main(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/main(get_turf(holder))
 					holder.icon_state = "fireripley4"
 			if(9)
 				if(diff==FORWARD)
@@ -923,7 +914,7 @@
 						"[user] removes the peripherals control module from [holder].",
 						"You remove the peripherals control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/ripley/peripherals(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/peripherals(get_turf(holder))
 					holder.icon_state = "fireripley6"
 			if(7)
 				if(diff==FORWARD)
@@ -1047,83 +1038,83 @@
 	result = /obj/mecha/combat/durand
 	steps = list(
 		//1
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="External armor is wrenched."),
 		//2
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="External armor is installed."),
 		//3
 		list("key"=/obj/item/mecha_parts/part/durand_armour,
-			"backkey"=/obj/item/weapon/weldingtool,
+			"backkey"=QUALITY_WELDING,
 			"desc"="Internal armor is welded."),
 		//4
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="Internal armor is wrenched"),
 		//5
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Internal armor is installed"),
 		//6
 		list("key"=/obj/item/stack/material/steel,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Advanced capacitor is secured"),
 		//7
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Advanced capacitor is installed"),
 		//8
 		list("key"=/obj/item/weapon/stock_parts/capacitor/adv,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Advanced scanner module is secured"),
 		//9
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Advanced scanner module is installed"),
 		//10
 		list("key"=/obj/item/weapon/stock_parts/scanning_module/adv,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Targeting module is secured"),
 		//11
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Targeting module is installed"),
 		//12
-		list("key"=/obj/item/weapon/circuitboard/mecha/durand/targeting,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/targeting,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Peripherals control module is secured"),
 		//13
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Peripherals control module is installed"),
 		//14
-		list("key"=/obj/item/weapon/circuitboard/mecha/durand/peripherals,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/peripherals,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Central control module is secured"),
 		//15
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Central control module is installed"),
 		//16
-		list("key"=/obj/item/weapon/circuitboard/mecha/durand/main,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/main,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is adjusted"),
 		//17
-		list("key"=/obj/item/weapon/wirecutters,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=QUALITY_WIRE_CUTTING,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is added"),
 		//18
 		list("key"=/obj/item/stack/cable_coil,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The hydraulic systems are active."),
 		//19
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are connected."),
 		//20
-		list("key"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are disconnected.")
 		)
 
@@ -1206,7 +1197,7 @@
 						"[user] removes the central control module from [holder].",
 						"You remove the central computer mainboard from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/durand/main(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/main(get_turf(holder))
 					holder.icon_state = "durand4"
 			if(14)
 				if(diff==FORWARD)
@@ -1234,7 +1225,7 @@
 						"[user] removes the peripherals control module from [holder].",
 						"You remove the peripherals control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/durand/peripherals(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/peripherals(get_turf(holder))
 					holder.icon_state = "durand6"
 			if(12)
 				if(diff==FORWARD)
@@ -1262,7 +1253,7 @@
 						"[user] removes the weapon control module from [holder].",
 						"You remove the weapon control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/durand/targeting(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/targeting(get_turf(holder))
 					holder.icon_state = "durand8"
 			if(10)
 				if(diff==FORWARD)
@@ -1449,98 +1440,98 @@
 	steps = list(
 		//1
 		list("key"=/obj/item/weapon/hand_tele,
-			"backkey"=/obj/item/weapon/crowbar,
+			"backkey"=QUALITY_PRYING,
 			"desc"="The hand tele is installed."),
 		//2
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="External armor is wrenched."),
 		//3
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="External armor is installed."),
 		//4
 		list("key"=/obj/item/mecha_parts/part/phazon_armor,
-			"backkey"=/obj/item/weapon/weldingtool,
+			"backkey"=QUALITY_WELDING,
 			"desc"="Phase armor is welded."),
 		//5
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="Phase armor is wrenched."),
 		//6
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Phase armor is installed."),
 		//7
 		list("key"=/obj/item/stack/material/plasteel,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The bluespace crystal is engaged."),
 		//8
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/wirecutters,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_WIRE_CUTTING,
 			"desc"="The bluespace crystal is connected."),
 		//9
 		list("key"=/obj/item/stack/cable_coil,
-			"backkey"=/obj/item/weapon/crowbar,
+			"backkey"=QUALITY_PRYING,
 			"desc"="The bluespace crystal is installed."),
 		//10
 		list("key"=/obj/item/weapon/stock_parts/subspace/crystal,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Super capacitor is secured."),
 		//12
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Super capacitor is installed."),
 		//12
 		list("key"=/obj/item/weapon/stock_parts/capacitor/super,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Phasic scanner module is secured."),
 		//13
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Phasic scanner module is installed."),
 		//14
 		list("key"=/obj/item/weapon/stock_parts/scanning_module/phasic,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Weapon control module is secured."),
 		//15
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Weapon control is installed."),
 		//16
-		list("key"=/obj/item/weapon/circuitboard/mecha/phazon/targeting,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/targeting,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Peripherals control module is secured."),
 		//17
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Peripherals control module is installed"),
 		//18
-		list("key"=/obj/item/weapon/circuitboard/mecha/phazon/peripherals,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/peripherals,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Central control module is secured."),
 		//19
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Central control module is installed."),
 		//20
-		list("key"=/obj/item/weapon/circuitboard/mecha/phazon/main,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/main,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is adjusted."),
 		//21
-		list("key"=/obj/item/weapon/wirecutters,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=QUALITY_WIRE_CUTTING,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is added."),
 		//22
 		list("key"=/obj/item/stack/cable_coil,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The hydraulic systems are active."),
 		//23
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are connected."),
 		//24
-		list("key"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are disconnected.")
 		)
 
@@ -1623,7 +1614,7 @@
 						"[user] removes the central control module from the [holder].",
 						"You remove the central computer mainboard from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/phazon/main(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/main(get_turf(holder))
 					holder.icon_state = "phazon4"
 			if(18)
 				if(diff==FORWARD)
@@ -1651,7 +1642,7 @@
 						"[user] removes the peripherals control module from the [holder].",
 						"You remove the peripherals control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/phazon/peripherals(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/peripherals(get_turf(holder))
 					holder.icon_state = "phazon6"
 			if(16)
 				if(diff==FORWARD)
@@ -1679,7 +1670,7 @@
 						"[user] removes the weapon control module from the [holder].",
 						"You remove the weapon control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/phazon/targeting(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/targeting(get_turf(holder))
 					holder.icon_state = "phazon8"
 			if(14)
 				if(diff==FORWARD)
@@ -1917,59 +1908,59 @@
 	result = /obj/mecha/medical/odysseus
 	steps = list(
 		//1
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="External armor is wrenched."),
 		//2
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="External armor is installed."),
 		//3
 		list("key"=/obj/item/stack/material/plasteel,
-			"backkey"=/obj/item/weapon/weldingtool,
+			"backkey"=QUALITY_WELDING,
 			"desc"="Internal armor is welded."),
 		//4
-		list("key"=/obj/item/weapon/weldingtool,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_WELDING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="Internal armor is wrenched"),
 		//5
-		list("key"=/obj/item/weapon/wrench,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_BOLT_TURNING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Internal armor is installed"),
 		//6
 		list("key"=/obj/item/stack/material/steel,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Peripherals control module is secured"),
 		//7
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Peripherals control module is installed"),
 		//8
-		list("key"=/obj/item/weapon/circuitboard/mecha/odysseus/peripherals,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/peripherals,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="Central control module is secured"),
 		//9
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/crowbar,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_PRYING,
 			"desc"="Central control module is installed"),
 		//10
-		list("key"=/obj/item/weapon/circuitboard/mecha/odysseus/main,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=/obj/item/weapon/circuitboard/mecha/main,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is adjusted"),
 		//11
-		list("key"=/obj/item/weapon/wirecutters,
-			"backkey"=/obj/item/weapon/screwdriver,
+		list("key"=QUALITY_WIRE_CUTTING,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The wiring is added"),
 		//12
 		list("key"=/obj/item/stack/cable_coil,
-			"backkey"=/obj/item/weapon/screwdriver,
+			"backkey"=QUALITY_SCREW_DRIVING,
 			"desc"="The hydraulic systems are active."),
 		//13
-		list("key"=/obj/item/weapon/screwdriver,
-			"backkey"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_SCREW_DRIVING,
+			"backkey"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are connected."),
 		//14
-		list("key"=/obj/item/weapon/wrench,
+		list("key"=QUALITY_BOLT_TURNING,
 			"desc"="The hydraulic systems are disconnected.")
 	)
 
@@ -2051,7 +2042,7 @@
 						"[user] removes the central control module from [holder].",
 						"You remove the central computer mainboard from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/odysseus/main(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/main(get_turf(holder))
 					holder.icon_state = "odysseus4"
 			if(8)
 				if(diff==FORWARD)
@@ -2079,7 +2070,7 @@
 						"[user] removes the peripherals control module from [holder].",
 						"You remove the peripherals control module from [holder]."
 					)
-					new /obj/item/weapon/circuitboard/mecha/odysseus/peripherals(get_turf(holder))
+					new /obj/item/weapon/circuitboard/mecha/peripherals(get_turf(holder))
 					holder.icon_state = "odysseus6"
 			if(6)
 				if(diff==FORWARD)

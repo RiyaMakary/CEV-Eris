@@ -9,10 +9,9 @@
 	anchored = 1
 	opacity = 1
 	density = 1
-	layer = DOOR_OPEN_LAYER
-	var/open_layer = DOOR_OPEN_LAYER
-	var/closed_layer = DOOR_CLOSED_LAYER
-
+	layer = OPEN_DOOR_LAYER
+	var/open_layer = OPEN_DOOR_LAYER
+	var/closed_layer = CLOSED_DOOR_LAYER
 	var/visible = 1
 	var/p_open = 0
 	var/operating = 0
@@ -21,20 +20,22 @@
 	var/normalspeed = 1
 	var/heat_proof = 0 // For glass airlocks/opacity firedoors
 	var/air_properties_vary_with_direction = 0
-	var/maxhealth = 300
+	var/maxhealth = 250
 	var/health
 	var/destroy_hits = 10 //How many strong hits it takes to destroy the door
-	var/min_force = 10 //minimum amount of force needed to damage the door with a melee weapon
+	var/resistance = RESISTANCE_TOUGH //minimum amount of force needed to damage the door with a melee weapon
 	var/hitsound = 'sound/weapons/smash.ogg' //sound door makes when hit with a weapon
 	var/obj/item/stack/material/repairing
 	var/block_air_zones = 1 //If set, air zones cannot merge across the door even when it is opened.
 	var/close_door_at = 0 //When to automatically close the door, if possible
 	var/obj/machinery/filler_object/f5
 	var/obj/machinery/filler_object/f6
-
+	var/welded = null //Placed here for simplicity, only airlocks can be welded tho
 	//Multi-tile doors
 	dir = EAST
 	var/width = 1
+
+	var/damage_smoke = FALSE
 
 	// turf animation
 	var/atom/movable/overlay/c_animation = null
@@ -43,11 +44,13 @@
 	return density
 
 /obj/machinery/door/attack_generic(var/mob/user, var/damage)
-	if(damage >= 10)
+	if(damage >= resistance)
 		visible_message(SPAN_DANGER("\The [user] smashes into \the [src]!"))
 		take_damage(damage)
 	else
 		visible_message(SPAN_NOTICE("\The [user] bonks \the [src] harmlessly."))
+		playsound(src, 'sound/weapons/Genhit.ogg', 15, 1,-1)
+	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN*1.5)
 	attack_animation(user)
 
 /obj/machinery/door/New()
@@ -77,10 +80,10 @@
 /obj/machinery/door/Destroy()
 	density = 0
 	update_nearby_tiles()
-	..()
-	return
 
-/obj/machinery/door/process()
+	return ..()
+
+/obj/machinery/door/Process()
 	if(close_door_at && world.time >= close_door_at)
 		if(autoclose)
 			close_door_at = next_close_time()
@@ -89,12 +92,12 @@
 			close_door_at = 0
 
 /obj/machinery/door/proc/can_open()
-	if(!density || operating || !ticker)
+	if(!density || operating)
 		return 0
 	return 1
 
 /obj/machinery/door/proc/can_close()
-	if(density || operating || !ticker)
+	if(density || operating)
 		return 0
 	return 1
 
@@ -171,7 +174,7 @@
 			switch (Proj.damage_type)
 				if(BRUTE)
 					new /obj/item/stack/material/steel(src.loc, 2)
-					PoolOrNew(/obj/item/stack/rods, list(src.loc, 3))
+					new /obj/item/stack/rods(loc, 3)
 				if(BURN)
 					new /obj/effect/decal/cleanable/ash(src.loc) // Turn it to ashes!
 			qdel(src)
@@ -185,21 +188,23 @@
 /obj/machinery/door/hitby(AM as mob|obj, var/speed=5)
 
 	..()
-	visible_message(SPAN_DANGER("[src.name] was hit by [AM]."))
-	var/tforce = 0
-	if(ismob(AM))
-		tforce = 15 * (speed/5)
-	else
-		tforce = AM:throwforce * (speed/5)
-	playsound(src.loc, hitsound, 100, 1)
-	take_damage(tforce)
+	var/damage = 5
+	if (istype(AM, /obj/item))
+		var/obj/item/O = AM
+		damage = O.throwforce
+	else if (istype(AM, /mob/living))
+		var/mob/living/M = AM
+		damage = M.mob_size
+	take_damage(damage)
 	return
 
-/obj/machinery/door/attack_ai(mob/user as mob)
-	return src.attack_hand(user)
-
 /obj/machinery/door/attack_hand(mob/user as mob)
-	return src.attackby(user, user)
+	if(src.allowed(user) && operable())
+		if(src.density)
+			open()
+		else
+			close()
+		return
 
 /obj/machinery/door/attack_tk(mob/user as mob)
 	if(requiresID() && !allowed(null))
@@ -209,27 +214,62 @@
 /obj/machinery/door/attackby(obj/item/I as obj, mob/user as mob)
 	src.add_fingerprint(user)
 
+	//Harm intent overrides other actions
+	if(src.density && user.a_intent == I_HURT && !I.GetIdCard())
+		hit(user, I)
+		return
+
+	if(density && I.GetIdCard())
+		if(allowed(user))	open()
+		else				do_animate("deny")
+		return
+
+	if(repairing)
+		var/tool_type = I.get_tool_type(user, list(QUALITY_PRYING, QUALITY_WELDING), src)
+		switch(tool_type)
+
+			if(QUALITY_WELDING)
+				if(I.use_tool(user, src, WORKTIME_FAST, tool_type, FAILCHANCE_EASY, required_stat = STAT_MEC))
+					to_chat(user, SPAN_NOTICE("You finish repairing the damage to \the [src]."))
+					health = between(health, health + repairing.amount*DOOR_REPAIR_AMOUNT, maxhealth)
+					update_icon()
+					qdel(repairing)
+					repairing = null
+					return
+				return
+
+			if(QUALITY_PRYING)
+				if(I.use_tool(user, src, WORKTIME_FAST, tool_type, FAILCHANCE_EASY,  required_stat = STAT_ROB))
+					to_chat(user, SPAN_NOTICE("You remove \the [repairing]."))
+					repairing.loc = user.loc
+					repairing = null
+					return
+				return
+
+			if(ABORT_CHECK)
+				return
+
 	if(istype(I, /obj/item/stack/material) && I.get_material_name() == src.get_material_name())
 		if(stat & BROKEN)
-			user << SPAN_NOTICE("It looks like \the [src] is pretty busted. It's going to need more than just patching up now.")
+			to_chat(user, SPAN_NOTICE("It looks like \the [src] is pretty busted. It's going to need more than just patching up now."))
 			return
 		if(health >= maxhealth)
-			user << SPAN_NOTICE("Nothing to fix!")
+			to_chat(user, SPAN_NOTICE("Nothing to fix!"))
 			return
 		if(!density)
-			user << SPAN_WARNING("\The [src] must be closed before you can repair it.")
+			to_chat(user, SPAN_WARNING("\The [src] must be closed before you can repair it."))
 			return
 
 		//figure out how much metal we need
 		var/amount_needed = (maxhealth - health) / DOOR_REPAIR_AMOUNT
-		amount_needed = ceil(amount_needed)
+		amount_needed = CEILING(amount_needed, 1)
 
 		var/obj/item/stack/stack = I
 		var/transfer
 		if (repairing)
 			transfer = stack.transfer_to(repairing, amount_needed - repairing.amount)
 			if (!transfer)
-				user << SPAN_WARNING("You must weld or remove \the [repairing] from \the [src] before you can add anything else.")
+				to_chat(user, SPAN_WARNING("You must weld or remove \the [repairing] from \the [src] before you can add anything else."))
 		else
 			repairing = stack.split(amount_needed)
 			if (repairing)
@@ -237,58 +277,15 @@
 				transfer = repairing.amount
 
 		if (transfer)
-			user << SPAN_NOTICE("You fit [transfer] [stack.singular_name]\s to damaged and broken parts on \the [src].")
+			to_chat(user, SPAN_NOTICE("You fit [transfer] [stack.singular_name]\s to damaged and broken parts on \the [src]."))
 
 		return
 
-	if(repairing && istype(I, /obj/item/weapon/weldingtool))
-		if(!density)
-			user << SPAN_WARNING("\The [src] must be closed before you can repair it.")
-			return
 
-		var/obj/item/weapon/weldingtool/welder = I
-		if(welder.remove_fuel(0,user))
-			user << SPAN_NOTICE("You start to fix dents and weld \the [repairing] into place.")
-			playsound(src, 'sound/items/Welder.ogg', 100, 1)
-			if(do_after(user, 5 * repairing.amount, src) && welder && welder.isOn())
-				user << SPAN_NOTICE("You finish repairing the damage to \the [src].")
-				health = between(health, health + repairing.amount*DOOR_REPAIR_AMOUNT, maxhealth)
-				update_icon()
-				qdel(repairing)
-				repairing = null
-		return
-
-	if(repairing && istype(I, /obj/item/weapon/crowbar))
-		user << SPAN_NOTICE("You remove \the [repairing].")
-		playsound(src.loc, 'sound/items/Crowbar.ogg', 100, 1)
-		repairing.loc = user.loc
-		repairing = null
-		return
-
-	//psa to whoever coded this, there are plenty of objects that need to call attack() on doors without bludgeoning them.
-	if(src.density && istype(I, /obj/item/weapon) && user.a_intent == I_HURT && !istype(I, /obj/item/weapon/card))
-		var/obj/item/weapon/W = I
-		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
-		if(W.damtype == BRUTE || W.damtype == BURN)
-			user.do_attack_animation(src)
-			if(W.force < min_force)
-				user.visible_message(SPAN_DANGER("\The [user] hits \the [src] with \the [W] with no visible effect."))
-			else
-				user.visible_message(SPAN_DANGER("\The [user] forcefully strikes \the [src] with \the [W]!"))
-				playsound(src.loc, hitsound, 100, 1)
-				take_damage(W.force)
-		return
 
 	if(src.operating > 0 || isrobot(user))	return //borgs can't attack doors open because it conflicts with their AI-like interaction with them.
 
 	if(src.operating) return
-
-	if(src.allowed(user) && operable())
-		if(src.density)
-			open()
-		else
-			close()
-		return
 
 	if(src.density)
 		do_animate("deny")
@@ -302,34 +299,74 @@
 		operating = -1
 		return 1
 
+
+
+/obj/machinery/door/proc/hit(var/mob/user, var/obj/item/I, var/thrown = FALSE)
+	var/obj/item/weapon/W = I
+	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN*1.5)
+	var/calc_damage
+	if (thrown)
+		calc_damage= W.throwforce*W.structure_damage_factor
+	else
+		calc_damage= W.force*W.structure_damage_factor
+		if (user)user.do_attack_animation(src)
+
+	calc_damage -= resistance
+
+	if(calc_damage <= 0)
+		if (user)user.visible_message(SPAN_DANGER("\The [user] hits \the [src] with \the [W] with no visible effect."))
+		playsound(src.loc, hitsound, 20, 1)
+	else
+		if (user)user.visible_message(SPAN_DANGER("\The [user] forcefully strikes \the [src] with \the [W]!"))
+		playsound(src.loc, hitsound, calc_damage*2.5, 1, 3,3)
+		take_damage(W.force)
+
 /obj/machinery/door/proc/take_damage(var/damage)
+	if (!isnum(damage))
+		return
+
+	var/smoke_amount
+
 	var/initialhealth = src.health
 	src.health = max(0, src.health - damage)
 	if(src.health <= 0 && initialhealth > 0)
 		src.set_broken()
+		smoke_amount = 4
 	else if(src.health < src.maxhealth / 4 && initialhealth >= src.maxhealth / 4)
 		visible_message("\The [src] looks like it's about to break!" )
+		smoke_amount = 3
 	else if(src.health < src.maxhealth / 2 && initialhealth >= src.maxhealth / 2)
 		visible_message("\The [src] looks seriously damaged!" )
+		smoke_amount = 2
 	else if(src.health < src.maxhealth * 3/4 && initialhealth >= src.maxhealth * 3/4)
 		visible_message("\The [src] shows signs of damage!" )
+		smoke_amount = 1
 	update_icon()
+	if(damage_smoke && smoke_amount)
+		var/datum/effect/effect/system/smoke_spread/S = new
+		S.set_up(smoke_amount, 0, src)
+		S.start()
 	return
 
 
 /obj/machinery/door/examine(mob/user)
 	. = ..()
 	if(src.health < src.maxhealth / 4)
-		user << "\The [src] looks like it's about to break!"
+		to_chat(user, "\The [src] looks like it's about to break!")
 	else if(src.health < src.maxhealth / 2)
-		user << "\The [src] looks seriously damaged!"
+		to_chat(user, "\The [src] looks seriously damaged!")
 	else if(src.health < src.maxhealth * 3/4)
-		user << "\The [src] shows signs of damage!"
+		to_chat(user, "\The [src] shows signs of damage!")
 
 
 /obj/machinery/door/proc/set_broken()
 	stat |= BROKEN
-	visible_message("<span class = 'warning'>\The [src.name] breaks!</span>")
+
+	if (health <= 0)
+		visible_message("<span class = 'warning'>\The [src.name] breaks open!</span>")
+		open(TRUE)
+	else
+		visible_message("<span class = 'warning'>\The [src.name] breaks!</span>")
 	update_icon()
 
 
@@ -452,12 +489,9 @@
 	return ..(M)
 
 /obj/machinery/door/update_nearby_tiles(need_rebuild)
-	if(!air_master)
-		return 0
-
 	for(var/turf/simulated/turf in locs)
 		update_heat_protection(turf)
-		air_master.mark_for_update(turf)
+		SSair.mark_for_update(turf)
 
 	return 1
 
@@ -468,7 +502,7 @@
 		else
 			source.thermal_conductivity = initial(source.thermal_conductivity)
 
-/obj/machinery/door/Move(new_loc, new_dir)
+/obj/machinery/door/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	//update_nearby_tiles()
 	. = ..()
 	if(width > 1)
@@ -483,3 +517,5 @@
 
 /obj/machinery/door/morgue
 	icon = 'icons/obj/doors/doormorgue.dmi'
+
+

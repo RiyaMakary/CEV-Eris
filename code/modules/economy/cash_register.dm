@@ -36,9 +36,9 @@
 	..(user)
 	if(cash_open)
 		if(cash_stored)
-			user << "It holds [cash_stored] Thaler\s of money."
+			to_chat(user, "It holds [cash_stored] Credit\s of money.")
 		else
-			user << "It's completely empty."
+			to_chat(user, "It's completely empty.")
 
 
 /obj/machinery/cash_register/attack_hand(mob/user as mob)
@@ -93,7 +93,6 @@
 		return
 
 	usr.set_machine(src)
-	add_fingerprint(usr)
 
 	if(href_list["choice"])
 		switch(href_list["choice"])
@@ -106,10 +105,10 @@
 						if(try_pin == pin_code)
 							locked = !locked
 						else
-							usr << "\icon[src]<span class='warning'>Insufficient access.</span>"
+							to_chat(usr, "\icon[src]<span class='warning'>Insufficient access.</span>")
 				else
 					locked = !locked
-					usr << "You lock cash register."
+					to_chat(usr, "You lock cash register.")
 			if("toggle_cash_lock")
 				cash_locked = !cash_locked
 			if("link_account")
@@ -121,7 +120,7 @@
 						linked_account = null
 						src.visible_message("\icon[src]<span class='warning'>Account has been suspended.</span>")
 				else
-					usr << "\icon[src]<span class='warning'>Account not found.</span>"
+					to_chat(usr, "\icon[src]<span class='warning'>Account not found.</span>")
 			if("custom_order")
 				var/t_purpose = sanitize(input("Enter purpose", "New purpose") as text)
 				if (!t_purpose || !Adjacent(usr)) return
@@ -132,11 +131,11 @@
 				transaction_amount += t_amount
 				price_list += t_amount
 				playsound(src, 'sound/machines/twobeep.ogg', 25)
-				src.visible_message("\icon[src][transaction_purpose]: [t_amount] Thaler\s.")
+				src.visible_message("\icon[src][transaction_purpose]: [t_amount] Credit\s.")
 			if("set_amount")
 				var/item_name = locate(href_list["item"])
 				var/n_amount = round(input("Enter amount", "New amount") as num)
-				n_amount = Clamp(n_amount, 0, 20)
+				n_amount = CLAMP(n_amount, 0, 20)
 				if (!item_list[item_name] || !Adjacent(usr)) return
 				transaction_amount += (n_amount - item_list[item_name]) * price_list[item_name]
 				if(!n_amount)
@@ -169,14 +168,14 @@
 					price_list.Cut()
 			if("reset_log")
 				transaction_logs.Cut()
-				usr << "\icon[src]<span class='notice'>Transaction log reset.</span>"
+				to_chat(usr, "\icon[src]<span class='notice'>Transaction log reset.</span>")
 	updateDialog()
 
 
 
 /obj/machinery/cash_register/attackby(obj/O as obj, user as mob)
 	// Check for a method of paying (ID, PDA, e-wallet, cash, ect.)
-	var/obj/item/weapon/card/id/I = O.GetID()
+	var/obj/item/weapon/card/id/I = O.GetIdCard()
 	if(I)
 		scan_card(I, O)
 	else if (istype(O, /obj/item/weapon/spacecash/ewallet))
@@ -185,7 +184,7 @@
 	else if (istype(O, /obj/item/weapon/spacecash))
 		var/obj/item/weapon/spacecash/SC = O
 		if(cash_open)
-			user << "You neatly sort the cash into the box."
+			to_chat(user, "You neatly sort the cash into the box.")
 			cash_stored += SC.worth
 			overlays |= "register_cash"
 			if(ishuman(user))
@@ -196,8 +195,8 @@
 			scan_cash(SC)
 	else if(istype(O, /obj/item/weapon/card/emag))
 		return ..()
-	else if(istype(O, /obj/item/weapon/wrench))
-		var/obj/item/weapon/wrench/W = O
+	else if(istype(O, /obj/item/weapon/tool/wrench))
+		var/obj/item/weapon/tool/wrench/W = O
 		toggle_anchors(W, user)
 	// Not paying: Look up price and add it to transaction_amount
 	else
@@ -214,7 +213,7 @@
 		return 1
 	else
 		confirm_item = I
-		src.visible_message("\icon[src]<b>Total price:</b> [transaction_amount] Thaler\s. Swipe again to confirm.")
+		src.visible_message("\icon[src]<b>Total price:</b> [transaction_amount] Credit\s. Swipe again to confirm.")
 		playsound(src, 'sound/machines/twobeep.ogg', 25)
 		return 0
 
@@ -225,7 +224,7 @@
 
 	if (cash_open)
 		playsound(src, 'sound/machines/buzz-sigh.ogg', 25)
-		usr << "\icon[src]<span class='warning'>The cash box is open.</span>"
+		to_chat(usr, "\icon[src]<span class='warning'>The cash box is open.</span>")
 		return
 
 	if((item_list.len > 1 || item_list[item_list[1]] > 1) && !confirm(I))
@@ -290,7 +289,7 @@
 
 	if (cash_open)
 		playsound(src, 'sound/machines/buzz-sigh.ogg', 25)
-		usr << "\icon[src]<span class='warning'>The cash box is open.</span>"
+		to_chat(usr, "\icon[src]<span class='warning'>The cash box is open.</span>")
 		return
 
 	if((item_list.len > 1 || item_list[item_list[1]] > 1) && !confirm(E))
@@ -328,7 +327,7 @@
 
 	if (cash_open)
 		playsound(src, 'sound/machines/buzz-sigh.ogg', 25)
-		usr << "\icon[src]<span class='warning'>The cash box is open.</span>"
+		to_chat(usr, "\icon[src]<span class='warning'>The cash box is open.</span>")
 		return
 
 	if((item_list.len > 1 || item_list[item_list[1]] > 1) && !confirm(SC))
@@ -361,7 +360,7 @@
 		return
 	if (cash_open)
 		playsound(src, 'sound/machines/buzz-sigh.ogg', 25)
-		usr << "\icon[src]<span class='warning'>The cash box is open.</span>"
+		to_chat(usr, "\icon[src]<span class='warning'>The cash box is open.</span>")
 		return
 
 	// First check if item has a valid price
@@ -370,11 +369,11 @@
 		src.visible_message("\icon[src]<span class='warning'>Unable to find item in database.</span>")
 		return
 	// Call out item cost
-	src.visible_message("\icon[src]\A [O]: [price ? "[price] Thaler\s" : "free of charge"].")
+	src.visible_message("\icon[src]\A [O]: [price ? "[price] Credit\s" : "free of charge"].")
 	// Note the transaction purpose for later use
 	if(transaction_purpose)
 		transaction_purpose += "<br>"
-	transaction_purpose += "[O]: [price] Thaler\s"
+	transaction_purpose += "[O]: [price] Credit\s"
 	transaction_amount += price
 	for(var/previously_scanned in item_list)
 		if(price == price_list[previously_scanned] && O.name == previously_scanned)
@@ -484,7 +483,7 @@
 		if(cash_stored)
 			overlays += "register_cash"
 	else
-		usr << SPAN_WARNING("The cash box is locked.")
+		to_chat(usr, SPAN_WARNING("The cash box is locked."))
 
 
 /obj/machinery/cash_register/proc/toggle_anchors(obj/item/weapon/wrench/W, mob/user)
@@ -546,7 +545,7 @@
 	..()
 
 /obj/machinery/cash_register/cargo
-	account_to_connect = "Cargo"
+	account_to_connect = "Guild"
 	..()
 
 /obj/machinery/cash_register/civilian

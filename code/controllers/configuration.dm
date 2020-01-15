@@ -1,12 +1,11 @@
-var/list/storyteller_cache = list()
+
+GLOBAL_LIST_EMPTY(storyteller_cache)
 
 /datum/configuration
 	var/server_name = null				// server name (for world name / status)
 	var/server_suffix = 0				// generate numeric suffix based on server port
 
 	var/nudge_script_path = "nudge.py"  // where the nudge.py script is located
-
-	var/list/lobby_screens = list("title") // Which lobby screens are available
 
 	var/log_ooc = 0						// log OOC channel
 	var/log_access = 0					// log login/logout
@@ -23,7 +22,7 @@ var/list/storyteller_cache = list()
 	var/log_pda = 0						// log pda messages
 	var/log_hrefs = 0					// logs all links clicked in-game. Could be used for debugging and tracking down exploits
 	var/log_runtime = 0					// logs world.log to a file
-	var/log_world_output = 0			// log world.log << messages
+	var/log_world_output = 0			// log log_world(messages)
 	var/sql_enabled = 1					// for sql switching
 	var/allow_admin_ooccolor = 0		// Allows admins with relevant permissions to have their own ooc colour
 	var/allow_vote_restart = 0 			// allow votes to restart
@@ -43,8 +42,8 @@ var/list/storyteller_cache = list()
 	var/protect_roles_from_antagonist = 0// If security and such can be traitor/cult/other
 	var/allow_Metadata = 0				// Metadata is supported.
 	var/popup_admin_pm = 0				//adminPMs to non-admins show in a pop-up 'reply' window when set to 1.
-	var/Ticklag = 0.9
-	var/Tickcomp = 0
+	var/tick_limit_mc_init = TICK_LIMIT_MC_INIT_DEFAULT	//SSinitialization throttling
+	var/Ticklag = 0.33
 	var/socket_talk	= 0					// use socket_talk to communicate with other processes
 	var/list/resource_urls = null
 	var/antag_hud_allowed = 0			// Ghosts can turn on Antagovision to see a HUD of who is the bad guys this round.
@@ -53,7 +52,7 @@ var/list/storyteller_cache = list()
 	var/list/storytellers = list()				// allowed modes
 	var/humans_need_surnames = 0
 	var/allow_random_events = 0			// enables random events mid-round when set to 1
-	var/allow_ai = 1					// allow ai job
+	var/allow_ai = 0					// allow ai job
 	var/hostedby = null
 	var/respawn_delay = 30
 	var/guest_jobban = 1
@@ -68,12 +67,19 @@ var/list/storyteller_cache = list()
 	var/load_jobs_from_txt = 0
 	var/ToRban = 0
 	var/automute_on = 0					//enables automuting/spam prevention
+	var/use_cortical_stacks = 0			//enables neural lace
+	var/empty_server_restart_time = 0	// Time in minutes before empty server will restart
 
 	var/character_slots = 10				// The number of available character slots
+	var/loadout_slots = 3					// The number of loadout slots per character
+
+	var/max_gear_cost = 10 // Used in chargen for accessory loadout limit. 0 disables loadout, negative allows infinite points.
 
 	var/max_maint_drones = 5				//This many drones can spawn,
 	var/allow_drone_spawn = 1				//assuming the admin allow them to.
 	var/drone_build_time = 1200				//A drone will become available every X ticks since last drone spawn. Default is 2 minutes.
+
+	var/enable_mob_sleep = 1  //Experimental - make mobs sleep when no danger is present
 
 	var/disable_player_mice = 0
 	var/uneducated_mice = 0 //Set to 1 to prevent newly-spawned mice from understanding human speech
@@ -82,12 +88,14 @@ var/list/storyteller_cache = list()
 	var/guests_allowed = 1
 	var/debugparanoid = 0
 
+	var/language
 	var/serverurl
 	var/server
 	var/banappeals
 	var/wikiurl
 	var/forumurl
 	var/githuburl
+	var/discordurl
 
 	//Alert level description
 	var/alert_desc_green = "All threats to the ship have passed. Security may not have weapons visible, privacy laws are once again fully enforced."
@@ -98,14 +106,6 @@ var/list/storyteller_cache = list()
 
 	var/forbid_singulo_possession = 0
 
-	//game_options.txt configs
-
-	var/health_threshold_softcrit = 0
-	var/health_threshold_crit = 0
-	var/health_threshold_dead = -100
-
-	var/organ_health_multiplier = 1
-	var/organ_regeneration_multiplier = 1
 	var/organs_decay
 	var/default_brain_health = 400
 
@@ -114,7 +114,7 @@ var/list/storyteller_cache = list()
 	var/organ_damage_spillover_multiplier = 0.5
 
 	var/bones_can_break = 0
-	var/limbs_can_break = 0
+	var/limbs_can_break = 1
 
 	var/revival_pod_plants = 1
 	var/revival_cloning = 1
@@ -125,22 +125,6 @@ var/list/storyteller_cache = list()
 	var/welder_vision = 1
 	var/generate_asteroid = 0
 	var/no_click_cooldown = 0
-
-	var/asteroid_z_levels = list()
-
-	//Used for modifying movement speed for mobs.
-	//Unversal modifiers
-	var/run_speed = 0
-	var/walk_speed = 0
-
-	//Mob specific modifiers. NOTE: These will affect different mob types in different ways
-	var/human_delay = 0
-	var/robot_delay = 0
-	var/monkey_delay = 0
-	var/alien_delay = 0
-	var/slime_delay = 0
-	var/animal_delay = 0
-
 
 	var/admin_legacy_system = 0	//Defines whether the server uses the legacy admin system with admins.txt or the SQL system. Config option in config.txt
 	var/ban_legacy_system = 0	//Defines whether the server uses the legacy banning system with the files in /data or the SQL system. Config option in config.txt
@@ -155,6 +139,10 @@ var/list/storyteller_cache = list()
 
 	var/comms_password = ""
 
+	var/list/forbidden_versions = list() // Clients with these byond versions will be autobanned. Format: string "byond_version.byond_build"; separate with ; in config, e.g. 512.1234;512.1235
+	var/minimum_byond_version
+	var/minimum_byond_build
+
 	var/enter_allowed = 1
 
 	var/use_irc_bot = 0
@@ -167,12 +155,6 @@ var/list/storyteller_cache = list()
 	var/use_lib_nudge = 0 //Use the C library nudge instead of the python nudge.
 	var/use_overmap = 0
 
-	var/list/station_levels = list(1, 2, 3, 4, 5)	// Defines which Z-levels the station exists on.
-	var/list/admin_levels= list(6)					// Defines which Z-levels which are for admin functionality, for example including such areas as Central Command and the Syndicate Shuttle
-	var/list/contact_levels = list(1, 2, 3, 4, 5)	// Defines which Z-levels which, for example, a Code Red announcement may affect
-	var/list/player_levels = list(1, 2, 3, 4, 5)	// Defines all Z-levels a character can typically reach
-	var/list/sealed_levels = list() 				// Defines levels that do not allow random transit at the edges.
-
 	// Event settings
 	var/expected_round_length = 3 * 60 * 60 * 10 // 3 hours
 	// If the first delay has a custom start time
@@ -181,6 +163,7 @@ var/list/storyteller_cache = list()
 		EVENT_LEVEL_MUNDANE = null,
 		EVENT_LEVEL_MODERATE = null,
 		EVENT_LEVEL_MAJOR = list("lower" = 48000, "upper" = 60000),
+		EVENT_LEVEL_ROLESET = null,
 		EVENT_LEVEL_ECONOMY = list("lower" = 16000, "upper" = 20000),
 	)
 	// The lowest delay until next event
@@ -189,6 +172,7 @@ var/list/storyteller_cache = list()
 		EVENT_LEVEL_MUNDANE = 6000,
 		EVENT_LEVEL_MODERATE = 18000,
 		EVENT_LEVEL_MAJOR = 30000,
+		EVENT_LEVEL_ROLESET = null,
 		EVENT_LEVEL_ECONOMY = 18000
 	)
 	// The upper delay until next event
@@ -197,6 +181,7 @@ var/list/storyteller_cache = list()
 		EVENT_LEVEL_MUNDANE = 9000,
 		EVENT_LEVEL_MODERATE = 27000,
 		EVENT_LEVEL_MAJOR = 42000,
+		EVENT_LEVEL_ROLESET = null,
 		EVENT_LEVEL_ECONOMY = 18000
 	)
 
@@ -219,14 +204,23 @@ var/list/storyteller_cache = list()
 
 	var/ghosts_can_possess_animals = 0
 
+	var/emojis = 0
+
+	var/random_submap_orientation = FALSE // If true, submaps loaded automatically can be rotated.
+
+	var/webhook_url
+	var/webhook_key
+
 /datum/configuration/New()
+	fill_storyevents_list()
+
 	var/list/L = typesof(/datum/storyteller)-/datum/storyteller
 	for (var/T in L)
 		// I wish I didn't have to instance the game modes in order to look up
 		// their information, but it is the only way (at least that I know of).
 		var/datum/storyteller/S = new T()
 		if (S.config_tag)
-			storyteller_cache[S.config_tag] = S // So we don't instantiate them repeatedly.
+			GLOB.storyteller_cache[S.config_tag] = S // So we don't instantiate them repeatedly.
 			if(!(S.config_tag in storytellers))		// ensure each mode is added only once
 				log_misc("Adding storyteller [S.name] ([S.config_tag]) to configuration.")
 				src.storytellers += S.config_tag
@@ -290,7 +284,7 @@ var/list/storyteller_cache = list()
 					config.log_admin = 1
 
 				if ("log_debug")
-					config.log_debug = text2num(value)
+					config.log_debug = 1
 
 				if ("log_game")
 					config.log_game = 1
@@ -324,15 +318,13 @@ var/list/storyteller_cache = list()
 
 				if ("log_runtime")
 					config.log_runtime = 1
+					var/newlog = file("data/logs/runtimes/runtime-[time2text(world.realtime, "YYYY-MM-DD")].log")
+					if(runtime_diary != newlog)
+						world.log << "Now logging runtimes to data/logs/runtimes/runtime-[time2text(world.realtime, "YYYY-MM-DD")].log"
+						runtime_diary = newlog
 
 				if ("generate_asteroid")
 					config.generate_asteroid = 1
-
-				if ("asteroid_z_levels")
-					config.asteroid_z_levels = splittext(value, ";")
-					//Numbers get stored as strings, so we'll fix that right now.
-					for(var/z_level in config.asteroid_z_levels)
-						z_level = text2num(z_level)
 
 				if ("no_click_cooldown")
 					config.no_click_cooldown = 1
@@ -397,6 +389,9 @@ var/list/storyteller_cache = list()
 				if ("serverurl")
 					config.serverurl = value
 
+				if ("language")
+					config.language = value
+
 				if ("server")
 					config.server = value
 
@@ -405,6 +400,9 @@ var/list/storyteller_cache = list()
 
 				if ("wikiurl")
 					config.wikiurl = value
+
+				if ("discordurl")
+					config.discordurl = value
 
 				if ("forumurl")
 					config.forumurl = value
@@ -512,6 +510,9 @@ var/list/storyteller_cache = list()
 				if("ticklag")
 					Ticklag = text2num(value)
 
+				if("tick_limit_mc_init")
+					tick_limit_mc_init = text2num(value)
+
 				if("allow_antag_hud")
 					config.antag_hud_allowed = 1
 				if("antag_hud_restricted")
@@ -519,9 +520,6 @@ var/list/storyteller_cache = list()
 
 				if("socket_talk")
 					socket_talk = text2num(value)
-
-				if("tickcomp")
-					Tickcomp = 1
 
 				if("humans_need_surnames")
 					humans_need_surnames = 1
@@ -550,6 +548,15 @@ var/list/storyteller_cache = list()
 				if("comms_password")
 					config.comms_password = value
 
+				if("forbidden_versions")
+					config.forbidden_versions = splittext(value, ";")
+
+				if("minimum_byond_version")
+					config.minimum_byond_version = text2num(value)
+
+				if("minimum_byond_build")
+					config.minimum_byond_build = text2num(value)
+
 				if("irc_bot_host")
 					config.irc_bot_host = value
 
@@ -569,6 +576,11 @@ var/list/storyteller_cache = list()
 				if("use_lib_nudge")
 					config.use_lib_nudge = 1
 
+				if("max_gear_cost")
+					max_gear_cost = text2num(value)
+					if(max_gear_cost < 0)
+						max_gear_cost = INFINITY
+
 				if("character_slots")
 					config.character_slots = text2num(value)
 
@@ -583,18 +595,6 @@ var/list/storyteller_cache = list()
 
 				if("use_overmap")
 					config.use_overmap = 1
-
-				if("station_levels")
-					config.station_levels = text2numlist(value, ";")
-
-				if("admin_levels")
-					config.admin_levels = text2numlist(value, ";")
-
-				if("contact_levels")
-					config.contact_levels = text2numlist(value, ";")
-
-				if("player_levels")
-					config.player_levels = text2numlist(value, ";")
 
 				if("expected_round_length")
 					config.expected_round_length = MinutesToTicks(text2num(value))
@@ -638,10 +638,19 @@ var/list/storyteller_cache = list()
 				if("starlight")
 					config.starlight = value ? value : 0
 
+				if("random_submap_orientation")
+					config.random_submap_orientation = 1
+
 				if("ert_species")
 					config.ert_species = splittext(value, ";")
 					if(!config.ert_species.len)
 						config.ert_species += "Human"
+
+				if("use_cortical_stacks")
+					config.use_cortical_stacks = 1
+
+				if("loadout_slots")
+					config.loadout_slots = text2num(value)
 
 				if("law_zero")
 					law_zero = value
@@ -654,9 +663,20 @@ var/list/storyteller_cache = list()
 					if(values.len > 0)
 						language_prefixes = values
 
-				if ("lobby_screens")
-					config.lobby_screens = splittext(value, ";")
+				if("empty_server_restart_time")
+					config.empty_server_restart_time = text2num(value)
 
+				if("emojis")
+					config.emojis = 1
+
+				if("enable_mob_sleep")
+					config.enable_mob_sleep = 1
+
+				if("webhook_key")
+					config.webhook_key = value
+
+				if("webhook_url")
+					config.webhook_url = value
 				else
 					log_misc("Unknown setting in configuration: '[name]'")
 
@@ -666,22 +686,12 @@ var/list/storyteller_cache = list()
 			value = text2num(value)
 
 			switch(name)
-				if("health_threshold_crit")
-					config.health_threshold_crit = value
-				if("health_threshold_softcrit")
-					config.health_threshold_softcrit = value
-				if("health_threshold_dead")
-					config.health_threshold_dead = value
 				if("revival_pod_plants")
 					config.revival_pod_plants = value
 				if("revival_cloning")
 					config.revival_cloning = value
 				if("revival_brain_life")
 					config.revival_brain_life = value
-				if("organ_health_multiplier")
-					config.organ_health_multiplier = value / 100
-				if("organ_regeneration_multiplier")
-					config.organ_regeneration_multiplier = value / 100
 				if("organ_damage_spillover_multiplier")
 					config.organ_damage_spillover_multiplier = value / 100
 				if("organs_can_decay")
@@ -695,27 +705,12 @@ var/list/storyteller_cache = list()
 				if("limbs_can_break")
 					config.limbs_can_break = value
 
-				if("run_speed")
-					config.run_speed = value
-				if("walk_speed")
-					config.walk_speed = value
-
-				if("human_delay")
-					config.human_delay = value
-				if("robot_delay")
-					config.robot_delay = value
-				if("monkey_delay")
-					config.monkey_delay = value
-				if("alien_delay")
-					config.alien_delay = value
-				if("slime_delay")
-					config.slime_delay = value
-				if("animal_delay")
-					config.animal_delay = value
-
 
 				if("use_loyalty_implants")
 					config.use_loyalty_implants = 1
+
+
+
 
 				else
 					log_misc("Unknown setting in configuration: '[name]'")
@@ -761,18 +756,20 @@ var/list/storyteller_cache = list()
 /datum/configuration/proc/pick_storyteller(story_name)
 	// I wish I didn't have to instance the game modes in order to look up
 	// their information, but it is the only way (at least that I know of).
-	if(story_name in storyteller_cache)
-		return storyteller_cache[story_name]
+	if(story_name in GLOB.storyteller_cache)
+		return GLOB.storyteller_cache[story_name]
 
-	return storyteller_cache[STORYTELLER_BASE]
+	return GLOB.storyteller_cache[STORYTELLER_BASE]
 
 /datum/configuration/proc/get_storytellers()
 	var/list/runnable_storytellers = list()
-	for(var/storyteller in storyteller_cache)
-		var/datum/storyteller/S = storyteller_cache[storyteller]
+	for(var/storyteller in GLOB.storyteller_cache)
+		var/datum/storyteller/S = GLOB.storyteller_cache[storyteller]
 		if(S)
 			runnable_storytellers |= S
 	return runnable_storytellers
+
+
 
 /datum/configuration/proc/post_load()
 	//apply a default value to config.python_path, if needed

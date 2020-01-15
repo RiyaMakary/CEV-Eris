@@ -25,8 +25,10 @@
 	var/corpseidaccess = null //This is for access. See access.dm for which jobs give what access. Again, put in quotes. Use "Captain" if you want it to be all access.
 	var/species = "Human"
 
-/obj/landmark/corpse/initialize()
+/obj/landmark/corpse/Initialize()
+	..()
 	createCorpse()
+	return INITIALIZE_HINT_QDEL
 
 /obj/landmark/corpse/proc/createCorpse() //Creates a mob and checks for gear in each slot before attempting to equip it.
 	var/mob/living/carbon/human/M = new /mob/living/carbon/human (src.loc)
@@ -58,14 +60,14 @@
 	if(src.corpseback)
 		M.equip_to_slot_or_del(new src.corpseback(M), slot_back)
 
-	var/datum/job/jobdatum = corpseidjob && job_master.GetJob(corpseidjob)
+	var/datum/job/jobdatum = corpseidjob && SSjob.GetJob(corpseidjob)
 	if(jobdatum)
 		jobdatum.equip(M)
 
 	if(src.corpseid)
 		var/datum/job/job_access = jobdatum
 		if(corpseidaccess)
-			job_access = job_master.GetJob(corpseidaccess)
+			job_access = SSjob.GetJob(corpseidaccess)
 		var/obj/item/weapon/card/id/W = new(M)
 		if(job_access)
 			W.access = job_access.get_access()
@@ -74,7 +76,6 @@
 		W.assignment = corpseidjob
 		M.set_id_info(W)
 		M.equip_to_slot_or_del(W, slot_wear_id)
-	qdel(src)
 
 
 
@@ -88,11 +89,11 @@
 	name = "Syndicate Operative"
 	corpseuniform = /obj/item/clothing/under/syndicate
 	corpsesuit = /obj/item/clothing/suit/armor/vest
-	corpseshoes = /obj/item/clothing/shoes/swat
+	corpseshoes = /obj/item/clothing/shoes/jackboots
 	corpsegloves = /obj/item/clothing/gloves/thick/swat
 	corpseradio = /obj/item/device/radio/headset
 	corpsemask = /obj/item/clothing/mask/gas
-	corpsehelmet = /obj/item/clothing/head/helmet/swat
+	corpsehelmet = /obj/item/clothing/head/helmet
 	corpseback = /obj/item/weapon/storage/backpack
 	corpseid = 1
 	corpseidjob = "Operative"
@@ -104,11 +105,10 @@
 	name = "Syndicate Commando"
 	corpseuniform = /obj/item/clothing/under/syndicate
 	corpsesuit = /obj/item/clothing/suit/space/void/merc
-	corpseshoes = /obj/item/clothing/shoes/swat
+	corpseshoes = /obj/item/clothing/shoes/jackboots
 	corpsegloves = /obj/item/clothing/gloves/thick/swat
 	corpseradio = /obj/item/device/radio/headset
 	corpsemask = /obj/item/clothing/mask/gas/syndicate
-	corpsehelmet = /obj/item/clothing/head/helmet/space/void/merc
 	corpseback = /obj/item/weapon/tank/jetpack/oxygen
 	corpsepocket1 = /obj/item/weapon/tank/emergency_oxygen
 	corpseid = 1
@@ -138,7 +138,6 @@
 /obj/landmark/corpse/engineer/rig
 	corpsesuit = /obj/item/clothing/suit/space/void/engineering
 	corpsemask = /obj/item/clothing/mask/breath
-	corpsehelmet = /obj/item/clothing/head/helmet/space/void/engineering
 
 /obj/landmark/corpse/clown
 	name = "Clown"
@@ -165,7 +164,6 @@
 /obj/landmark/corpse/miner/rig
 	corpsesuit = /obj/item/clothing/suit/space/void/mining
 	corpsemask = /obj/item/clothing/mask/breath
-	corpsehelmet = /obj/item/clothing/head/helmet/space/void/mining
 
 
 /////////////////Officers//////////////////////
@@ -190,7 +188,7 @@
 	corpsemask = /obj/item/clothing/mask/smokable/cigarette/cigar/cohiba
 	corpsehelmet = /obj/item/clothing/head/centhat
 	corpsegloves = /obj/item/clothing/gloves/thick/swat
-	corpseshoes = /obj/item/clothing/shoes/swat
+	corpseshoes = /obj/item/clothing/shoes/jackboots
 	corpsepocket1 = /obj/item/weapon/flame/lighter/zippo
 	corpseid = 1
 	corpseidjob = "Commander"

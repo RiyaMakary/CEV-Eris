@@ -16,9 +16,39 @@
 	Note that this proc can be overridden, and is in the case of screen objects.
 */
 
-/atom/Click(var/location, var/control, var/params) // This is their reaction to being clicked on (standard proc)
-	if(src)
-		usr.ClickOn(src, params)
+/client/MouseDown(object,location,control,params)
+
+	if (CH)
+		if (!CH.MouseDown(object,location,control,params))
+			return
+	.=..()
+
+/client/MouseUp(object,location,control,params)
+	if (CH)
+		if (!CH.MouseUp(object,location,control,params))
+			return
+	.=..()
+
+/client/MouseDrag(over_object,src_location,over_location,src_control,over_control,params)
+	if (CH)
+		if (!CH.MouseDrag(over_object,src_location,over_location,src_control,over_control,params))
+			return
+	.=..()
+
+
+/client/Click(var/atom/target, location, control, params)
+	var/list/L = params2list(params) //convert params into a list
+	var/dragged = L["drag"] //grab what mouse button they are dragging with, if any.
+	if(dragged && !L[dragged]) //check to ensure they aren't using drag clicks to aimbot
+		return //if they are dragging, and they clicked with a different mouse button, reject the click as it will always go the atom they are currently dragging, even if out of view and not under the mouse
+
+	if (CH)
+		if (!CH.Click(target, location, control, params))
+			return
+
+
+	if(!target.Click(location, control, params))
+		usr.ClickOn(target, params)
 
 /atom/DblClick(var/location, var/control, var/params)
 	if(src)
@@ -39,7 +69,7 @@
 */
 /mob/proc/ClickOn(var/atom/A, var/params)
 
-	if(world.time <= next_click) // Hard check, before anything else, to avoid crashing
+	if(!can_click())
 		return
 
 	next_click = world.time + 1
@@ -52,8 +82,14 @@
 	if(modifiers["shift"] && modifiers["ctrl"])
 		CtrlShiftClickOn(A)
 		return 1
+	if(modifiers["ctrl"] && modifiers["alt"])
+		CtrlAltClickOn(A)
+		return 1
 	if(modifiers["middle"])
-		MiddleClickOn(A)
+		if(modifiers["shift"])
+			ShiftMiddleClickOn(A)
+		else
+			MiddleClickOn(A)
 		return 1
 	if(modifiers["shift"])
 		ShiftClickOn(A)
@@ -70,8 +106,7 @@
 
 	face_atom(A) // change direction to face what you clicked on
 
-	if(!canClick()) // in the year 2000...
-		return
+
 
 	if(istype(loc, /obj/mecha))
 		if(!locate(/turf) in list(A, A.loc)) // Prevents inventory from being drilled
@@ -94,10 +129,6 @@
 
 	if(W == A) // Handle attack_self
 		W.attack_self(src)
-		if(hand)
-			update_inv_l_hand(0)
-		else
-			update_inv_r_hand(0)
 		return 1
 
 	//Atoms on your person
@@ -105,11 +136,8 @@
 	var/sdepth = A.storage_depth(src)
 	if((!isturf(A) && A == loc) || (sdepth != -1 && sdepth <= 1))
 		// faster access to objects already on you
-		if(A.loc != src)
-			setMoveCooldown(10) //getting something out of a backpack
-
 		if(W)
-			var/resolved = W.resolve_attackby(A, src)
+			var/resolved = SEND_SIGNAL(W, COMSIG_IATTACK, A, src, params) || W.resolve_attackby(A, src, params)
 			if(!resolved && A && W)
 				W.afterattack(A, src, 1, params) // 1 indicates adjacency
 		else
@@ -126,11 +154,9 @@
 	sdepth = A.storage_depth_turf()
 	if(isturf(A) || isturf(A.loc) || (sdepth != -1 && sdepth <= 1))
 		if(A.Adjacent(src)) // see adjacent.dm
-			setMoveCooldown(5)
-
 			if(W)
 				// Return 1 in attackby() to prevent afterattack() effects (when safely moving items for example)
-				var/resolved = W.resolve_attackby(A, src)
+				var/resolved = SEND_SIGNAL(W, COMSIG_IATTACK, A, src, params) || W.resolve_attackby(A, src, params)
 				if(!resolved && A && W)
 					W.afterattack(A, src, 1, params) // 1: clicking something Adjacent
 			else
@@ -146,10 +172,10 @@
 	return 1
 
 /mob/proc/setClickCooldown(var/timeout)
-	next_move = max(world.time + timeout, next_move)
+	next_click = max(world.time + timeout, next_click)
 
-/mob/proc/canClick()
-	if(config.no_click_cooldown || next_move <= world.time)
+/mob/proc/can_click()
+	if(next_click <= world.time)
 		return 1
 	return 0
 
@@ -171,11 +197,6 @@
 	return
 
 /mob/living/UnarmedAttack(var/atom/A, var/proximity_flag)
-
-	if(!ticker)
-		src << "You cannot attack people before the game has started."
-		return 0
-
 	if(stat)
 		return 0
 
@@ -194,16 +215,11 @@
 	if((LASER in mutations) && a_intent == I_HURT)
 		LaserEyes(A) // moved into a proc below
 	else if(TK in mutations)
-		switch(get_dist(src, A))
-			if(1 to 5) // not adjacent may mean blocked by window
-				setMoveCooldown(2)
-			if(5 to 7)
-				setMoveCooldown(5)
-			if(8 to tk_maxrange)
-				setMoveCooldown(10)
-			else
-				return
-		A.attack_tk(src)
+		var/d = (get_dist(src, A))
+		if (d == 0)
+			return
+		if (d <= tk_maxrange)
+			A.attack_tk(src)
 /*
 	Restrained ClickOn
 
@@ -221,6 +237,9 @@
 	swap_hand()
 	return
 
+/mob/proc/ShiftMiddleClickOn(var/atom/A)
+	pointed(A)
+
 // In case of use break glass
 /*
 /atom/proc/MiddleClick(var/mob/M as mob)
@@ -235,9 +254,20 @@
 /mob/proc/ShiftClickOn(var/atom/A)
 	A.ShiftClick(src)
 	return
+
 /atom/proc/ShiftClick(var/mob/user)
 	if(user.client && user.client.eye == user)
 		user.examinate(src)
+	return
+
+/*
+	Control+Alt click
+*/
+/mob/proc/CtrlAltClickOn(var/atom/A)
+	A.CtrlAltClick(src)
+	return
+
+/atom/proc/CtrlAltClick(var/mob/user)
 	return
 
 /*
@@ -310,10 +340,10 @@
 		nutrition = max(nutrition - rand(1, 5), 0)
 		handle_regular_hud_updates()
 	else
-		src << SPAN_WARNING("You're out of energy!  You need food!")
+		to_chat(src, SPAN_WARNING("You're out of energy!  You need food!"))
 
 // Simple helper to face what you clicked on, in case it should be needed in more than one place
-/mob/proc/face_atom(var/atom/A)
+/atom/movable/proc/face_atom(var/atom/A)
 	if(!A || !x || !y || !A.x || !A.y) return
 	var/dx = A.x - x
 	var/dy = A.y - y
@@ -328,3 +358,48 @@
 		else		direction = WEST
 	if(direction != dir)
 		facedir(direction)
+
+
+/atom/movable/proc/facedir(var/ndir)
+	set_dir(ndir)
+	return 1
+
+
+
+GLOBAL_LIST_INIT(click_catchers, create_click_catcher())
+
+/obj/screen/click_catcher
+	icon = 'icons/mob/screen_gen.dmi'
+	icon_state = "click_catcher"
+	plane = CLICKCATCHER_PLANE
+	mouse_opacity = 2
+	screen_loc = "CENTER-7,CENTER-7"
+
+/obj/screen/click_catcher/Destroy()
+	return QDEL_HINT_LETMELIVE
+
+/proc/create_click_catcher()
+	. = list()
+	for(var/i = 0, i<15, i++)
+		for(var/j = 0, j<15, j++)
+			var/obj/screen/click_catcher/CC = new()
+			CC.screen_loc = "NORTH-[i],EAST-[j]"
+			. += CC
+
+/obj/screen/click_catcher/Click(location, control, params)
+	var/list/modifiers = params2list(params)
+	if(modifiers["middle"] && istype(usr, /mob/living/carbon))
+		var/mob/living/carbon/C = usr
+		C.swap_hand()
+	else
+		var/turf/T = screen_loc2turf(screen_loc, get_turf(usr))
+		if(T)
+			usr.client.Click(T, location, control, params)
+			//T.Click(location, control, params)
+			//Bay system doesnt use client.click, not sure if better
+
+	. = 1
+
+/obj/screen/click_catcher/proc/resolve(var/mob/user)
+	var/turf/T = screen_loc2turf(screen_loc, get_turf(user))
+	return T

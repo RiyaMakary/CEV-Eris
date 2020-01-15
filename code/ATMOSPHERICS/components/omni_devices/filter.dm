@@ -5,7 +5,7 @@
 	name = "omni gas filter"
 	icon_state = "map_filter"
 
-	var/list/filters = new()
+	var/list/gas_filters = new()
 	var/datum/omni_port/input
 	var/datum/omni_port/output
 
@@ -27,8 +27,8 @@
 /obj/machinery/atmospherics/omni/filter/Destroy()
 	input = null
 	output = null
-	filters.Cut()
-	..()
+	gas_filters.Cut()
+	. = ..()
 
 /obj/machinery/atmospherics/omni/filter/sort_ports()
 	for(var/datum/omni_port/P in ports)
@@ -37,8 +37,8 @@
 				output = null
 			if(input == P)
 				input = null
-			if(filters.Find(P))
-				filters -= P
+			if(gas_filters.Find(P))
+				gas_filters -= P
 
 			P.air.volume = 200
 			switch(P.mode)
@@ -47,17 +47,17 @@
 				if(ATM_OUTPUT)
 					output = P
 				if(ATM_O2 to ATM_N2O)
-					filters += P
+					gas_filters += P
 
 /obj/machinery/atmospherics/omni/filter/error_check()
-	if(!input || !output || !filters)
+	if(!input || !output || !gas_filters)
 		return 1
-	if(filters.len < 1) //requires at least 1 filter ~otherwise why are you using a filter?
+	if(gas_filters.len < 1) //requires at least 1 filter ~otherwise why are you using a filter?
 		return 1
 
 	return 0
 
-/obj/machinery/atmospherics/omni/filter/process()
+/obj/machinery/atmospherics/omni/filter/Process()
 	if(!..())
 		return 0
 
@@ -79,20 +79,18 @@
 			input.network.update = 1
 		if(output.network)
 			output.network.update = 1
-		for(var/datum/omni_port/P in filters)
+		for(var/datum/omni_port/P in gas_filters)
 			if(P.network)
 				P.network.update = 1
 
 	return 1
 
-/obj/machinery/atmospherics/omni/filter/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
-	usr.set_machine(src)
+/obj/machinery/atmospherics/omni/filter/ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = NANOUI_FOCUS)
+	user.set_machine(src)
 
-	var/list/data = new()
+	var/list/data = ui_data()
 
-	data = build_uidata()
-
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 
 	if (!ui)
 		ui = new(user, src, ui_key, "omni_filter.tmpl", "Omni Filter Control", 330, 330)
@@ -100,7 +98,7 @@
 
 		ui.open()
 
-/obj/machinery/atmospherics/omni/filter/proc/build_uidata()
+/obj/machinery/atmospherics/omni/filter/ui_data()
 	var/list/data = new()
 
 	data["power"] = use_power
@@ -180,7 +178,7 @@
 				switch_filter(dir_flag(href_list["dir"]), mode_return_switch(new_filter))
 
 	update_icon()
-	nanomanager.update_uis(src)
+	SSnano.update_uis(src)
 	return
 
 /obj/machinery/atmospherics/omni/filter/proc/mode_return_switch(var/mode)

@@ -19,6 +19,15 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 	var/datum/mind/uplink_owner = null
 	var/used_TC = 0
 
+	var/list/owner_roles = new
+
+
+	var/passive_gain = 0.1 //Number of telecrystals this uplink gains per minute.
+	//The total uses is only increased when this is a whole number
+	var/gain_progress = 0.0
+
+	var/bsdm_time = 0
+
 /obj/item/device/uplink/nano_host()
 	return loc
 
@@ -28,10 +37,29 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 	purchase_log = list()
 	world_uplinks += src
 	uses = telecrystals
+	addtimer(CALLBACK(src, .obj/item/device/uplink/proc/gain_TC), 600)
 
 /obj/item/device/uplink/Destroy()
 	world_uplinks -= src
 	return ..()
+
+
+//Passive TC gain, triggers once per minute as long as the owner is alive and active
+/obj/item/device/uplink/proc/gain_TC()
+	addtimer(CALLBACK(src, .obj/item/device/uplink/proc/gain_TC), 600)
+	if (!uplink_owner || !uplink_owner.current)
+		return
+
+	var/mob/M = uplink_owner.current
+	if (M.stat == DEAD)
+		return
+
+	gain_progress += passive_gain
+	if (gain_progress >= 1)
+		uses += 1
+		gain_progress -= 1
+
+
 
 // HIDDEN UPLINK - Can be stored in anything but the host item has to have a trigger for it.
 /* How to create an uplink in 3 easy steps!
@@ -51,12 +79,14 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 	var/active = 0
 	var/datum/uplink_category/category 	= 0		// The current category we are in
 	var/exploit_id								// Id of the current exploit record we are viewing
+	var/trigger_code
+	var/emplaced = FALSE
 
 
 // The hidden uplink MUST be inside an obj/item's contents.
-/obj/item/device/uplink/hidden/New()
+/obj/item/device/uplink/hidden/New(var/location, var/datum/mind/owner, var/telecrystals = DEFAULT_TELECRYSTAL_AMOUNT)
 	spawn(2)
-		if(!istype(src.loc, /obj/item))
+		if(!istype(src.loc, /obj))
 			qdel(src)
 	..()
 	nanoui_data = list()
@@ -75,8 +105,8 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 // Checks to see if the value meets the target. Like a frequency being a traitor_frequency, in order to unlock a headset.
 // If true, it accesses trigger() and returns 1. If it fails, it returns false. Use this to see if you need to close the
 // current item's menu.
-/obj/item/device/uplink/hidden/proc/check_trigger(mob/user as mob, var/value, var/target)
-	if(value == target)
+/obj/item/device/uplink/hidden/proc/check_trigger(mob/user as mob, var/value)
+	if(value == trigger_code)
 		trigger(user)
 		return 1
 	return 0
@@ -84,25 +114,30 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 /*
 	NANO UI FOR UPLINK WOOP WOOP
 */
-/obj/item/device/uplink/hidden/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/item/device/uplink/hidden/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	var/title = "Remote Uplink"
 	var/data[0]
 
 	data["welcome"] = welcome
 	data["crystals"] = uses
 	data["menu"] = nanoui_menu
+	data["has_contracts"] = uplink_owner ? player_is_antag_in_list(uplink_owner, ROLES_CONTRACT)\
+	                                     : !!length(owner_roles & ROLES_CONTRACT)
 	data += nanoui_data
 
 	// update the ui if it exists, returns null if no ui is passed/found
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)	// No auto-refresh
-		ui = new(user, src, ui_key, "uplink.tmpl", title, 450, 600, state = inventory_state)
+		if (emplaced)
+			ui = new(user, src, ui_key, "uplink.tmpl", title, 450, 600, state =GLOB.default_state)
+		else
+			ui = new(user, src, ui_key, "uplink.tmpl", title, 450, 600, state =GLOB.inventory_state)
 		ui.set_initial_data(data)
 		ui.open()
 
 
 // Interaction code. Gathers a list of items purchasable from the paren't uplink and displays it. It also adds a lock button.
-/obj/item/device/uplink/hidden/interact(mob/user)
+/obj/item/device/uplink/interact(mob/user)
 	ui_interact(user)
 
 // The purchasing code.
@@ -116,7 +151,7 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 		UI.buy(src, usr)
 	else if(href_list["lock"])
 		toggle()
-		var/datum/nanoui/ui = nanomanager.get_open_ui(user, src, "main")
+		var/datum/nanoui/ui = SSnano.get_open_ui(user, src, "main")
 		ui.close()
 	else if(href_list["return"])
 		nanoui_menu = round(nanoui_menu/10)
@@ -131,6 +166,7 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 	return 1
 
 /obj/item/device/uplink/hidden/proc/update_nano_data()
+	nanoui_data["menu"] = nanoui_menu
 	if(nanoui_menu == 0)
 		var/categories[0]
 		for(var/datum/uplink_category/category in uplink.categories)
@@ -140,10 +176,15 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 	else if(nanoui_menu == 1)
 		var/items[0]
 		for(var/datum/uplink_item/item in category.items)
+
 			if(item.can_view(src))
 				var/cost = item.cost(uses)
-				if(!cost) cost = "???"
+				if(cost == 0)
+					cost = "Free"
+				else if(!cost)
+					cost = "???"
 				items[++items.len] = list("name" = item.name, "description" = replacetext(item.description(), "\n", "<br>"), "can_buy" = item.can_buy(src), "cost" = cost, "ref" = "\ref[item]")
+
 		nanoui_data["items"] = items
 	else if(nanoui_menu == 2)
 		var/permanentData[0]
@@ -169,6 +210,22 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 
 				nanoui_data["exploit_exists"] = 1
 				break
+	else if(nanoui_menu == 3 && (uplink_owner ? player_is_antag_in_list(uplink_owner, ROLES_CONTRACT) : !!length(owner_roles & ROLES_CONTRACT)))
+		var/list/available_contracts = list()
+		var/list/completed_contracts = list()
+		for(var/datum/antag_contract/C in GLOB.all_antag_contracts)
+			var/list/entry = list(list(
+				"name" = C.name,
+				"desc" = C.desc,
+				"reward" = C.reward,
+				"status" = C.completed ? "Fulfilled" : "Available"
+			))
+			if(!C.completed)
+				available_contracts.Add(entry)
+			else
+				completed_contracts.Add(entry)
+		nanoui_data["available_contracts"] = available_contracts
+		nanoui_data["completed_contracts"] = completed_contracts
 
 // I placed this here because of how relevant it is.
 // You place this in your uplinkable item to check if an uplink is active or not.
@@ -197,12 +254,12 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 	if(hidden_uplink)
 		hidden_uplink.trigger(user)
 
-/obj/item/device/multitool/uplink/New(loc, mind, crystal_amount)
+/obj/item/weapon/tool/multitool/uplink/New(loc, mind, crystal_amount)
 	..(loc)
 	hidden_uplink = new(src, mind, crystal_amount)
 
 
-/obj/item/device/multitool/uplink/attack_self(mob/user as mob)
+/obj/item/weapon/tool/multitool/uplink/attack_self(mob/user as mob)
 	if(hidden_uplink)
 		hidden_uplink.trigger(user)
 
@@ -213,3 +270,32 @@ A list of items and costs is stored under the datum of every game mode, alongsid
 	..(loc)
 	hidden_uplink = new(src, mind, crystal_amount)
 	hidden_uplink.uses = DEFAULT_TELECRYSTAL_AMOUNT
+
+
+
+//Uplink beacon
+//A large dense uplink object that can't be moved. Designed for use by team antags on their shuttles
+/obj/structure/uplink
+	name = "Uplink Beacon"
+	icon = 'icons/obj/supplybeacon.dmi'
+	desc = "A bulky machine used for teleporting in supplies from a benefactor."
+	icon_state = "beacon"
+	var/obj/item/device/uplink/hidden/uplink
+	var/telecrystals = 100
+	density = TRUE
+	anchored = TRUE
+	var/owner_roles //Can be a list of roles or a single role
+
+/obj/structure/uplink/New()
+	uplink = new(src, null, telecrystals)
+	uplink.update_nano_data()
+	uplink.emplaced = TRUE
+	if(owner_roles)
+		uplink.owner_roles |= owner_roles
+	..()
+
+/obj/structure/uplink/attack_hand(var/mob/user)
+	uplink.trigger(user)
+
+/obj/structure/uplink/mercenary
+	owner_roles = ROLE_MERCENARY

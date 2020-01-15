@@ -2,6 +2,7 @@
 	name = "pAI"
 	icon = 'icons/mob/pai.dmi'
 	icon_state = "repairbot"
+	layer = BELOW_MOB_LAYER
 
 	emote_type = 2		// pAIs emotes are heard, not seen, so they can be seen through a container (eg. person)
 	pass_flags = 1
@@ -45,15 +46,13 @@
 	var/pai_law0 = "Serve your master."
 	var/pai_laws				// String for additional operating instructions our master might give us
 
-	var/silence_time			// Timestamp when we were silenced (normally via EMP burst), set to null after silence has faded
+	var/silence_time			// Timestamp when we were item_flags & SILENT (normally via EMP burst), set to null after silence has faded
 
 // Various software-specific vars
 
 	var/temp				// General error reporting text contained here will typically be shown once and cleared
 	var/screen				// Which screen our main window displays
 	var/subscreen			// Which specific function of the main screen is being displayed
-
-	var/obj/item/device/pda/ai/pai/pda = null
 
 	var/secHUD = 0			// Toggles whether the Security HUD is active or not
 	var/medHUD = 0			// Toggles whether the Medical  HUD is active or not
@@ -74,8 +73,6 @@
 
 	var/translator_on = 0 // keeps track of the translator module
 
-	var/current_pda_messaging = null
-
 /mob/living/silicon/pai/New(var/obj/item/device/paicard)
 	src.loc = paicard
 	card = paicard
@@ -91,20 +88,13 @@
 	verbs += /mob/living/silicon/pai/proc/choose_chassis
 	verbs += /mob/living/silicon/pai/proc/choose_verbs
 
-	//PDA
-	pda = new(src)
-	spawn(5)
-		pda.ownjob = "Personal Assistant"
-		pda.owner = text("[]", src)
-		pda.name = pda.owner + " (" + pda.ownjob + ")"
-		pda.toff = 1
 	..()
 
 /mob/living/silicon/pai/Login()
 	..()
 
 
-// this function shows the information about being silenced as a pAI in the Status panel
+// this function shows the information about being item_flags & SILENT as a pAI in the Status panel
 /mob/living/silicon/pai/proc/show_silenced()
 	if(src.silence_time)
 		var/timeleft = round((silence_time - world.timeofday)/10 ,1)
@@ -112,7 +102,7 @@
 
 
 /mob/living/silicon/pai/Stat()
-	..()
+	. = ..()
 	statpanel("Status")
 	if (src.client.statpanel == "Status")
 		show_silenced()
@@ -138,7 +128,7 @@
 		// 33% chance of no additional effect
 
 	src.silence_time = world.timeofday + 120 * 10		// Silence for 2 minutes
-	src << "<font color=green><b>Communication circuit overload. Shutting down and reloading communication circuits - speech and messaging functionality will be unavailable until the reboot is complete.</b></font>"
+	to_chat(src, "<font color=green><b>Communication circuit overload. Shutting down and reloading communication circuits - speech and messaging functionality will be unavailable until the reboot is complete.</b></font>")
 	if(prob(20))
 		var/turf/T = get_turf_or_move(src.loc)
 		for (var/mob/M in viewers(T))
@@ -149,7 +139,7 @@
 		if(1)
 			src.master = null
 			src.master_dna = null
-			src << "<font color=green>You feel unbound.</font>"
+			to_chat(src, "<font color=green>You feel unbound.</font>")
 		if(2)
 			var/command
 			if(severity  == 1)
@@ -157,9 +147,9 @@
 			else
 				command = pick("Serve", "Kill", "Love", "Hate", "Disobey", "Devour", "Fool", "Enrage", "Entice", "Observe", "Judge", "Respect", "Disrespect", "Consume", "Educate", "Destroy", "Disgrace", "Amuse", "Entertain", "Ignite", "Glorify", "Memorialize", "Analyze")
 			src.pai_law0 = "[command] your master."
-			src << "<font color=green>Pr1m3 d1r3c71v3 uPd473D.</font>"
+			to_chat(src, "<font color=green>Pr1m3 d1r3c71v3 uPd473D.</font>")
 		if(3)
-			src << "<font color=green>You feel an electric surge run through your circuitry and become acutely aware at how lucky you are that you can still feel at all.</font>"
+			to_chat(src, "<font color=green>You feel an electric surge run through your circuitry and become acutely aware at how lucky you are that you can still feel at all.</font>")
 
 /mob/living/silicon/pai/proc/switchCamera(var/obj/machinery/camera/C)
 	if (!C)
@@ -185,8 +175,8 @@
 	medicalActive1 = null
 	medicalActive2 = null
 	medical_cannotfind = 0
-	nanomanager.update_uis(src)
-	usr << SPAN_NOTICE("You reset your record-viewing software.")
+	SSnano.update_uis(src)
+	to_chat(usr, SPAN_NOTICE("You reset your record-viewing software."))
 
 /mob/living/silicon/pai/cancel_camera()
 	set category = "pAI Commands"
@@ -206,7 +196,7 @@
 	var/cameralist[0]
 
 	if(usr.stat == 2)
-		usr << "You can't change your camera network because you are dead!"
+		to_chat(usr, "You can't change your camera network because you are dead!")
 		return
 
 	for (var/obj/machinery/camera/C in Cameras)
@@ -217,7 +207,7 @@
 				cameralist[C.network] = C.network
 
 	src.network = input(usr, "Which network would you like to view?") as null|anything in cameralist
-	src << "\blue Switched to [src.network] camera network."
+	to_chat(src, "\blue Switched to [src.network] camera network.")
 //End of code by Mord_Sith
 */
 
@@ -253,7 +243,7 @@
 
 	//I'm not sure how much of this is necessary, but I would rather avoid issues.
 	if(istype(card.loc,/obj/item/rig_module))
-		src << "There is no room to unfold inside this rig module. You're good and stuck."
+		to_chat(src, "There is no room to unfold inside this rig module. You're good and stuck.")
 		return 0
 	else if(istype(card.loc,/mob))
 		var/mob/holder = card.loc
@@ -266,9 +256,6 @@
 					H.visible_message(SPAN_DANGER("\The [src] explodes out of \the [H]'s [affecting.name] in shower of gore!"))
 					break
 		holder.drop_from_inventory(card)
-	else if(istype(card.loc,/obj/item/device/pda))
-		var/obj/item/device/pda/holder = card.loc
-		holder.pai = null
 
 	src.client.perspective = EYE_PERSPECTIVE
 	src.client.eye = src
@@ -338,9 +325,12 @@
 		if(istype(rig))
 			rig.force_rest(src)
 	else
-		resting = !resting
+		if(resting && can_stand_up())
+			resting = FALSE
+		else if (!resting)
+			resting = TRUE
 		icon_state = resting ? "[chassis]_rest" : "[chassis]"
-		src << "<span class='notice'>You are now [resting ? "resting" : "getting up"]</span>"
+		to_chat(src, "<span class='notice'>You are now [resting ? "resting" : "getting up"]</span>")
 
 	canmove = !resting
 
@@ -406,8 +396,7 @@
 	if(!istype(H))
 		return
 	H.icon_state = "pai-[icon_state]"
-	grabber.update_inv_l_hand()
-	grabber.update_inv_r_hand()
+	H.update_wear_icon()
 	return H
 
 /mob/living/silicon/pai/MouseDrop(atom/over_object)

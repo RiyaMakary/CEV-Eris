@@ -5,7 +5,7 @@
 	name = "Toggle Station Artificial Gravity"
 
 /datum/admin_secret_item/random_event/gravity/can_execute(var/mob/user)
-	if(!(ticker && ticker.current_state == GAME_STATE_PLAYING))
+	if(SSticker.current_state != GAME_STATE_PLAYING)
 		return 0
 
 	return ..()
@@ -16,8 +16,8 @@
 		return
 
 	gravity_is_on = !gravity_is_on
-	for(var/area/A in world)
-		A.gravitychange(gravity_is_on,A)
+	if (GLOB.active_gravity_generator)
+		GLOB.active_gravity_generator.set_state(gravity_is_on)
 
 
 	if(gravity_is_on)

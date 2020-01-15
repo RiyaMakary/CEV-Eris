@@ -48,7 +48,7 @@
 	loc = has_suit
 	has_suit.overlays += get_inv_overlay()
 
-	user << SPAN_NOTICE("You attach \the [src] to \the [has_suit].")
+	to_chat(user, SPAN_NOTICE("You attach \the [src] to \the [has_suit]."))
 	src.add_fingerprint(user)
 
 /obj/item/clothing/accessory/proc/on_removed(var/mob/user)
@@ -91,6 +91,7 @@
 	icon_state = "stethoscope"
 
 /obj/item/clothing/accessory/stethoscope/attack(mob/living/carbon/human/M, mob/living/user)
+	// TODO: baymed, rework this to use something like get_heartbeat()
 	if(ishuman(M) && isliving(user))
 		if(user.a_intent == I_HELP)
 			var/body_part = parse_zone(user.targeted_organ)
@@ -103,9 +104,9 @@
 				var/sound = "heartbeat"
 				var/sound_strength = "cannot hear"
 				var/heartbeat = 0
-				if(M.species && M.species.has_organ[O_HEART])
-					var/obj/item/organ/internal/heart/heart = M.internal_organs_by_name[O_HEART]
-					if(heart && !heart.robotic)
+				if(M.species && M.species.has_organ[BP_HEART])
+					var/obj/item/organ/internal/heart/heart = M.internal_organs_by_name[BP_HEART]
+					if(heart && !BP_IS_ROBOTIC(heart))
 						heartbeat = 1
 				if(M.stat == DEAD || (M.status_flags&FAKEDEATH))
 					sound_strength = "cannot hear"
@@ -116,20 +117,22 @@
 							sound_strength = "hear"
 							sound = "no heartbeat"
 							if(heartbeat)
-								var/obj/item/organ/internal/heart/heart = M.internal_organs_by_name[O_HEART]
+								var/obj/item/organ/internal/heart/heart = M.internal_organs_by_name[BP_HEART]
+								if(!heart)
+									return
 								if(heart.is_bruised() || M.getOxyLoss() > 50)
 									sound = "[pick("odd noises in","weak")] heartbeat"
 								else
 									sound = "healthy heartbeat"
 
-							var/obj/item/organ/internal/heart/L = M.internal_organs_by_name[O_LUNGS]
+							var/obj/item/organ/internal/heart/L = M.internal_organs_by_name[BP_LUNGS]
 							if(!L || M.losebreath)
 								sound += " and no respiration"
 							else if(M.is_lung_ruptured() || M.getOxyLoss() > 50)
 								sound += " and [pick("wheezing","gurgling")] sounds"
 							else
 								sound += " and healthy respiration"
-						if(O_EYES,"mouth")
+						if(BP_EYES, BP_MOUTH)
 							sound_strength = "cannot hear"
 							sound = "anything"
 						else
@@ -138,7 +141,6 @@
 								sound = "pulse"
 
 				user.visible_message("[user] places [src] against [M]'s [body_part] and listens attentively.", "You place [src] against [their] [body_part]. You [sound_strength] [sound].")
-				return
 	return ..(M,user)
 
 
@@ -147,6 +149,7 @@
 	name = "bronze medal"
 	desc = "A bronze medal."
 	icon_state = "bronze"
+	price_tag = 250
 
 /obj/item/clothing/accessory/medal/conduct
 	name = "distinguished conduct medal"
@@ -165,6 +168,7 @@
 	name = "silver medal"
 	desc = "A silver medal."
 	icon_state = "silver"
+	price_tag = 500
 
 /obj/item/clothing/accessory/medal/silver/valor
 	name = "medal of valor"
@@ -178,6 +182,7 @@
 	name = "gold medal"
 	desc = "A prestigious golden medal."
 	icon_state = "gold"
+	price_tag = 1000
 
 /obj/item/clothing/accessory/medal/gold/captain
 	name = "medal of captaincy"

@@ -3,7 +3,7 @@
 	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "med_key"
 	icon_screen = "dna"
-	light_color = COLOR_LIME
+	light_color = COLOR_LIGHTING_GREEN_MACHINERY
 	req_access = list(access_heads) //Only used for record deletion right now.
 	var/obj/machinery/dna_scannernew/scanner = null //Linked scanner. For scanning.
 	var/list/pods = list() //Linked cloning pods.
@@ -15,8 +15,8 @@
 	var/obj/item/weapon/disk/data/diskette = null //Mostly so the geneticist can steal everything.
 	var/loading = 0 // Nice loading text
 
-/obj/machinery/computer/cloning/initialize()
-	..()
+/obj/machinery/computer/cloning/Initialize()
+	. = ..()
 	set_extension(src, /datum/extension/multitool, /datum/extension/multitool/cryo, list(/proc/is_operable))
 	updatemodules()
 
@@ -94,15 +94,12 @@
 			user.drop_item()
 			W.loc = src
 			src.diskette = W
-			user << "You insert [W]."
+			to_chat(user, "You insert [W].")
 			src.updateUsrDialog()
 			return
 	else
 		..()
 	return
-
-/obj/machinery/computer/cloning/attack_ai(mob/user as mob)
-	return attack_hand(user)
 
 /obj/machinery/computer/cloning/attack_hand(mob/user as mob)
 	if(..())
@@ -267,7 +264,7 @@
 
 		else if (src.menu == 4)
 			var/obj/item/weapon/card/id/C = usr.get_active_hand()
-			if (istype(C)||istype(C, /obj/item/device/pda))
+			if (istype(C)||istype(C, /obj/item/modular_computer/pda))
 				if(src.check_access(C))
 					src.records.Remove(src.active_record)
 					qdel(src.active_record)
@@ -346,7 +343,7 @@
 					menu = 1
 				else
 
-					var/mob/selected = find_dead_player("[C.ckey]")
+					var/mob/selected = find_dead_player("[C.ckey]", TRUE)
 					selected << 'sound/machines/chime.ogg'	//probably not the best sound but I think it's reasonable
 					var/answer = alert(selected,"Do you want to return to life?","Cloning","Yes","No")
 					if(answer != "No" && pod.growclone(C))
@@ -374,7 +371,7 @@
 	if (!subject.has_brain())
 		if(ishuman(subject))
 			var/mob/living/carbon/human/H = subject
-			if(H.species.has_organ[O_BRAIN])
+			if(H.species.has_organ[BP_BRAIN])
 				scantemp = "Error: No signs of intelligence detected."
 		else
 			scantemp = "Error: No signs of intelligence detected."

@@ -5,7 +5,7 @@
 	icon_state = "posibrain"
 	w_class = ITEM_SIZE_NORMAL
 	origin_tech = list(TECH_ENGINEERING = 4, TECH_MATERIAL = 4, TECH_BLUESPACE = 2, TECH_DATA = 4)
-
+	matter = list(MATERIAL_STEEL = 5, MATERIAL_GLASS = 5, MATERIAL_SILVER = 5, MATERIAL_GOLD = 5)
 	var/searching = 0
 	var/askDelay = 10 * 60 * 1
 	req_access = list(access_robotics)
@@ -16,11 +16,11 @@
 /obj/item/device/mmi/digital/posibrain/attack_self(mob/user as mob)
 	if(brainmob && !brainmob.key && searching == 0)
 		//Start the process of searching for a new user.
-		user << SPAN_NOTICE("You carefully locate the manual activation switch and start the positronic brain's boot process.")
+		to_chat(user, SPAN_NOTICE("You carefully locate the manual activation switch and start the positronic brain's boot process."))
 		icon_state = "posibrain-searching"
 		src.searching = 1
 		var/datum/ghosttrap/G = get_ghost_trap("positronic brain")
-		G.request_player(brainmob, "Someone is requesting a personality for a positronic brain.", 60 SECONDS)
+		G.request_player(brainmob, "Someone is requesting a personality for a positronic brain.", MINISYNTH, 60 SECONDS)
 		spawn(600) reset_search()
 
 /obj/item/device/mmi/digital/posibrain/proc/reset_search() //We give the players sixty seconds to decide, then reset the timer.
@@ -38,11 +38,11 @@
 		return
 
 	var/datum/ghosttrap/G = get_ghost_trap("positronic brain")
-	if(!G.assess_candidate(user))
+	if(!G.assess_candidate(user, check_respawn_timer=FALSE))
 		return
 	var/response = alert(user, "Are you sure you wish to possess this [src]?", "Possess [src]", "Yes", "No")
 	if(response == "Yes")
-		G.transfer_personality(user, brainmob)
+		G.transfer_personality(user, brainmob, check_respawn_timer=FALSE)
 	return
 
 /obj/item/device/mmi/digital/posibrain/examine(mob/user)
@@ -61,7 +61,7 @@
 	else
 		msg += "<span class='deadsay'>It appears to be completely inactive.</span>\n"
 	msg += "</span><span class='info'>*---------*</span>"
-	user << msg
+	to_chat(user, msg)
 	return
 
 /obj/item/device/mmi/digital/posibrain/emp_act(severity)

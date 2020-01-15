@@ -3,7 +3,7 @@
 	desc = "Used for scanning and alerting when someone enters a certain proximity."
 	icon_state = "prox"
 	origin_tech = list(TECH_MAGNET = 1)
-	matter = list(DEFAULT_WALL_MATERIAL = 800, "glass" = 200, "waste" = 50)
+	matter = list(MATERIAL_PLASTIC = 1)
 	flags = PROXMOVE
 	wires = WIRE_PULSE
 
@@ -29,11 +29,11 @@
 /obj/item/device/assembly/prox_sensor/toggle_secure()
 	secured = !secured
 	if(secured)
-		processing_objects.Add(src)
+		START_PROCESSING(SSobj, src)
 	else
 		scanning = 0
 		timing = 0
-		processing_objects.Remove(src)
+		STOP_PROCESSING(SSobj, src)
 	update_icon()
 	return secured
 
@@ -61,7 +61,7 @@
 		process_cooldown()
 
 
-/obj/item/device/assembly/prox_sensor/process()
+/obj/item/device/assembly/prox_sensor/Process()
 	if(scanning)
 		var/turf/mainloc = get_turf(src)
 		for(var/mob/living/A in range(range,mainloc))
@@ -103,14 +103,14 @@
 		grenade.primed(scanning)
 
 
-/obj/item/device/assembly/prox_sensor/Move()
-	..()
+/obj/item/device/assembly/prox_sensor/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
+	. = ..()
 	sense()
 
 
 /obj/item/device/assembly/prox_sensor/interact(mob/user as mob)//TODO: Change this to the wires thingy
 	if(!secured)
-		user << SPAN_WARNING("The [name] is unsecured!")
+		to_chat(user, SPAN_WARNING("The [name] is unsecured!"))
 		return
 	var/second = time % 60
 	var/minute = (time - second) / 60

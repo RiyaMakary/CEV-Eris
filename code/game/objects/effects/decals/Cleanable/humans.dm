@@ -10,7 +10,6 @@ var/global/list/image/splatter_cache=list()
 	gender = PLURAL
 	density = 0
 	anchored = 1
-	layer = 2
 	icon = 'icons/effects/blood.dmi'
 	icon_state = "mfloor1"
 	random_icon_states = list("mfloor1", "mfloor2", "mfloor3", "mfloor4", "mfloor5", "mfloor6", "mfloor7")
@@ -21,6 +20,7 @@ var/global/list/image/splatter_cache=list()
 	var/list/datum/disease2/disease/virus2 = list()
 	var/amount = 5
 	var/drytime
+	sanity_damage = 1
 
 /obj/effect/decal/cleanable/blood/reveal_blood()
 	if(!fluorescent)
@@ -33,16 +33,19 @@ var/global/list/image/splatter_cache=list()
 	if(invisibility != 100)
 		invisibility = 100
 		amount = 0
-		processing_objects -= src
+		STOP_PROCESSING(SSobj, src)
 	..(ignore=1)
 
 /obj/effect/decal/cleanable/blood/Destroy()
-	processing_objects -= src
+	STOP_PROCESSING(SSobj, src)
 	return ..()
 
 /obj/effect/decal/cleanable/blood/New()
 	..()
+	fall_to_floor()
 	update_icon()
+
+
 	if(istype(src, /obj/effect/decal/cleanable/blood/gibs))
 		return
 	if(src.type == /obj/effect/decal/cleanable/blood)
@@ -53,9 +56,9 @@ var/global/list/image/splatter_cache=list()
 						blood_DNA |= B.blood_DNA.Copy()
 					qdel(B)
 	drytime = world.time + DRYING_TIME * (amount+1)
-	processing_objects += src
+	START_PROCESSING(SSobj, src)
 
-/obj/effect/decal/cleanable/blood/process()
+/obj/effect/decal/cleanable/blood/Process()
 	if(world.time > drytime)
 		dry()
 
@@ -69,10 +72,10 @@ var/global/list/image/splatter_cache=list()
 	if(amount < 1)
 		return
 
-	var/obj/item/organ/external/l_foot = perp.get_organ(BP_L_FOOT)
-	var/obj/item/organ/external/r_foot = perp.get_organ(BP_R_FOOT)
+	var/obj/item/organ/external/l_leg = perp.get_organ(BP_L_LEG)
+	var/obj/item/organ/external/r_leg = perp.get_organ(BP_R_LEG)
 	var/hasfeet = 1
-	if((!l_foot || l_foot.is_stump()) && (!r_foot || r_foot.is_stump()))
+	if((!l_leg || l_leg.is_stump()) && (!r_leg || r_leg.is_stump()))
 		hasfeet = 0
 	if(perp.shoes && !perp.buckled)//Adding blood to shoes
 		var/obj/item/clothing/shoes/S = perp.shoes
@@ -109,7 +112,7 @@ var/global/list/image/splatter_cache=list()
 	desc = drydesc
 	color = adjust_brightness(color, -50)
 	amount = 0
-	processing_objects -= src
+	STOP_PROCESSING(SSobj, src)
 
 /obj/effect/decal/cleanable/blood/attack_hand(mob/living/carbon/human/user)
 	..()
@@ -119,7 +122,7 @@ var/global/list/image/splatter_cache=list()
 			return
 		var/taken = rand(1,amount)
 		amount -= taken
-		user << SPAN_NOTICE("You get some of \the [src] on your hands.")
+		to_chat(user, SPAN_NOTICE("You get some of \the [src] on your hands."))
 		if (!user.blood_DNA)
 			user.blood_DNA = list()
 		user.blood_DNA |= blood_DNA.Copy()
@@ -165,7 +168,7 @@ var/global/list/image/splatter_cache=list()
 
 /obj/effect/decal/cleanable/blood/writing/examine(mob/user)
 	..(user)
-	user << "It reads: <font color='[basecolor]'>\"[message]\"</font>"
+	to_chat(user, "It reads: <font color='[basecolor]'>\"[message]\"</font>")
 
 /obj/effect/decal/cleanable/blood/gibs
 	name = "gibs"
@@ -173,7 +176,7 @@ var/global/list/image/splatter_cache=list()
 	gender = PLURAL
 	density = 0
 	anchored = 1
-	layer = 2
+	layer = LOW_OBJ_LAYER
 	icon = 'icons/effects/blood.dmi'
 	icon_state = "gibbl5"
 	random_icon_states = list("gib1", "gib2", "gib3", "gib4", "gib5", "gib6")
@@ -211,17 +214,17 @@ var/global/list/image/splatter_cache=list()
 
 
 /obj/effect/decal/cleanable/blood/gibs/proc/streak(var/list/directions)
-        spawn (0)
-                var/direction = pick(directions)
-                for (var/i = 0, i < pick(1, 200; 2, 150; 3, 50; 4), i++)
-                        sleep(3)
-                        if (i > 0)
-                                var/obj/effect/decal/cleanable/blood/b = PoolOrNew(/obj/effect/decal/cleanable/blood/splatter, src.loc)
-                                b.basecolor = src.basecolor
-                                b.update_icon()
+	spawn (0)
+		var/direction = pick(directions)
+		for (var/i = 0, i < pick(1, 200; 2, 150; 3, 50; 4), i++)
+			sleep(3)
+			if (i > 0)
+				var/obj/effect/decal/cleanable/blood/splatter/b = new(loc)
+				b.basecolor = src.basecolor
+				b.update_icon()
 
-                        if (step_to(src, get_step(src, direction), 0))
-                                break
+			if (step_to(src, get_step(src, direction), 0))
+				break
 
 
 /obj/effect/decal/cleanable/mucus
@@ -230,7 +233,6 @@ var/global/list/image/splatter_cache=list()
 	gender = PLURAL
 	density = 0
 	anchored = 1
-	layer = 2
 	icon = 'icons/effects/blood.dmi'
 	icon_state = "mucus"
 	random_icon_states = list("mucus")
@@ -241,3 +243,16 @@ var/global/list/image/splatter_cache=list()
 /obj/effect/decal/cleanable/mucus/New()
 	spawn(DRYING_TIME * 2)
 		dry=1
+
+//This proc prevents blood on openspace tiles, by causing them to fall down until they hit the ground
+/obj/effect/decal/cleanable/blood/proc/fall_to_floor()
+	if (istype(loc, /turf/simulated/open))
+		anchored = 0 //Anchored things can't fall
+		while (istype(loc, /turf/simulated/open))
+			var/turf/simulated/open/T = loc
+			T.fallThrough(src)
+
+			//A failsafe. If falling through the floor somehow fails to send us anywhere new, we break out to avoid an infinite loop
+			if (loc == T)
+				break
+	anchored = initial(anchored) //Reset it

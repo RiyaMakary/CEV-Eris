@@ -9,17 +9,34 @@ datum/pipeline
 
 	var/alert_pressure = 0
 
-	Destroy()
-		if(network)
-			qdel(network)
-
-		if(air && air.volume)
-			temporarily_store_air()
-			qdel(air)
-
+	New()
 		..()
+		air = new
 
-	proc/process()//This use to be called called from the pipe networks
+	Destroy()
+		QDEL_NULL(network)
+
+		//Update individual gas_mixtures by volume ratio
+		if (air.volume)
+			for(var/obj/machinery/atmospherics/pipe/member in members)
+				var/datum/gas_mixture/G = new
+				G.copy_from(air)
+				G.volume = member.volume
+				G.multiply(member.volume / air.volume)
+				member.air_temporary = G
+				member.parent = null
+		else
+			for(var/obj/machinery/atmospherics/pipe/member in members)
+				member.air_temporary = null
+				member.parent = null
+		QDEL_NULL(air)
+
+		members.Cut()
+		edges.Cut()
+
+		. = ..()
+
+	Process()//This use to be called called from the pipe networks
 
 		//Check to see if pressure is within acceptable limits
 		var/pressure = air.return_pressure()
@@ -28,18 +45,7 @@ datum/pipeline
 				if(!member.check_pressure(pressure))
 					break //Only delete 1 pipe per process
 
-	proc/temporarily_store_air()
-		//Update individual gas_mixtures by volume ratio
-
-		for(var/obj/machinery/atmospherics/pipe/member in members)
-			member.air_temporary = new
-			member.air_temporary.copy_from(air)
-			member.air_temporary.volume = member.volume
-			member.air_temporary.multiply(member.volume / air.volume)
-
 	proc/build_pipeline(obj/machinery/atmospherics/pipe/base)
-		air = new
-
 		var/list/possible_expansions = list(base)
 		members = list(base)
 		edges = list()
@@ -49,10 +55,9 @@ datum/pipeline
 		alert_pressure = base.alert_pressure
 
 		if(base.air_temporary)
-			air = base.air_temporary
+			air.copy_from(base.air_temporary)
+			qdel(base.air_temporary)
 			base.air_temporary = null
-		else
-			air = new
 
 		while(possible_expansions.len>0)
 			for(var/obj/machinery/atmospherics/pipe/borderline in possible_expansions)
@@ -73,6 +78,8 @@ datum/pipeline
 
 							if(item.air_temporary)
 								air.merge(item.air_temporary)
+								qdel(item.air_temporary)
+								item.air_temporary = null
 
 						edge_check--
 
@@ -201,16 +208,16 @@ datum/pipeline
 	proc/radiate_heat_to_space(surface, thermal_conductivity)
 		var/gas_density = air.total_moles/air.volume
 		thermal_conductivity *= min(gas_density / ( RADIATOR_OPTIMUM_PRESSURE/(R_IDEAL_GAS_EQUATION*GAS_CRITICAL_TEMPERATURE) ), 1) //mult by density ratio
-		
+
 		// We only get heat from the star on the exposed surface area.
 		// If the HE pipes gain more energy from AVERAGE_SOLAR_RADIATION than they can radiate, then they have a net heat increase.
 		var/heat_gain = AVERAGE_SOLAR_RADIATION * (RADIATOR_EXPOSED_SURFACE_AREA_RATIO * surface) * thermal_conductivity
-		
+
 		// Previously, the temperature would enter equilibrium at 26C or 294K.
 		// Only would happen if both sides (all 2 square meters of surface area) were exposed to sunlight.  We now assume it aligned edge on.
 		// It currently should stabilise at 129.6K or -143.6C
 		heat_gain -= surface * STEFAN_BOLTZMANN_CONSTANT * thermal_conductivity * (air.temperature - COSMIC_RADIATION_TEMPERATURE) ** 4
-		
+
 		air.add_thermal_energy(heat_gain)
 		if(network)
 			network.update = 1

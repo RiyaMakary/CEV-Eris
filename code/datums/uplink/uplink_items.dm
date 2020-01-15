@@ -30,14 +30,10 @@ var/datum/uplink/uplink = new()
 	var/desc
 	var/item_cost = 0
 	var/datum/uplink_category/category		// Item category
-	var/list/antag_roles	// Antag roles this item is displayed to. If empty, display to all.
+	var/list/antag_roles = ROLES_UPLINK_BASE	// Antag roles this item is displayed to. If empty, display to all.
 
 /datum/uplink_item/item
 	var/path = null
-
-/datum/uplink_item/New()
-	..()
-	antag_roles = list()
 
 /datum/uplink_item/proc/buy(var/obj/item/device/uplink/U, var/mob/user)
 	var/extra_args = extra_args(user)
@@ -73,14 +69,10 @@ var/datum/uplink/uplink = new()
 	if(!U || !antag_roles.len)
 		return 1
 
-	// With no owner, there's no need to check antag status.
 	if(!U.uplink_owner)
-		return 0
-
-	for(var/antag_role in antag_roles)
-		if(player_is_antag_id(U.uplink_owner, antag_role))
-			return 1
-	return 0
+		return !!length(U.owner_roles & antag_roles)
+	else
+		return player_is_antag_in_list(U.uplink_owner, antag_roles)
 
 /datum/uplink_item/proc/cost(var/telecrystals)
 	return item_cost
@@ -116,9 +108,8 @@ datum/uplink_item/dd_SortValue()
 		var/list/L = I
 		if(L.len) I = L[1]
 
-	if(istype(I) && ishuman(user))
-		var/mob/living/carbon/human/A = user
-		A.put_in_any_hand_if_possible(I)
+	if(istype(I))
+		user.put_in_hands(I)
 	return I
 
 /datum/uplink_item/item/get_goods(var/obj/item/device/uplink/U, var/loc)

@@ -18,7 +18,7 @@
 	if(istype(O, /obj/item/weapon/reagent_containers/glass) || istype(O,/obj/item/weapon/reagent_containers/syringe))
 
 		if(beaker)
-			user << "\The [src] is already loaded."
+			to_chat(user, "\The [src] is already loaded.")
 			return
 
 		beaker = O
@@ -26,7 +26,7 @@
 		O.loc = src
 
 		user.visible_message("[user] adds \a [O] to \the [src]!", "You add \a [O] to \the [src]!")
-		nanomanager.update_uis(src)
+		SSnano.update_uis(src)
 
 		src.attack_hand(user)
 		return
@@ -34,7 +34,7 @@
 	if(istype(O, /obj/item/weapon/virusdish))
 
 		if(dish)
-			user << "The dish tray is aleady full!"
+			to_chat(user, "The dish tray is aleady full!")
 			return
 
 		dish = O
@@ -42,7 +42,7 @@
 		O.loc = src
 
 		user.visible_message("[user] adds \a [O] to \the [src]!", "You add \a [O] to \the [src]!")
-		nanomanager.update_uis(src)
+		SSnano.update_uis(src)
 
 		src.attack_hand(user)
 
@@ -50,7 +50,7 @@
 	if(stat & (NOPOWER|BROKEN)) return
 	ui_interact(user)
 
-/obj/machinery/disease2/incubator/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/disease2/incubator/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	user.set_machine(src)
 
 	var/data[0]
@@ -71,7 +71,7 @@
 	data["blood_already_infected"] = null
 
 	if (beaker)
-		var/datum/reagent/blood/B = locate(/datum/reagent/blood) in beaker.reagents.reagent_list
+		var/datum/reagent/organic/blood/B = locate(/datum/reagent/organic/blood) in beaker.reagents.reagent_list
 		data["can_breed_virus"] = dish && dish.virus2 && B
 
 		if (B)
@@ -82,13 +82,13 @@
 			for (var/ID in virus)
 				data["blood_already_infected"] = virus[ID]
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "dish_incubator.tmpl", src.name, 400, 600)
 		ui.set_initial_data(data)
 		ui.open()
 
-/obj/machinery/disease2/incubator/process()
+/obj/machinery/disease2/incubator/Process()
 	if(dish && on && dish.virus2)
 		use_power(50,EQUIP)
 		if(!powered(EQUIP))
@@ -101,7 +101,7 @@
 
 			foodsupply -= 1
 			dish.growth += 3
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 
 		if(radiation)
 			if(radiation > 50 & prob(5))
@@ -114,18 +114,18 @@
 			else if(prob(5))
 				dish.virus2.minormutate()
 			radiation -= 1
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 		if(toxins && prob(5))
 			dish.virus2.infectionchance -= 1
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 		if(toxins > 50)
 			dish.growth = 0
 			dish.virus2 = null
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 	else if(!dish)
 		on = 0
 		icon_state = "incubator"
-		nanomanager.update_uis(src)
+		SSnano.update_uis(src)
 
 	if(beaker)
 		if(foodsupply < 100 && beaker.reagents.remove_reagent("virusfood",5))
@@ -134,7 +134,7 @@
 			else
 				beaker.reagents.add_reagent("virusfood",(100 - foodsupply)/2)
 				foodsupply = 100
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 
 		if (locate(/datum/reagent/toxin) in beaker.reagents.reagent_list && toxins < 100)
 			for(var/datum/reagent/toxin/T in beaker.reagents.reagent_list)
@@ -143,15 +143,13 @@
 				if(toxins > 100)
 					toxins = 100
 					break
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 
 /obj/machinery/disease2/incubator/Topic(href, href_list)
 	if (..()) return 1
 
 	var/mob/user = usr
-	var/datum/nanoui/ui = nanomanager.get_open_ui(user, src, "main")
-
-	src.add_fingerprint(user)
+	var/datum/nanoui/ui = SSnano.get_open_ui(user, src, "main")
 
 	if (href_list["close"])
 		user.unset_machine()
@@ -190,7 +188,7 @@
 		if (!dish)
 			return 1
 
-		var/datum/reagent/blood/B = locate(/datum/reagent/blood) in beaker.reagents.reagent_list
+		var/datum/reagent/organic/blood/B = locate(/datum/reagent/organic/blood) in beaker.reagents.reagent_list
 		if (!B)
 			return 1
 

@@ -1,6 +1,6 @@
 /obj/structure/table/rack
 	name = "rack"
-	desc = "Different from the Middle Ages version."
+	desc = "Different from the medieval version."
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "rack"
 	can_plate = 0
@@ -21,11 +21,7 @@
 /obj/structure/table/rack/update_icon()
 	return
 
-/obj/structure/table/rack/holorack/dismantle(obj/item/weapon/wrench/W, mob/user)
-	user << SPAN_WARNING("You cannot dismantle \the [src].")
-	return
-
 /obj/structure/table/rack/shelf
 	name = "shelf"
-	desc = "For collecting dust, heads of the enemies and tools."
+	desc = "For showing off your collections of dust, electronics, the heads of your enemies and tools."
 	icon_state = "shelf"

@@ -1,3 +1,13 @@
+var/const/ENGINEERING       =(1<<0)
+var/const/IRONHAMMER        =(1<<1)
+var/const/MEDICAL           =(1<<2)
+var/const/SCIENCE           =(1<<3)
+var/const/CIVILIAN          =(1<<4)
+var/const/COMMAND           =(1<<5)
+var/const/MISC              =(1<<6)
+var/const/SERVICE           =(1<<7)
+var/const/GUILD             =(1<<8)
+var/const/CHURCH           	=(1<<9)
 
 var/const/ENGSEC			=(1<<0)
 
@@ -25,89 +35,50 @@ var/const/ROBOTICIST		=(1<<6)
 var/const/PARAMEDIC			=(1<<7)
 
 
-var/const/CIVILIAN			=(1<<2)
-
 var/const/FIRSTOFFICER		=(1<<0)
-var/const/BARTENDER			=(1<<1)
-var/const/BOTANIST			=(1<<2)
-var/const/CHEF				=(1<<3)
-var/const/JANITOR			=(1<<4)
-var/const/MERCHANT			=(1<<5)
-var/const/GUILDTECH			=(1<<6)
-var/const/MINER				=(1<<7)
-var/const/CHAPLAIN			=(1<<8)
-var/const/ACTOR				=(1<<9)
-var/const/ASSISTANT			=(1<<10)
+var/const/CLUBMANAGER		=(1<<1)
+var/const/CLUBWORKER		=(1<<2)
+var/const/MERCHANT			=(1<<3)
+var/const/GUILDTECH			=(1<<4)
+var/const/MINER				=(1<<5)
+var/const/ACTOR				=(1<<6)
+var/const/ASSISTANT			=(1<<7)
 
 
-var/list/assistant_occupations = list(
-)
+var/const/CHAPLAIN			=(1<<0)
+var/const/ACOLYTE			=(1<<1)
+var/const/JANITOR			=(1<<2)
+var/const/BOTANIST			=(1<<3)
 
 
-var/list/command_positions = list(
-	"Captain",
-	"First Officer",
-	"Ironhammer Commander",
-	"Technomancer Exultant",
-	"Guild Merchant",
-	"Moebius Expedition Overseer",
-	"Moebius Biolab Officer"
-)
+var/list/assistant_occupations = list()
 
 
-var/list/engineering_positions = list(
-	"Technomancer Exultant",
-	"Technomancer",
-)
+var/list/command_positions = list(JOBS_COMMAND)
 
 
-var/list/medical_positions = list(
-	"Moebius Biolab Officer",
-	"Moebius Doctor",
-	"Moebius Psychiatrist",
-	"Moebius Chemist",
-	"Moebius Paramedic"
-)
+var/list/engineering_positions = list(JOBS_ENGINEERING)
 
 
-var/list/science_positions = list(
-	"Moebius Expedition Overseer",
-	"Moebius Scientist",
-	"Moebius Roboticist",
-)
+var/list/medical_positions = list(JOBS_MEDICAL)
+
+
+var/list/science_positions = list(JOBS_SCIENCE)
 
 //BS12 EDIT
-var/list/cargo_positions = list(
-	"Guild Merchant",
-	"Guild Technician",
-	"Guild Miner"
-)
-
-var/list/civilian_positions = list(
-	"First Officer",
-	"Bartender",
-	"Gardener",
-	"Chef",
-	"Janitor",
-	"Cyberchristian Preacher",
-	"Assistant"
-)
+var/list/cargo_positions = list(JOBS_CARGO)
 
 
-var/list/security_positions = list(
-	"Ironhammer Commander",
-	"Ironhammer Gunnery Sergeant",
-	"Ironhammer Medical Specialist",
-	"Ironhammer Inspector",
-	"Ironhammer Operative"
-)
+var/list/church_positions = list(JOBS_CHURCH)
 
 
-var/list/nonhuman_positions = list(
-	"AI",
-	"Cyborg",
-	"pAI"
-)
+var/list/civilian_positions = list(JOBS_CIVILIAN)
+
+
+var/list/security_positions = list(JOBS_SECURITY)
+
+
+var/list/nonhuman_positions = list(JOBS_NONHUMAN)
 
 
 /proc/guest_jobbans(var/job)

@@ -3,14 +3,15 @@
 	role_text = "Xenomorph"
 	role_text_plural = "Xenomorphs"
 	mob_path = /mob/living/carbon/alien/larva
-	bantype = "Xenomorph"
+	bantype = ROLE_BANTYPE_XENOS
 	welcome_text = "Hiss! You are a larval alien. Hide and bide your time until you are ready to evolve."
+	antaghud_indicator = "hudalien"
 	faction_type = /datum/faction/xenomorph
 	outer = TRUE
 
 /datum/antagonist/xenos/proc/get_vents()
 	var/list/vents = list()
-	for(var/obj/machinery/atmospherics/unary/vent_pump/temp_vent in machines)
+	for(var/obj/machinery/atmospherics/unary/vent_pump/temp_vent in SSmachines.machinery)
 		if(!temp_vent.welded && temp_vent.network && temp_vent.loc.z in config.station_levels)
 			if(temp_vent.network.normal_members.len > 50)
 				vents += temp_vent

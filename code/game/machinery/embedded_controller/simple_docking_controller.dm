@@ -3,13 +3,14 @@
 	name = "docking hatch controller"
 	var/tag_door
 	var/datum/computer/file/embedded_program/docking/simple/docking_program
+	var/progtype = /datum/computer/file/embedded_program/docking/simple/
 
-/obj/machinery/embedded_controller/radio/simple_docking_controller/initialize()
-	..()
-	docking_program = new/datum/computer/file/embedded_program/docking/simple(src)
+/obj/machinery/embedded_controller/radio/simple_docking_controller/Initialize()
+	. = ..()
+	docking_program = new progtype(src)
 	program = docking_program
 
-/obj/machinery/embedded_controller/radio/simple_docking_controller/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/embedded_controller/radio/simple_docking_controller/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	var/data[0]
 
 	data = list(
@@ -19,7 +20,7 @@
 		"door_lock" = 	docking_program.memory["door_status"]["lock"],
 	)
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 
 	if (!ui)
 		ui = new(user, src, ui_key, "simple_docking_console.tmpl", name, 470, 290)
@@ -35,10 +36,8 @@
 	src.add_fingerprint(usr)
 
 	var/clean = FALSE
-	switch(href_list["command"])	//anti-HTML-hacking checks
-		if("force_door")
-			clean = TRUE
-		if("toggle_override")
+	switch(href_list["command"])
+		if("force_door", "toggle_override")
 			clean = TRUE
 
 	if(clean)

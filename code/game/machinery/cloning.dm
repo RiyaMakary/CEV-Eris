@@ -1,28 +1,6 @@
 //Cloning revival method.
 //The pod handles the actual cloning while the computer manages the clone profiles
 
-//Potential replacement for genetics revives or something I dunno (?)
-
-//Find a dead mob with a brain and client.
-/proc/find_dead_player(var/find_key)
-	if(isnull(find_key))
-		return
-
-	var/mob/selected = null
-	for(var/mob/living/M in player_list)
-		//Dead people only thanks!
-		if((M.stat != DEAD) || (!M.client))
-			continue
-		//They need a brain!
-		if(ishuman(M))
-			var/mob/living/carbon/human/H = M
-			if(H.species.has_organ[O_BRAIN] && !H.has_brain())
-				continue
-		if(M.ckey == find_key)
-			selected = M
-			break
-	return selected
-
 #define CLONE_BIOMASS 150
 
 /obj/machinery/clonepod
@@ -48,7 +26,7 @@
 /obj/machinery/clonepod/New()
 	set_extension(src, /datum/extension/multitool, /datum/extension/multitool/store)
 	..()
-	if(!(ticker && ticker.current_state == GAME_STATE_PLAYING))
+	if(SSticker.current_state != GAME_STATE_PLAYING)
 		biomass = CLONE_BIOMASS * 3
 
 /obj/machinery/clonepod/Destroy()
@@ -66,7 +44,7 @@
 		return
 	if(occupant.stat != DEAD)
 		var/completion = (100 * ((occupant.health + 50) / (heal_level + 100))) // Clones start at -150 health
-		user << "Current clone cycle is [round(completion)]% complete."
+		to_chat(user, "Current clone cycle is [round(completion)]% complete.")
 	return
 
 //Clonepod
@@ -85,7 +63,7 @@
 		if(ckey(clonemind.key) != R.ckey)
 			return 0
 	else
-		for(var/mob/observer/ghost/G in player_list)
+		for(var/mob/observer/ghost/G in GLOB.player_list)
 			if(G.ckey == R.ckey)
 				if(G.can_reenter_corpse)
 					break
@@ -115,7 +93,7 @@
 
 	clonemind.transfer_to(H)
 	H.ckey = R.ckey
-	H << SPAN_NOTICE("<b>Consciousness slowly creeps over you as your body regenerates.</b><br><i>So this is what cloning feels like?</i>")
+	to_chat(H, SPAN_NOTICE("<b>Consciousness slowly creeps over you as your body regenerates.</b><br><i>So this is what cloning feels like?</i>"))
 
 	// -- Mode/mind specific stuff goes here
 	callHook("clone", list(H))
@@ -144,7 +122,7 @@
 	return 1
 
 //Grow clones to maturity then kick them out.  FREELOADERS
-/obj/machinery/clonepod/process()
+/obj/machinery/clonepod/Process()
 
 	if(stat & NOPOWER) //Autoeject if power is lost
 		if(occupant)
@@ -166,7 +144,7 @@
 			occupant.adjustCloneLoss(-2 * heal_rate)
 
 			//Premature clones may have brain damage.
-			occupant.adjustBrainLoss(-(ceil(0.5*heal_rate)))
+			occupant.adjustBrainLoss(-(CEILING(0.5*heal_rate, 1)))
 
 			//So clones don't die of oxyloss in a running pod.
 			if(occupant.reagents.get_reagent_amount("inaprovaline") < 30)
@@ -195,52 +173,41 @@
 	return
 
 //Let's unlock this early I guess.  Might be too early, needs tweaking.
-/obj/machinery/clonepod/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/machinery/clonepod/attackby(var/obj/item/I, mob/user as mob)
 	if(isnull(occupant))
-		if(default_deconstruction_screwdriver(user, W))
+
+		if(default_deconstruction(I, user))
 			return
-		if(default_deconstruction_crowbar(user, W))
+
+		if(default_part_replacement(I, user))
 			return
-		if(default_part_replacement(user, W))
-			return
-	if(W.GetID())
-		if(!check_access(W))
-			user << SPAN_WARNING("Access Denied.")
+
+	if(I.GetIdCard())
+		if(!check_access(I))
+			to_chat(user, SPAN_WARNING("Access Denied."))
 			return
 		if(!locked || isnull(occupant))
 			return
 		if((occupant.health < -20) && (occupant.stat != DEAD))
-			user << SPAN_WARNING("Access Refused.")
+			to_chat(user, SPAN_WARNING("Access Refused."))
 			return
 		else
 			locked = 0
-			user << "System unlocked."
-	else if(istype(W, /obj/item/weapon/reagent_containers/food/snacks/meat))
-		user << SPAN_NOTICE("\The [src] processes \the [W].")
-		biomass += 50
-		user.drop_from_inventory(W)
-		qdel(W)
-		return
-	else if(istype(W, /obj/item/weapon/wrench))
-		if(locked && (anchored || occupant))
-			user << SPAN_WARNING("Can not do that while [src] is in use.")
-		else
-			anchored = !anchored
-			playsound(loc, 'sound/items/Ratchet.ogg', 100, 1)
-			if(anchored)
-				user.visible_message("[user] secures [src] to the floor.", "You secure [src] to the floor.")
-			else
-				user.visible_message("[user] unsecures [src] from the floor.", "You unsecure [src] from the floor.")
-				if(connected)
-					connected.pods -= src
-					connected = null
+			to_chat(user, "System unlocked.")
 	else
-		..()
+		for(var/type in BIOMASS_TYPES)
+			if(istype(I,type))
+				to_chat(user, SPAN_NOTICE("\The [src] processes \the [I]."))
+				biomass += BIOMASS_TYPES[type]
+				user.drop_from_inventory(I)
+				qdel(I)
+				return
+	..()
 
 /obj/machinery/clonepod/emag_act(var/remaining_charges, var/mob/user)
 	if(isnull(occupant))
 		return NO_EMAG_ACT
-	user << "You force an emergency ejection."
+	to_chat(user, "You force an emergency ejection.")
 	locked = 0
 	go_out()
 	return 1

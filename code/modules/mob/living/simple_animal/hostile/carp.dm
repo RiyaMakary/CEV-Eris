@@ -1,5 +1,3 @@
-
-
 /mob/living/simple_animal/hostile/carp
 	name = "space carp"
 	desc = "A ferocious, fang-bearing creature that resembles a fish."
@@ -7,7 +5,7 @@
 	icon_gib = "carp_gib"
 	speak_chance = 0
 	turns_per_move = 5
-	meat_type = /obj/item/weapon/reagent_containers/food/snacks/carpmeat
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/meat/carp
 	response_help = "pets the"
 	response_disarm = "gently pushes aside the"
 	response_harm = "hits the"
@@ -16,8 +14,8 @@
 	health = 25
 
 	harm_intent_damage = 8
-	melee_damage_lower = 15
-	melee_damage_upper = 15
+	melee_damage_lower = 8
+	melee_damage_upper = 12
 	attacktext = "bitten"
 	attack_sound = 'sound/weapons/bite.ogg'
 
@@ -32,11 +30,11 @@
 	max_n2 = 0
 	minbodytemp = 0
 
-	break_stuff_probability = 15
+	break_stuff_probability = 4
 
 	faction = "carp"
 
-/mob/living/simple_animal/hostile/carp/Process_Spacemove(var/check_drift = 0)
+/mob/living/simple_animal/hostile/carp/allow_spacemove()
 	return 1	//No drifting in space for space carp!	//original comments do not steal
 
 /mob/living/simple_animal/hostile/carp/FindTarget()

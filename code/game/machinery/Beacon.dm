@@ -4,8 +4,8 @@
 	icon_state = "floor_beaconf"
 	name = "Bluespace Gigabeacon"
 	desc = "A device that draws power from bluespace and creates a permanent tracking beacon."
-	level = 1		// underfloor
-	layer = 2.5
+	level = BELOW_PLATING_LEVEL		// underfloor
+	layer = LOW_OBJ_LAYER
 	anchored = 1
 	use_power = 1
 	idle_power_usage = 0
@@ -23,7 +23,7 @@
 	Destroy()
 		if(Beacon)
 			qdel(Beacon)
-		..()
+		. = ..()
 
 	// update the invisibility and icon
 	hide(var/intact)
@@ -40,7 +40,7 @@
 		else
 			icon_state = "[state]"
 
-	process()
+	Process()
 		if(!Beacon)
 			var/turf/T = loc
 			Beacon = new /obj/item/device/radio/beacon

@@ -34,11 +34,11 @@
 	desc = "Forensics"
 	region = ACCESS_REGION_SECURITY
 
-/var/const/access_medical = 5
-/datum/access/medical
-	id = access_medical
-	desc = "Medical"
-	region = ACCESS_REGION_MEDBAY
+/var/const/access_moebius = 5
+/datum/access/moebius
+	id = access_moebius
+	desc = "Moebius General"
+	region = ACCESS_REGION_RESEARCH
 
 /var/const/access_morgue = 6
 /datum/access/morgue
@@ -270,11 +270,7 @@
 
 // /var/const/free_access_id = 46
 
-/var/const/access_research = 47
-/datum/access/research
-	id = access_research
-	desc = "Science"
-	region = ACCESS_REGION_RESEARCH
+// /var/const/free_access_id = 47
 
 /var/const/access_mining = 48
 /datum/access/mining
@@ -339,7 +335,7 @@
 	desc = "RC Announcements"
 	region = ACCESS_REGION_COMMAND
 
-/var/const/access_keycard_auth = 60 //Used for events which require at least two people to confirm them
+/var/const/access_keycard_auth = 60
 /datum/access/keycard_auth
 	id = access_keycard_auth
 	desc = "Keycode Auth. Device"
@@ -386,6 +382,54 @@
 	id = access_medspec
 	desc = "Medical Specialist"
 	region = ACCESS_REGION_SECURITY
+
+/var/const/access_paramedic = 68 // Paramedic's closet
+/datum/access/paramedic
+	id = access_paramedic
+	desc = "Paramedic's Office"
+	region = ACCESS_REGION_MEDBAY
+
+// /var/const/free_access_id = 69
+
+/**************
+* NeoTheology *
+***************/
+/var/const/access_nt_disciple = 70
+/datum/access/nt_disciple
+	id = access_nt_disciple
+	desc = "NeoTheology Disciple"
+	region = ACCESS_REGION_CHURCH
+
+/var/const/access_nt_acolyte = 71
+/datum/access/nt_acolyte
+	id = access_nt_acolyte
+	desc = "NeoTheology Acolyte"
+	region = ACCESS_REGION_CHURCH
+
+/var/const/access_nt_custodian = 72
+/datum/access/nt_custodian
+	id = access_nt_custodian
+	desc = "NeoTheology Custodian"
+	region = ACCESS_REGION_CHURCH
+
+/var/const/access_nt_agrolyte = 73
+/datum/access/nt_agrolyte
+	id = access_nt_agrolyte
+	desc = "NeoTheology Agrolyte"
+	region = ACCESS_REGION_CHURCH
+
+/var/const/access_nt_preacher = 74
+/datum/access/nt_preacher
+	id = access_nt_preacher
+	desc = "NeoTheology Preacher"
+	region = ACCESS_REGION_CHURCH
+
+/var/const/access_nt_inquisitor = 75
+/datum/access/nt_inquisitor
+	id = access_nt_inquisitor
+	desc = "NeoTheology Inquisitor"
+	region = ACCESS_REGION_CHURCH
+
 
 /******************
 * Central Command *
@@ -443,15 +487,24 @@
 	id = access_cent_captain
 	desc = "Code Gold"
 	access_type = ACCESS_TYPE_CENTCOM
-
+/var/const/access_research_equipment = 110 //RnD Console Access
+/datum/access/research_equipment
+	id = access_research_equipment
+	desc = "Research Console"
+	region = ACCESS_REGION_RESEARCH
 /***************
 * Antag access *
 ***************/
-/var/const/access_syndicate = 150//General Syndicate Access
+/var/const/access_mercenary = 150//Merc ship and base access
+/datum/access/mercenary
+	id = access_mercenary
+	access_type = ACCESS_TYPE_SYNDICATE
+
+
+/var/const/access_syndicate = 140//General Syndicate Access
 /datum/access/syndicate
 	id = access_syndicate
 	access_type = ACCESS_TYPE_SYNDICATE
-
 /*******
 * Misc *
 *******/

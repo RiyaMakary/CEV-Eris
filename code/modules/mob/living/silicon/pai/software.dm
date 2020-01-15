@@ -25,7 +25,7 @@ var/global/list/default_pai_software = list()
 		var/datum/pai_software/P = new type()
 		if(pai_software_by_key[P.id])
 			var/datum/pai_software/O = pai_software_by_key[P.id]
-			world << SPAN_WARNING("pAI software module [P.name] has the same key as [O.name]!")
+			to_chat(world, SPAN_WARNING("pAI software module [P.name] has the same key as [O.name]!"))
 			r = 0
 			continue
 		pai_software_by_key[P.id] = P
@@ -43,7 +43,7 @@ var/global/list/default_pai_software = list()
 
 	ui_interact(src)
 
-/mob/living/silicon/pai/ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = 1)
+/mob/living/silicon/pai/ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = NANOUI_FOCUS)
 	if(user != src)
 		if(ui) ui.set_status(STATUS_CLOSE, 0)
 		return
@@ -90,7 +90,7 @@ var/global/list/default_pai_software = list()
 	data["emotions"] = emotions
 	data["current_emotion"] = card.current_emotion
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "pai_interface.tmpl", "pAI Software Interface", 450, 600)
 		ui.set_initial_data(data)

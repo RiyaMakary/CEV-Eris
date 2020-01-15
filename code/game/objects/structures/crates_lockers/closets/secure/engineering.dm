@@ -4,30 +4,24 @@
 	icon_state = "ce"
 
 /obj/structure/closet/secure_closet/reinforced/engineering_chief/populate_contents()
-	..()
 	if(prob(50))
 		new /obj/item/weapon/storage/backpack/industrial(src)
 	else
-		new /obj/item/weapon/storage/backpack/satchel_eng(src)
+		new /obj/item/weapon/storage/backpack/satchel/industrial(src)
 	new /obj/item/blueprints(src)
 	new /obj/item/clothing/under/rank/exultant(src)
 	new /obj/item/clothing/head/hardhat/white(src)
 	new /obj/item/clothing/head/welding(src)
 	new /obj/item/clothing/gloves/insulated(src)
 	new /obj/item/clothing/shoes/color/brown(src)
-	new /obj/item/weapon/cartridge/ce(src)
 	new /obj/item/device/radio/headset/heads/ce(src)
 	new /obj/item/weapon/storage/toolbox/mechanical(src)
 	new /obj/item/clothing/suit/storage/hazardvest(src)
 	new /obj/item/clothing/mask/gas(src)
-	new /obj/item/device/multitool(src)
+	new /obj/item/weapon/tool/multitool(src)
 	new /obj/item/device/flash(src)
 	new /obj/item/taperoll/engineering(src)
-	new /obj/item/weapon/hatton(src)
-	new /obj/item/weapon/hatton_magazine(src)
-	new /obj/item/weapon/hatton_magazine(src)
-	new /obj/item/weapon/hatton_magazine(src)
-
+	new /obj/item/weapon/storage/pouch/engineering_supply(src)
 
 /obj/structure/closet/secure_closet/engineering_electrical
 	name = "electrical supplies"
@@ -36,7 +30,6 @@
 	icon_door = "eng_elec"
 
 /obj/structure/closet/secure_closet/engineering_electrical/populate_contents()
-	..()
 	new /obj/item/clothing/gloves/insulated(src)
 	new /obj/item/clothing/gloves/insulated(src)
 	new /obj/item/weapon/storage/toolbox/electrical(src)
@@ -45,10 +38,9 @@
 	new /obj/item/weapon/circuitboard/apc(src)
 	new /obj/item/weapon/circuitboard/apc(src)
 	new /obj/item/weapon/circuitboard/apc(src)
-	new /obj/item/device/multitool(src)
-	new /obj/item/device/multitool(src)
-	new /obj/item/device/multitool(src)
-
+	new /obj/item/weapon/tool/multitool(src)
+	new /obj/item/weapon/tool/multitool(src)
+	new /obj/item/weapon/tool/multitool(src)
 
 /obj/structure/closet/secure_closet/engineering_welding
 	name = "welding supplies"
@@ -57,17 +49,18 @@
 	icon_door = "eng_weld"
 
 /obj/structure/closet/secure_closet/engineering_welding/populate_contents()
-	..()
 	new /obj/item/clothing/head/welding(src)
 	new /obj/item/clothing/head/welding(src)
 	new /obj/item/clothing/head/welding(src)
-	new /obj/item/weapon/weldingtool/largetank(src)
-	new /obj/item/weapon/weldingtool/largetank(src)
-	new /obj/item/weapon/weldingtool/largetank(src)
+	new /obj/item/weapon/tool/weldingtool(src)
+	new /obj/item/weapon/tool/weldingtool(src)
+	new /obj/item/weapon/tool/weldingtool(src)
 	new /obj/item/weapon/weldpack(src)
 	new /obj/item/weapon/weldpack(src)
 	new /obj/item/weapon/weldpack(src)
-
+	new /obj/item/weapon/tool_upgrade/augment/fuel_tank(src)
+	new /obj/item/weapon/tool_upgrade/augment/fuel_tank(src)
+	new /obj/item/weapon/tool_upgrade/augment/fuel_tank(src)
 
 /obj/structure/closet/secure_closet/personal/engineering_personal
 	name = "technomancer's locker"
@@ -77,15 +70,17 @@
 	icon_door = "eng_secure"
 
 /obj/structure/closet/secure_closet/personal/engineering_personal/populate_contents()
-	..()
 	if(prob(50))
 		new /obj/item/weapon/storage/backpack/industrial(src)
 	else
-		new /obj/item/weapon/storage/backpack/satchel_eng(src)
+		new /obj/item/weapon/storage/backpack/satchel/industrial(src)
 	new /obj/item/weapon/storage/toolbox/mechanical(src)
+	new /obj/item/clothing/under/rank/engineer(src)
+	new /obj/item/clothing/head/hardhat(src)
+	new /obj/item/clothing/head/welding(src)
+	new /obj/item/clothing/gloves/insulated(src)
 	new /obj/item/device/radio/headset/headset_eng(src)
 	new /obj/item/clothing/suit/storage/hazardvest(src)
 	new /obj/item/clothing/mask/gas(src)
-	new /obj/item/clothing/glasses/meson(src)
+	new /obj/item/clothing/glasses/powered/meson(src)
 	new /obj/item/weapon/cartridge/engineering(src)
-	new /obj/item/taperoll/engineering(src)

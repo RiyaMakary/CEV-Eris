@@ -1,4 +1,4 @@
-n/obj/structure/walllocker
+/obj/structure/walllocker
 	name = "Wall Locker"
 	icon = 'icons/obj/lockwall.dmi'
 	icon_state = "emerg"
@@ -18,7 +18,7 @@ n/obj/structure/walllocker
 	return
 /obj/structure/walllocker/emerglocker
 	name = "Emergency Locker"
-	spawnitems = list(/obj/item/weapon/tank/emergency_oxygen,/obj/item/clothing/mask/breath,/obj/item/weapon/crowbar)
+	spawnitems = list(/obj/item/weapon/tank/emergency_oxygen,/obj/item/clothing/mask/breath,/obj/item/weapon/tool/crowbar)
 /obj/structure/walllocker/emerglocker/north
 	pixel_y = 32
 	dir = SOUTH

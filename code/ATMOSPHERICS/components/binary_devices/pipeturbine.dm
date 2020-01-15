@@ -1,5 +1,3 @@
-#define ADIABATIC_EXPONENT 0.667 //Actually adiabatic exponent - 1.
-
 /obj/machinery/atmospherics/pipeturbine
 	name = "turbine"
 	desc = "A gas turbine. Converting pressure into energy since 1884."
@@ -16,9 +14,6 @@
 	var/kin_loss = 0.001
 
 	var/dP = 0
-
-	var/obj/machinery/atmospherics/node1
-	var/obj/machinery/atmospherics/node2
 
 	var/datum/pipe_network/network1
 	var/datum/pipe_network/network2
@@ -51,9 +46,9 @@
 		node1 = null
 		node2 = null
 
-		..()
+		. = ..()
 
-	process()
+	Process()
 		..()
 		if(anchored && !(stat&BROKEN))
 			kin_energy *= 1 - kin_loss
@@ -88,38 +83,34 @@
 		if (kin_energy > 1000000)
 			overlays += image('icons/obj/pipeturbine.dmi', "hi-turb")
 
-	attackby(obj/item/weapon/W as obj, mob/user as mob)
-		if(istype(W, /obj/item/weapon/wrench))
-			anchored = !anchored
-			user << "<span class='notice'>You [anchored ? "secure" : "unsecure"] the bolts holding \the [src] to the floor.</span>"
+	attackby(obj/item/weapon/tool/W as obj, mob/user as mob)
+		if(!W.use_tool(user, src, WORKTIME_NEAR_INSTANT, QUALITY_BOLT_TURNING, FAILCHANCE_ZERO, required_stat = STAT_MEC))
+			return ..()
+		anchored = !anchored
+		to_chat(user, SPAN_NOTICE("You [anchored ? "secure" : "unsecure"] the bolts holding \the [src] to the floor."))
 
-			if(anchored)
-				if(dir & (NORTH|SOUTH))
-					initialize_directions = EAST|WEST
-				else if(dir & (EAST|WEST))
-					initialize_directions = NORTH|SOUTH
-
-				initialize()
-				build_network()
-				if (node1)
-					node1.initialize()
-					node1.build_network()
-				if (node2)
-					node2.initialize()
-					node2.build_network()
-			else
-				if(node1)
-					node1.disconnect(src)
-					qdel(network1)
-				if(node2)
-					node2.disconnect(src)
-					qdel(network2)
-
-				node1 = null
-				node2 = null
-
+		if(anchored)
+			if(dir & (NORTH|SOUTH))
+				initialize_directions = EAST|WEST
+			else if(dir & (EAST|WEST))
+				initialize_directions = NORTH|SOUTH
+				atmos_init()
+			build_network()
+			if (node1)
+				node1.atmos_init()
+				node1.build_network()
+			if (node2)
+				node2.atmos_init()
+				node2.build_network()
 		else
-			..()
+			if(node1)
+				node1.disconnect(src)
+				qdel(network1)
+			if(node2)
+				node2.disconnect(src)
+				qdel(network2)
+				node1 = null
+			node2 = null
 
 	verb/rotate_clockwise()
 		set category = "Object"
@@ -157,7 +148,7 @@
 
 		return null
 
-	initialize()
+	atmos_init()
 		if(node1 && node2) return
 
 		var/node2_connect = turn(dir, -90)
@@ -249,7 +240,7 @@
 			if (turbine.stat & (BROKEN) || !turbine.anchored || turn(turbine.dir, 180) != dir)
 				turbine = null
 
-	process()
+	Process()
 		updateConnection()
 		if(!turbine || !anchored || stat & (BROKEN))
 			return
@@ -259,14 +250,13 @@
 		add_avail(power_generated)
 
 
-	attackby(obj/item/weapon/W as obj, mob/user as mob)
-		if(istype(W, /obj/item/weapon/wrench))
-			anchored = !anchored
-			turbine = null
-			user << "<span class='notice'>You [anchored ? "secure" : "unsecure"] the bolts holding \the [src] to the floor.</span>"
-			updateConnection()
-		else
-			..()
+	attackby(obj/item/weapon/tool/W as obj, mob/user as mob)
+		if (!W.use_tool(user, src, WORKTIME_NEAR_INSTANT, QUALITY_BOLT_TURNING, FAILCHANCE_ZERO, required_stat = STAT_MEC))
+			return ..()
+		anchored = !anchored
+		turbine = null
+		to_chat(user, SPAN_NOTICE("You [anchored ? "secure" : "unsecure"] the bolts holding \the [src] to the floor."))
+		updateConnection()
 
 	verb/rotate_clock()
 		set category = "Object"

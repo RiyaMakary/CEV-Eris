@@ -27,7 +27,7 @@
 			new/obj/item/weapon/reagent_containers/food/snacks/grown/ambrosiadeus(src)
 			new/obj/item/weapon/flame/lighter/zippo(src)
 		if(6 to 10)
-			new/obj/item/weapon/pickaxe/drill(src)
+			new/obj/item/weapon/tool/pickaxe/drill(src)
 			new/obj/item/device/taperecorder(src)
 			new/obj/item/clothing/suit/space(src)
 			new/obj/item/clothing/head/helmet/space(src)
@@ -75,21 +75,13 @@
 			for(var/i = 0, i < t, ++i)
 				var/newitem = pick(typesof(/obj/item/weapon/stock_parts) - /obj/item/weapon/stock_parts - /obj/item/weapon/stock_parts/subspace)
 				new newitem(src)
-		if(69 to 70)
-			new/obj/item/weapon/pickaxe/silver(src)
-		if(71 to 72)
-			new/obj/item/weapon/pickaxe/drill(src)
+		if(69 to 72)
+			new/obj/item/weapon/tool/pickaxe/drill(src)
 		if(73 to 74)
-			new/obj/item/weapon/pickaxe/jackhammer(src)
-		if(75 to 76)
-			new/obj/item/weapon/pickaxe/diamond(src)
-		if(77 to 78)
-			new/obj/item/weapon/pickaxe/diamonddrill(src)
-		if(79 to 80)
-			new/obj/item/weapon/pickaxe/gold(src)
-		if(81 to 82)
-			new/obj/item/weapon/pickaxe/plasmacutter(src)
-		if(83 to 84)
+			new/obj/item/weapon/tool/pickaxe/jackhammer(src)
+		if(75 to 78)
+			new/obj/item/weapon/tool/pickaxe/diamonddrill(src)
+		if(79 to 84)
 			new/obj/item/toy/katana(src)
 		if(85 to 86)
 			new/obj/item/seeds/random(src)
@@ -102,14 +94,13 @@
 		if(90)
 			new/obj/item/organ/internal/heart(src)
 		if(91)
-			new/obj/item/weapon/material/sword/katana(src)
+			new/obj/item/weapon/tool/sword/katana(src)
 		if(92)
 			new/obj/item/weapon/dnainjector/xraymut(src) // Probably the least OP
 		if(93) // Why the hell not
 			new/obj/item/weapon/storage/backpack/clown(src)
 			new/obj/item/clothing/under/rank/clown(src)
 			new/obj/item/clothing/shoes/clown_shoes(src)
-			new/obj/item/device/pda/clown(src)
 			new/obj/item/clothing/mask/gas/clown_hat(src)
 			new/obj/item/weapon/bikehorn(src)
 			//new/obj/item/weapon/stamp/clown(src) I'd add it, but only clowns can use it
@@ -139,29 +130,29 @@
 	if(!locked)
 		return
 
-	user << SPAN_NOTICE("The crate is locked with a Deca-code lock.")
+	to_chat(user, SPAN_NOTICE("The crate is locked with a Deca-code lock."))
 	var/input = input(user, "Enter [codelen] digits.", "Deca-Code Lock", "") as text
 	if(!Adjacent(user))
 		return
 
 	if(input == null || length(input) != codelen)
-		user << SPAN_NOTICE("You leave the crate alone.")
+		to_chat(user, SPAN_NOTICE("You leave the crate alone."))
 	else if(check_input(input))
-		user << SPAN_NOTICE("The crate unlocks!")
+		to_chat(user, SPAN_NOTICE("The crate unlocks!"))
 		playsound(user, 'sound/machines/lockreset.ogg', 50, 1)
 		set_locked(0)
 	else
 		visible_message(SPAN_WARNING("A red light on \the [src]'s control panel flashes briefly."))
 		attempts--
 		if (attempts == 0)
-			user << SPAN_DANGER("The crate's anti-tamper system activates!")
+			to_chat(user, SPAN_DANGER("The crate's anti-tamper system activates!"))
 			var/turf/T = get_turf(src.loc)
 			explosion(T, 0, 0, 1, 2)
 			qdel(src)
 
 /obj/structure/closet/crate/secure/loot/emag_act(var/remaining_charges, var/mob/user)
 	if (locked)
-		user << SPAN_NOTICE("The crate unlocks!")
+		to_chat(user, SPAN_NOTICE("The crate unlocks!"))
 		locked = 0
 
 /obj/structure/closet/crate/secure/loot/proc/check_input(var/input)
@@ -178,12 +169,12 @@
 
 /obj/structure/closet/crate/secure/loot/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(locked)
-		if (istype(W, /obj/item/device/multitool)) // Greetings Urist McProfessor, how about a nice game of cows and bulls?
-			user << SPAN_NOTICE("DECA-CODE LOCK ANALYSIS:")
+		if (istype(W, /obj/item/weapon/tool/multitool)) // Greetings Urist McProfessor, how about a nice game of cows and bulls?
+			to_chat(user, SPAN_NOTICE("DECA-CODE LOCK ANALYSIS:"))
 			if (attempts == 1)
-				user << SPAN_WARNING("* Anti-Tamper system will activate on the next failed access attempt.")
+				to_chat(user, SPAN_WARNING("* Anti-Tamper system will activate on the next failed access attempt."))
 			else
-				user << SPAN_NOTICE("* Anti-Tamper system will activate after [src.attempts] failed access attempts.")
+				to_chat(user, SPAN_NOTICE("* Anti-Tamper system will activate after [src.attempts] failed access attempts."))
 			if(lastattempt.len)
 				var/bulls = 0
 				var/cows = 0
@@ -195,6 +186,6 @@
 					else if(lastattempt[i] in code_contents)
 						++cows
 					code_contents -= lastattempt[i]
-				user << SPAN_NOTICE("Last code attempt had [bulls] correct digits at correct positions and [cows] correct digits at incorrect positions.")
+				to_chat(user, SPAN_NOTICE("Last code attempt had [bulls] correct digits at correct positions and [cows] correct digits at incorrect positions."))
 			return
 	..()

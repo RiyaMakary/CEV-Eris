@@ -1,8 +1,9 @@
 /mob/living/carbon/New()
 	//setup reagent holders
-	bloodstr = new/datum/reagents/metabolism(1000, src, CHEM_BLOOD)
-	ingested = new/datum/reagents/metabolism(1000, src, CHEM_INGEST)
-	touching = new/datum/reagents/metabolism(1000, src, CHEM_TOUCH)
+	bloodstr = new /datum/reagents/metabolism(1000, src, CHEM_BLOOD)
+	ingested = new /datum/reagents/metabolism(1000, src, CHEM_INGEST)
+	touching = new /datum/reagents/metabolism(1000, src, CHEM_TOUCH)
+	metabolism_effects = new /datum/metabolism_effects(src)
 	reagents = bloodstr
 	..()
 
@@ -10,37 +11,98 @@
 	..()
 
 	handle_viruses()
-
+	handle_nsa()
 	// Increase germ_level regularly
 	if(germ_level < GERM_LEVEL_AMBIENT && prob(30))	//if you're just standing there, you shouldn't get more germs beyond an ambient level
 		germ_level++
+
+/mob/living/carbon/proc/adjust_nsa(value, tag)
+	if(!tag)
+		crash_with("no tag given to adjust_nsa()")
+		return
+	nerve_system_accumulations[tag] = value
+
+/mob/living/carbon/proc/remove_nsa(tag)
+	if(nerve_system_accumulations[tag])
+		nerve_system_accumulations.Remove(tag)
+
+/mob/living/carbon/proc/get_nsa_value(tag)
+	if(nerve_system_accumulations[tag])
+		return nerve_system_accumulations[tag]
+
+/mob/living/carbon/proc/get_nsa()
+	return nsa_current
+
+/mob/living/carbon/proc/get_nsa_target()
+	var/accumulatedNSA
+	for(var/tag in nerve_system_accumulations)
+		accumulatedNSA += nerve_system_accumulations[tag]
+	return accumulatedNSA
+
+/mob/living/carbon/proc/handle_nsa()
+	var/nsa_target = get_nsa_target()
+	if(nsa_target != nsa_current)
+		nsa_current = nsa_target > nsa_current \
+		            ? min(nsa_current + nsa_target / 30, nsa_target) \
+		            : max(nsa_current - 6.66, nsa_target)
+		nsa_changed()
+	if(get_nsa() > nsa_threshold)
+		nsa_breached_effect()
+
+/mob/living/carbon/proc/nsa_changed()
+	if(get_nsa() > nsa_threshold)
+		var/stat_mod = get_nsa() > 140 ? -20 : -10
+		for(var/stat in ALL_STATS)
+			stats.addTempStat(stat, stat_mod, INFINITY, "nsa_breach")
+	else
+		for(var/stat in ALL_STATS)
+			stats.removeTempStat(stat, "nsa_breach")
+	HUDneed["nsa"]?.update_icon()
+
+/mob/living/carbon/proc/nsa_breached_effect()
+	if(get_nsa() < 120)
+		return
+	vomit()
+
+	if(get_nsa() < 160)
+		return
+	drop_l_hand()
+	drop_r_hand()
+
+	if(get_nsa() < 180)
+		return
+	adjustToxLoss(1)
+
+	if(get_nsa() < 200)
+		return
+	Sleeping(2)
 
 /mob/living/carbon/Destroy()
 	qdel(ingested)
 	qdel(touching)
 	// We don't qdel(bloodstr) because it's the same as qdel(reagents)
-	for(var/guts in internal_organs)
-		qdel(guts)
-	for(var/food in stomach_contents)
-		qdel(food)
+	QDEL_NULL_LIST(internal_organs)
+	QDEL_NULL_LIST(stomach_contents)
+	QDEL_NULL_LIST(hallucinations)
 	return ..()
 
 /mob/living/carbon/rejuvenate()
 	bloodstr.clear_reagents()
 	ingested.clear_reagents()
 	touching.clear_reagents()
+	metabolism_effects.clear_effects()
 	nutrition = 400
+	shock_stage = 0
 	..()
 
-/mob/living/carbon/Move(NewLoc, direct)
+/mob/living/carbon/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	. = ..()
 	if(.)
-		if(src.nutrition && src.stat != 2)
+		if (src.nutrition && src.stat != 2)
 			src.nutrition -= DEFAULT_HUNGER_FACTOR/10
-			if(src.m_intent == "run")
+			if (move_intent.flags & MOVE_INTENT_EXERTIVE)
 				src.nutrition -= DEFAULT_HUNGER_FACTOR/10
-		if((FAT in src.mutations) && src.m_intent == "run" && src.bodytemperature <= 360)
-			src.bodytemperature += 2
+
 
 		// Moving around increases germ_level faster
 		if(germ_level < GERM_LEVEL_MOVE_CAP && prob(8))
@@ -85,11 +147,11 @@
 /mob/living/carbon/attack_hand(mob/M as mob)
 	if (ishuman(M))
 		var/mob/living/carbon/human/H = M
-		var/obj/item/organ/external/temp = H.organs_by_name[BP_R_HAND]
+		var/obj/item/organ/external/temp = H.organs_by_name[BP_R_ARM]
 		if (H.hand)
-			temp = H.organs_by_name[BP_L_HAND]
+			temp = H.organs_by_name[BP_L_ARM]
 		if(temp && !temp.is_usable())
-			H << "\red You can't use your [temp.name]"
+			to_chat(H, "\red You can't use your [temp.name]")
 			return
 
 
@@ -123,10 +185,27 @@
 	return shock_damage
 
 /mob/living/carbon/swap_hand()
+
+	//We cache the held items before and after swapping using get active hand.
+	//This approach is future proof and will support people who possibly have >2 hands
+	var/obj/item/prev_held = get_active_hand()
+
+	//Now we do the hand swapping
 	src.hand = !( src.hand )
 	for (var/obj/screen/inventory/hand/H in src.HUDinventory)
 		H.update_icon()
-	return
+
+	var/obj/item/new_held = get_active_hand()
+
+	//Tell the old and new held items that they've been swapped
+
+	if (prev_held != new_held)
+		if (istype(prev_held))
+			prev_held.swapped_from(src)
+		if (istype(new_held))
+			new_held.swapped_to(src)
+
+	return TRUE
 
 /mob/living/carbon/proc/activate_hand(var/selhand) //0 or "r" or "right" for right hand; 1 or "l" or "left" for left hand.
 
@@ -142,55 +221,10 @@
 		swap_hand()
 
 /mob/living/carbon/proc/help_shake_act(mob/living/carbon/M)
-	if (src.health >= config.health_threshold_crit)
+	if (src.health >= HEALTH_THRESHOLD_CRIT)
 		if(src == M && ishuman(src))
 			var/mob/living/carbon/human/H = src
-			src.visible_message(
-				text("\blue [src] examines [].",src.gender==MALE?"himself":"herself"),
-				"\blue You check yourself for injuries."
-			)
-
-			for(var/obj/item/organ/external/org in H.organs)
-				var/list/status = list()
-				var/brutedamage = org.brute_dam
-				var/burndamage = org.burn_dam
-				if(halloss > 0)
-					if(prob(30))
-						brutedamage += halloss
-					if(prob(30))
-						burndamage += halloss
-				switch(brutedamage)
-					if(1 to 20)
-						status += "bruised"
-					if(20 to 40)
-						status += "wounded"
-					if(40 to INFINITY)
-						status += "mangled"
-
-				switch(burndamage)
-					if(1 to 10)
-						status += "numb"
-					if(10 to 40)
-						status += "blistered"
-					if(40 to INFINITY)
-						status += "peeling away"
-
-				if(org.is_stump())
-					status += "MISSING"
-				if(org.status & ORGAN_MUTATED)
-					status += "weirdly shapen"
-				if(org.dislocated == 2)
-					status += "dislocated"
-				if(org.status & ORGAN_BROKEN)
-					status += "hurts when touched"
-				if(org.status & ORGAN_DEAD)
-					status += "is bruised and necrotic"
-				if(!org.is_usable())
-					status += "dangling uselessly"
-				if(status.len)
-					src.show_message("My [org.name] is <span class='warning'> [english_list(status)].</span>",1)
-				else
-					src.show_message("My [org.name] is <span class='notice'> OK.</span>",1)
+			H.check_self_for_injuries()
 
 			if((SKELETON in H.mutations) && (!H.w_uniform) && (!H.wear_suit))
 				H.play_xylophone()
@@ -228,8 +262,12 @@
 				H.w_uniform.add_fingerprint(M)
 
 			var/show_ssd
+			var/target_organ_exists = FALSE
 			var/mob/living/carbon/human/H = src
-			if(istype(H)) show_ssd = H.species.show_ssd
+			if(istype(H))
+				show_ssd = H.species.show_ssd
+				var/obj/item/organ/external/O = H.get_organ(M.targeted_organ)
+				target_organ_exists = (O && O.is_usable())
 			if(show_ssd && !client && !teleop)
 				M.visible_message(SPAN_NOTICE("[M] shakes [src] trying to wake [t_him] up!"), \
 				SPAN_NOTICE("You shake [src], but they do not respond... Maybe they have S.S.D?"))
@@ -239,6 +277,16 @@
 					src.resting = 0
 				M.visible_message(SPAN_NOTICE("[M] shakes [src] trying to wake [t_him] up!"), \
 									SPAN_NOTICE("You shake [src] trying to wake [t_him] up!"))
+			else if((M.targeted_organ == BP_HEAD) && target_organ_exists)
+				M.visible_message(SPAN_NOTICE("[M] pats [src]'s head."), \
+									SPAN_NOTICE("You pat [src]'s head."))
+			else if(M.targeted_organ == BP_R_ARM || M.targeted_organ == BP_L_ARM)
+				if(target_organ_exists)
+					M.visible_message(SPAN_NOTICE("[M] shakes hands with [src]."), \
+										SPAN_NOTICE("You shake hands with [src]."))
+				else
+					M.visible_message(SPAN_NOTICE("[M] holds out \his hand to [src]."), \
+										SPAN_NOTICE("You hold out your hand to [src]."))
 			else
 				var/mob/living/carbon/human/hugger = M
 				if(istype(hugger))
@@ -288,6 +336,8 @@
 	if (istype(item, /obj/item/weapon/grab))
 		var/obj/item/weapon/grab/G = item
 		item = G.throw_held() //throw the person instead of the grab
+		if(!item) return
+		unEquip(G, loc)
 		if(ismob(item))
 			var/turf/start_T = get_turf(loc) //Get the start and target tile for the descriptors
 			var/turf/end_T = get_turf(target)
@@ -299,30 +349,17 @@
 				M.attack_log += text("\[[time_stamp()]\] <font color='orange'>Has been thrown by [usr.name] ([usr.ckey]) from [start_T_descriptor] with the target [end_T_descriptor]</font>")
 				usr.attack_log += text("\[[time_stamp()]\] <font color='red'>Has thrown [M.name] ([M.ckey]) from [start_T_descriptor] with the target [end_T_descriptor]</font>")
 				msg_admin_attack("[usr.name] ([usr.ckey]) has thrown [M.name] ([M.ckey]) from [start_T_descriptor] with the target [end_T_descriptor] (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[usr.x];Y=[usr.y];Z=[usr.z]'>JMP</a>)")
+				item.throw_at(target, item.throw_range, item.throw_speed, src)
+				return
 
-	if(!item) return //Grab processing has a chance of returning null
-
-
-	src.remove_from_mob(item)
-	item.loc = src.loc
-
-	//actually throw it!
-	if (item)
+	//Grab processing has a chance of returning null
+	if(item && src.unEquip(item, loc))
 		src.visible_message("\red [src] has thrown [item].")
-
-		if(!src.lastarea)
-			src.lastarea = get_area(src.loc)
-		if((istype(src.loc, /turf/space)) || (src.lastarea.has_gravity == 0))
+		if(incorporeal_move)
+			inertia_dir = 0
+		else if(!check_gravity() && !src.allow_spacemove()) // spacemove would return one with magboots, -1 with adjacent tiles
 			src.inertia_dir = get_dir(target, src)
 			step(src, inertia_dir)
-
-
-/*
-		if(istype(src.loc, /turf/space) || (src.flags & NOGRAV)) //they're in space, move em one space in the opposite direction
-			src.inertia_dir = get_dir(target, src)
-			step(src, inertia_dir)
-*/
-
 
 		item.throw_at(target, item.throw_range, item.throw_speed, src)
 
@@ -358,14 +395,12 @@
 	else
 	 ..()
 
-	return
-
 /mob/living/carbon/verb/mob_sleep()
 	set name = "Sleep"
 	set category = "IC"
 
 	if(usr.sleeping)
-		usr << "\red You are already sleeping"
+		to_chat(usr, "\red You are already sleeping")
 		return
 	if(alert(src,"You sure you want to sleep for a while?","Sleep","Yes","No") == "Yes")
 		usr.sleeping = 20 //Short nap
@@ -385,13 +420,15 @@
 		return 0
 	stop_pulling()
 	if (slipped_on)
-		src << SPAN_WARNING("You slipped on [slipped_on]!")
+		to_chat(src, SPAN_WARNING("You slipped on [slipped_on]!"))
 		playsound(src.loc, 'sound/misc/slip.ogg', 50, 1, -3)
 	Stun(stun_duration)
-	Weaken(Floor(stun_duration/2))
+	Weaken(FLOOR(stun_duration * 0.5, 1))
 	return 1
 
 /mob/living/carbon/proc/add_chemical_effect(var/effect, var/magnitude = 1)
+	if(effect == CE_ALCOHOL)
+		stats.getPerk(/datum/perk/inspiration)?.activate()
 	if(effect in chem_effects)
 		chem_effects[effect] += magnitude
 	else
@@ -422,3 +459,12 @@
 	user << browse(dat, text("window=mob[];size=325x500", name))
 	onclose(user, "mob[name]")
 	return
+
+/mob/living/carbon/proc/should_have_organ(var/organ_check)
+	return 0
+
+/mob/living/carbon/proc/has_appendage(var/limb_check)
+	return 0
+
+/mob/living/carbon/proc/need_breathe()
+	return TRUE

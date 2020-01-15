@@ -35,7 +35,7 @@
 	desc = "This sends a pulse signal out after a delay, critical for ensuring proper control flow in a complex machine.  \
 	This circuit is set to send a pulse after a delay of one second."
 	icon_state = "delay-10"
-	delay = 1 SECOND
+	delay = 1 SECONDS
 	spawn_flags = IC_SPAWN_DEFAULT|IC_SPAWN_RESEARCH
 
 /obj/item/integrated_circuit/time/delay/half_sec
@@ -85,27 +85,22 @@
 
 /obj/item/integrated_circuit/time/ticker/Destroy()
 	if(is_running)
-		processing_objects -= src
+		STOP_PROCESSING(SSobj, src)
 	. = ..()
 
 /obj/item/integrated_circuit/time/ticker/on_data_written()
 	var/do_tick = get_pin_data(IC_INPUT, 1)
 	if(do_tick && !is_running)
 		is_running = TRUE
-		processing_objects |= src
+		START_PROCESSING(SSobj, src)
 	else if(is_running)
 		is_running = FALSE
-		processing_objects -= src
+		STOP_PROCESSING(SSobj, src)
 		ticks_completed = 0
 
-/obj/item/integrated_circuit/time/ticker/process()
-	var/process_ticks = process_schedule_interval("obj")
-	ticks_completed += process_ticks
-	if(ticks_completed >= ticks_to_pulse)
-		if(ticks_to_pulse >= process_ticks)
-			ticks_completed -= ticks_to_pulse
-		else
-			ticks_completed = 0
+/obj/item/integrated_circuit/time/ticker/Process()
+	if(++ticks_completed >= ticks_to_pulse)
+		ticks_completed = 0
 		activate_pin(1)
 
 /obj/item/integrated_circuit/time/ticker/fast

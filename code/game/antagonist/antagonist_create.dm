@@ -1,15 +1,14 @@
-/datum/antagonist/proc/create_antagonist(var/datum/mind/target, var/datum/faction/new_faction, var/doequip = TRUE, var/announce = TRUE, var/update = TRUE)
+/datum/antagonist/proc/create_antagonist(datum/mind/target, datum/faction/new_faction, doequip = TRUE, announce = TRUE, update = TRUE, check = TRUE)
 	if(!istype(target) || !target.current)
 		log_debug("ANTAGONIST Wrong target passed to create_antagonist of [id]! Target: [target == null?"NULL":target] \ref[target]")
 		return FALSE
 
-	if(!can_become_antag(target))
+	if(check && !can_become_antag(target))
 		log_debug("ANTAGONIST [target.name] cannot become this antag, but passed roleset candidate.")
 		return FALSE
 
 	owner = target
 	target.antagonist.Add(src)
-
 	if(outer)
 		if(!ispath(mob_path))
 			owner = null
@@ -22,9 +21,13 @@
 
 		place_antagonist()
 
+		if (appearance_editor)
+			spawn(3)
+				var/mob/living/carbon/human/H = owner.current
+				if(istype(H))
+					H.change_appearance(APPEARANCE_ALL, H.loc, H, TRUE, list("Human"), state = GLOB.z_state)
 
 	current_antags.Add(src)
-
 	special_init()
 
 	if(new_faction)
@@ -35,15 +38,15 @@
 	if(doequip)
 		equip()
 
-	//if(announce)
-	//	greet()
+	if(announce)
+		greet()
 
 	return TRUE
 
 /datum/antagonist/proc/special_init()
 
 
-/datum/antagonist/proc/create_from_ghost(var/mob/observer/ghost)
+/datum/antagonist/proc/create_from_ghost(var/mob/observer/ghost, var/datum/faction/new_faction, var/doequip = TRUE, var/announce = TRUE, var/update = TRUE)
 	if(!istype(ghost))
 		log_debug("ANTAGONIST Wrong target passed to create_from_ghost of [id]! Ghost: [ghost == null?"NULL":ghost] \ref[ghost]")
 		return FALSE
@@ -56,8 +59,17 @@
 		log_debug("ANTAGONIST mob_path in [id] is not path! ([mob_path])")
 		return FALSE
 
+
 	var/mob/M = new mob_path(null)
 	M.client = ghost.client
+
+	//Load your character setup onto the new mob, only if human
+	if (load_character && ishuman(M))
+
+		var/datum/preferences/P = M.client.prefs
+		P.copy_to(M, FALSE)
+
+
 
 	if(!M.mind)
 		log_debug("ANTAGONIST mob, which created from mob_path has no mind. ([M] - \ref[M] : [mob_path])")
@@ -65,13 +77,13 @@
 		qdel(M)
 		return FALSE
 
-	return create_antagonist(M.mind)
+	return create_antagonist(M.mind, new_faction, doequip, announce, update = FALSE)
 
 /datum/antagonist/proc/create_faction()
-	if(!faction && faction_type)
-		faction = create_or_get_faction(faction_type)
+	if(!faction && faction_id)
+		faction = create_or_get_faction(faction_id)
 		faction.add_member(src)
-
+		faction.create_objectives()
 
 /datum/antagonist/proc/set_antag_name()
 	if(!owner || !owner.current)
@@ -93,15 +105,18 @@
 		faction.remove_member(src)
 		faction = null
 
+	current_antags.Remove(src)
+	if (!owner)
+		return //This can happen with some spamclicking
 	if(owner.current)
 		BITSET(owner.current.hud_updateflag, SPECIALROLE_HUD)
-	current_antags.Remove(src)
+
+	owner.antagonist.Remove(src)
 	owner = null
 	return TRUE
 
 /datum/antagonist/proc/place_antagonist()
 	if(!owner.current)
 		return
-	var/turf/T = pick_mobless_turf_if_exists(antag_starting_locations[id])
+	var/turf/T = pick_mobless_turf_if_exists(GLOB.antag_starting_locations[id])
 	owner.current.forceMove(T)
-

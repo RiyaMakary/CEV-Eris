@@ -4,13 +4,12 @@
 	icon_state = "welding-g"
 	item_state = "welding-g"
 	action_button_name = "Flip Welding Goggles"
-	matter = list(DEFAULT_WALL_MATERIAL = 1500, "glass" = 1000)
-	var/up = FALSE
+	matter = list(MATERIAL_PLASTIC = 2, MATERIAL_GLASS = 2)
 	flash_protection = FLASH_PROTECTION_MAJOR
 	tint = TINT_HEAVY
 
 /obj/item/clothing/glasses/welding/attack_self()
-	toggle()
+	adjust()
 
 
 /obj/item/clothing/glasses/welding/verb/adjust()
@@ -19,23 +18,23 @@
 	set src in usr
 
 	if(usr.canmove && !usr.stat && !usr.restrained())
-		if(src.up)
-			src.up = !src.up
+		if(!src.active)
+			src.active = !src.active
 			flags_inv |= HIDEEYES
 			body_parts_covered |= EYES
 			icon_state = initial(icon_state)
 			flash_protection = initial(flash_protection)
 			tint = initial(tint)
-			usr << "You flip \the [src] down to protect your eyes."
+			to_chat(usr, "You flip \the [src] down to protect your eyes.")
 		else
-			src.up = !src.up
+			src.active = !src.active
 			flags_inv &= ~HIDEEYES
 			body_parts_covered &= ~EYES
 			icon_state = "[initial(icon_state)]up"
 			flash_protection = FLASH_PROTECTION_NONE
 			tint = TINT_NONE
-			usr << "You push \the [src] up out of your face."
-		update_clothing_icon()
+			to_chat(usr, "You push \the [src] up out of your face.")
+		update_wear_icon()
 		usr.update_action_buttons()
 
 /obj/item/clothing/glasses/welding/superior

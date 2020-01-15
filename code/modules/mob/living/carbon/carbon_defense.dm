@@ -1,12 +1,15 @@
 
 //Called when the mob is hit with an item in combat.
-/mob/living/carbon/resolve_item_attack(obj/item/I, mob/living/user, var/effective_force, var/hit_zone)
+/mob/living/carbon/resolve_item_attack(obj/item/I, mob/living/user, var/hit_zone)
 	if(check_attack_throat(I, user))
 		return null
-	..()
+	if (!hit_zone)
+		hit_zone = "chest"
+	return ..(I, user, hit_zone)
 
-/mob/living/carbon/standard_weapon_hit_effects(obj/item/I, mob/living/user, var/effective_force, var/blocked, var/hit_zone)
-	if(!effective_force || blocked >= 2)
+/mob/living/carbon/standard_weapon_hit_effects(obj/item/I, mob/living/user, var/effective_force, var/hit_zone)
+
+	if(!effective_force)
 		return 0
 
 	//Hulk modifier
@@ -16,27 +19,35 @@
 	//Apply weapon damage
 	var/weapon_sharp = is_sharp(I)
 	var/weapon_edge = has_edge(I)
-	if(prob(getarmor(hit_zone, "melee"))) //melee armour provides a chance to turn sharp/edge weapon attacks into blunt ones
+
+	if(prob(getarmor(hit_zone, ARMOR_MELEE))) //melee armour provides a chance to turn sharp/edge weapon attacks into blunt ones
 		weapon_sharp = 0
 		weapon_edge = 0
 
-	apply_damage(effective_force, I.damtype, hit_zone, blocked, sharp=weapon_sharp, edge=weapon_edge, used_weapon=I)
+	hit_impact(effective_force, get_step(user, src))
+	damage_through_armor(effective_force, I.damtype, hit_zone, ARMOR_MELEE, armour_pen = I.armor_penetration, used_weapon = I, sharp = weapon_sharp, edge = weapon_edge)
+
+/*Its entirely possible that we were gibbed or dusted by the above. Check if we still exist before
+continuing. Being gibbed or dusted has a 1.5 second delay, during which it sets the transforming var to
+true, and the mob is not yet deleted, so we need to check that as well*/
+	if (QDELETED(src) || transforming)
+		return TRUE
 
 	//Melee weapon embedded object code.
 	if (I && I.damtype == BRUTE && !I.anchored && !is_robot_module(I))
 		var/damage = effective_force
-		if (blocked)
-			damage /= blocked+1
 
 		//blunt objects should really not be embedding in things unless a huge amount of force is involved
-		var/embed_chance = weapon_sharp? damage/I.w_class : damage/(I.w_class*3)
+
 		var/embed_threshold = weapon_sharp? 5*I.w_class : 15*I.w_class
 
-		//Sharp objects will always embed if they do enough damage.
-		if((weapon_sharp && damage > (10*I.w_class)) || (damage > embed_threshold && prob(embed_chance)))
+		//The user's robustness stat adds to the threshold, allowing you to use more powerful weapons without embedding risk
+		embed_threshold += user.stats.getStat(STAT_ROB)
+		var/embed_chance = (damage - embed_threshold)*I.embed_mult
+		if (embed_chance > 0 && prob(embed_chance))
 			src.embed(I, hit_zone)
 
-	return 1
+	return TRUE
 
 // Attacking someone with a weapon while they are neck-grabbed
 /mob/living/carbon/proc/check_attack_throat(obj/item/W, mob/user)
@@ -62,11 +73,7 @@
 		return 0
 
 	var/damage_mod = 1
-	//presumably, if they are wearing a helmet that stops pressure effects, then it probably covers the throat as well
-	var/obj/item/clothing/head/helmet = get_equipped_item(slot_head)
-	if(istype(helmet) && (helmet.body_parts_covered & HEAD) && (helmet.flags & STOPPRESSUREDAMAGE))
-		//we don't do an armor_check here because this is not an impact effect like a weapon swung with momentum, that either penetrates or glances off.
-		damage_mod = 1.0 - (helmet.armor["melee"]/100)
+
 
 	var/total_damage = 0
 	for(var/i in 1 to 3)

@@ -5,11 +5,12 @@
 	name = "guest pass"
 	desc = "Allows temporary access to station areas."
 	icon_state = "guest"
-	light_color = "#0099ff"
+	light_color = COLOR_LIGHTING_BLUE_MACHINERY
 
 	var/temp_access = list() //to prevent agent cards stealing access as permanent
 	var/expiration_time = 0
 	var/reason = "NOT SPECIFIED"
+
 
 /obj/item/weapon/card/id/guest/GetAccess()
 	if (world.time > expiration_time)
@@ -20,20 +21,24 @@
 /obj/item/weapon/card/id/guest/examine(mob/user)
 	..(user)
 	if (world.time < expiration_time)
-		user << SPAN_NOTICE("This pass expires at [worldtime2stationtime(expiration_time)].")
+		to_chat(user, SPAN_NOTICE("This pass expires at [worldtime2stationtime(expiration_time)]."))
 	else
-		user << SPAN_WARNING("It expired at [worldtime2stationtime(expiration_time)].")
+		to_chat(user, SPAN_WARNING("It expired at [worldtime2stationtime(expiration_time)]."))
+
+	to_chat(usr, SPAN_NOTICE("It grants access to the following areas:"))
+	for (var/A in temp_access)
+		to_chat(usr, SPAN_NOTICE("[get_access_desc(A)]."))
 
 /obj/item/weapon/card/id/guest/read()
 	if (world.time > expiration_time)
-		usr << SPAN_NOTICE("This pass expired at [worldtime2stationtime(expiration_time)].")
+		to_chat(usr, SPAN_NOTICE("This pass expired at [worldtime2stationtime(expiration_time)]."))
 	else
-		usr << SPAN_NOTICE("This pass expires at [worldtime2stationtime(expiration_time)].")
+		to_chat(usr, SPAN_NOTICE("This pass expires at [worldtime2stationtime(expiration_time)]."))
 
-	usr << SPAN_NOTICE("It grants access to following areas:")
+	to_chat(usr, SPAN_NOTICE("It grants access to following areas:"))
 	for (var/A in temp_access)
-		usr << SPAN_NOTICE("[get_access_desc(A)].")
-	usr << SPAN_NOTICE("Issuing reason: [reason].")
+		to_chat(usr, SPAN_NOTICE("[get_access_desc(A)]."))
+	to_chat(usr, SPAN_NOTICE("Issuing reason: [reason]."))
 	return
 
 /////////////////////////////////////////////
@@ -45,21 +50,24 @@
 	icon_state = "guest"
 	icon_keyboard = null
 	icon_screen = "pass"
-	light_color = COLOR_BLUE
+	light_color = COLOR_LIGHTING_BLUE_MACHINERY
 	light_range = 1.5
 	light_power = 0.2
 	light_range_on = 1.5
 	light_power_on = 0.2
 	density = 0
 	CheckFaceFlag = 0
+	circuit = /obj/item/weapon/circuitboard/guestpass
 	var/obj/item/weapon/card/id/giver
 	var/list/accesses = list()
 	var/giv_name = "NOT SPECIFIED"
 	var/reason = "NOT SPECIFIED"
-	var/duration = 5
+	var/duration = 30
 
 	var/list/internal_log = list()
 	var/mode = 0  // 0 - making pass, 1 - viewing logs
+	var/max_duration = 180
+
 
 /obj/machinery/computer/guestpass/New()
 	..()
@@ -70,14 +78,17 @@
 		if(!giver && user.unEquip(O))
 			O.loc = src
 			giver = O
+
+			//By default we'll set it to all accesses on the inserted ID, rather than none
+			accesses = list()
+			for (var/A in giver.access)
+				accesses.Add(A)
+
 			updateUsrDialog()
 		else if(giver)
-			user << SPAN_WARNING("There is already ID card inside.")
+			to_chat(user, SPAN_WARNING("There is already ID card inside."))
 		return
 	..()
-
-/obj/machinery/computer/guestpass/attack_ai(var/mob/user as mob)
-	return attack_hand(user)
 
 /obj/machinery/computer/guestpass/attack_hand(var/mob/user as mob)
 	if(..())
@@ -130,12 +141,12 @@
 				if(reas)
 					reason = reas
 			if ("duration")
-				var/dur = input("Duration (in minutes) during which pass is valid (up to 30 minutes).", "Duration") as num|null
+				var/dur = input("Duration (in minutes) during which pass is valid (up to [max_duration] minutes).", "Duration") as num|null
 				if (dur)
-					if (dur > 0 && dur <= 30)
+					if (dur > 0 && dur <= max_duration)
 						duration = dur
 					else
-						usr << SPAN_WARNING("Invalid duration.")
+						to_chat(usr, SPAN_WARNING("Invalid duration."))
 			if ("access")
 				var/A = text2num(href_list["access"])
 				if (A in accesses)
@@ -187,10 +198,10 @@
 					var/obj/item/weapon/card/id/guest/pass = new(src.loc)
 					pass.temp_access = accesses.Copy()
 					pass.registered_name = giv_name
-					pass.expiration_time = world.time + duration*10*60
+					pass.expiration_time = world.time + duration MINUTES
 					pass.reason = reason
 					pass.name = "guest pass #[number]"
 				else
-					usr << SPAN_WARNING("Cannot issue pass without issuing ID.")
+					to_chat(usr, SPAN_WARNING("Cannot issue pass without issuing ID."))
 	updateUsrDialog()
 	return

@@ -54,9 +54,8 @@
 	listener.secbot = src
 
 	spawn(5) // Since beepsky is made on the start... this delay is necessary
-		if(radio_controller)
-			radio_controller.add_object(listener, control_freq, filter = RADIO_SECBOT)
-			radio_controller.add_object(listener, beacon_freq, filter = RADIO_NAVBEACONS)
+		SSradio.add_object(listener, control_freq, filter = RADIO_SECBOT)
+		SSradio.add_object(listener, beacon_freq, filter = RADIO_NAVBEACONS)
 
 /mob/living/bot/secbot/turn_off()
 	..()
@@ -402,7 +401,7 @@
 	post_signal_multiple(freq, list("[key]" = value))
 
 /obj/secbot_listener/proc/post_signal_multiple(var/freq, var/list/keyval) // send a radio signal with multiple data key/values
-	var/datum/radio_frequency/frequency = radio_controller.return_frequency(freq)
+	var/datum/radio_frequency/frequency = SSradio.return_frequency(freq)
 	if(!frequency)
 		return
 
@@ -491,7 +490,7 @@
 		qdel(S)
 		var/obj/item/weapon/secbot_assembly/A = new /obj/item/weapon/secbot_assembly
 		user.put_in_hands(A)
-		user << "You add the signaler to the helmet."
+		to_chat(user, "You add the signaler to the helmet.")
 		playsound(src.loc, 'sound/effects/insert.ogg', 50, 1)
 		user.drop_from_inventory(src)
 		qdel(src)
@@ -507,43 +506,42 @@
 	var/build_step = 0
 	var/created_name = "Securitron"
 
-/obj/item/weapon/secbot_assembly/attackby(var/obj/item/O, var/mob/user)
+/obj/item/weapon/secbot_assembly/attackby(obj/item/I, mob/user)
 	..()
-	if(istype(O, /obj/item/weapon/weldingtool) && !build_step)
-		var/obj/item/weapon/weldingtool/WT = O
-		if(WT.remove_fuel(0, user))
+	if((QUALITY_WELDING in I.tool_qualities) && !build_step)
+		if(QUALITY_WELDING in I.tool_qualities)
 			build_step = 1
 			overlays += image('icons/obj/aibots.dmi', "hs_hole")
-			user << "You weld a hole in \the [src]."
+			to_chat(user, "You weld a hole in \the [src].")
 
-	else if(is_proximity_sensor(O) && (build_step == 1))
+	else if(is_proximity_sensor(I) && (build_step == 1))
 		user.drop_item()
 		build_step = 2
-		user << "You add \the [O] to [src]."
+		to_chat(user, "You add \the [I] to [src].")
 		playsound(src.loc, 'sound/effects/insert.ogg', 50, 1)
 		overlays += image('icons/obj/aibots.dmi', "hs_eye")
 		name = "helmet/signaler/prox sensor assembly"
-		qdel(O)
+		qdel(I)
 
-	else if((istype(O, /obj/item/robot_parts/l_arm) || istype(O, /obj/item/robot_parts/r_arm)) && build_step == 2)
+	else if((istype(I, /obj/item/robot_parts/l_arm) || istype(I, /obj/item/robot_parts/r_arm)) && build_step == 2)
 		user.drop_item()
 		build_step = 3
-		user << "You add \the [O] to [src]."
+		to_chat(user, "You add \the [I] to [src].")
 		playsound(src.loc, 'sound/effects/insert.ogg', 50, 1)
 		name = "helmet/signaler/prox sensor/robot arm assembly"
 		overlays += image('icons/obj/aibots.dmi', "hs_arm")
-		qdel(O)
+		qdel(I)
 
-	else if(istype(O, /obj/item/weapon/melee/baton) && build_step == 3)
+	else if(istype(I, /obj/item/weapon/melee/baton) && build_step == 3)
 		user.drop_item()
-		user << "You complete the Securitron! Beep boop."
+		to_chat(user, "You complete the Securitron! Beep boop.")
 		playsound(src.loc, 'sound/effects/insert.ogg', 50, 1)
 		var/mob/living/bot/secbot/S = new /mob/living/bot/secbot(get_turf(src))
 		S.name = created_name
-		qdel(O)
+		qdel(I)
 		qdel(src)
 
-	else if(istype(O, /obj/item/weapon/pen))
+	else if(istype(I, /obj/item/weapon/pen))
 		var/t = sanitizeSafe(input(user, "Enter new robot name", name, created_name), MAX_NAME_LEN)
 		if(!t)
 			return

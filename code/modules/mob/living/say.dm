@@ -3,22 +3,23 @@ var/list/department_radio_keys = list(
 	"l" = "left ear",
 	"i" = "intercom",
 	"h" = "department",
-	"+" = "special",		//activate radio-specific special functions
+	"+" = "special",	 //activate radio-specific special functions
 	"c" = "Command",
 	"n" = "Science",
 	"m" = "Medical",
 	"e" = "Engineering",
 	"s" = "Security",
 	"w" = "whisper",
-	"t" = "Mercenary",
+	"y" = "Mercenary",
 	"u" = "Supply",
 	"v" = "Service",
-	"p" = "AI Private"
+	"p" = "AI Private",
+	"t" = "NT Voice",
 )
 
 
 var/list/channel_to_radio_key = new
-proc/get_radio_key_from_channel(var/channel)
+/proc/get_radio_key_from_channel(var/channel)
 	var/key = channel_to_radio_key[channel]
 	if(!key)
 		for(var/radio_key in department_radio_keys)
@@ -79,10 +80,10 @@ proc/get_radio_key_from_channel(var/channel)
 	returns[3] = speech_problem_flag
 	return returns
 
-/mob/living/proc/handle_message_mode(message_mode, message, verb, speaking, used_radios, alt_name)
+/mob/living/proc/handle_message_mode(message_mode, message, verb, speaking, used_radios, alt_name, speech_volume)
 	if(message_mode == "intercom")
 		for(var/obj/item/device/radio/intercom/I in view(1, null))
-			I.talk_into(src, message, verb, speaking)
+			I.talk_into(src, message, verb, speaking, speech_volume)
 			used_radios += I
 	return 0
 
@@ -99,10 +100,18 @@ proc/get_radio_key_from_channel(var/channel)
 		return "asks"
 	return verb
 
+// returns message
+/mob/living/proc/getSpeechVolume(var/message)
+	var/volume = chem_effects[CE_SPEECH_VOLUME] ? round(chem_effects[CE_SPEECH_VOLUME]) : 2	// 2 is default text size in byond chat
+	var/ending = copytext(message, length(message))
+	if(ending == "!")
+		volume ++
+	return volume
+
 /mob/living/say(var/message, var/datum/language/speaking = null, var/verb="says", var/alt_name="")
 	if(client)
 		if(client.prefs.muted&MUTE_IC)
-			src << "\red You cannot speak in IC (Muted)."
+			to_chat(src, "\red You cannot speak in IC (Muted).")
 			return
 
 	if(stat)
@@ -110,25 +119,27 @@ proc/get_radio_key_from_channel(var/channel)
 			return say_dead(message)
 		return
 
-	if(is_muzzled())
-		src << SPAN_DANGER("You're muzzled and cannot speak!")
+	if(HUSK in mutations)
 		return
 
-	var/message_mode = parse_message_mode(message, "headset")
+	if(is_muzzled())
+		to_chat(src, SPAN_DANGER("You're muzzled and cannot speak!"))
+		return
 
-	switch(copytext(message, 1, 2))
-		if("*")
-			return emote(copytext(message, 2))
-		if("^")
-			return custom_emote(1, copytext(message, 2))
+	var/prefix = copytext(message,1,2)
+	if(prefix == get_prefix_key(/decl/prefix/custom_emote))
+		return emote(copytext(message,2))
+	if(prefix == get_prefix_key(/decl/prefix/visible_emote))
+		return custom_emote(1, copytext(message,2))
 
 	//parse the radio code and consume it
-	if(message_mode)
+	var/message_mode = parse_message_mode(message, "headset")
+	if (message_mode)
 		//it would be really nice if the parse procs could do this for us.
-		if(message_mode == "headset")
-			message = copytext(message, 2)
+		if (message_mode == "headset")
+			message = copytext(message,2)
 		else
-			message = copytext(message, 3)
+			message = copytext(message,3)
 
 	message = trim_left(message)
 
@@ -140,6 +151,7 @@ proc/get_radio_key_from_channel(var/channel)
 	else
 		speaking = get_default_language()
 
+	message = capitalize(message)
 	// This is broadcast to all mobs with the language,
 	// irrespective of distance or anything else.
 	if(speaking && speaking.flags&HIVEMIND)
@@ -160,16 +172,17 @@ proc/get_radio_key_from_channel(var/channel)
 		return 0
 
 	var/list/obj/item/used_radios = new
-	if(handle_message_mode(message_mode, message, verb, speaking, used_radios, alt_name))
+
+
+	if(handle_message_mode(message_mode, message, verb, speaking, used_radios, alt_name, getSpeechVolume(message)))
 		return TRUE
 
 	var/list/handle_v = handle_speech_sound()
 	var/sound/speech_sound = handle_v[1]
-	var/sound_vol = handle_v[2]
+	var/sound_vol = handle_v[2] * (chem_effects[CE_SPEECH_VOLUME] ? chem_effects[CE_SPEECH_VOLUME] : 1)
 
 	var/italics = FALSE
 	var/message_range = world.view
-
 	//speaking into radios
 	if(used_radios.len)
 		italics = TRUE
@@ -198,6 +211,7 @@ proc/get_radio_key_from_channel(var/channel)
 
 	var/list/listening = list()
 	var/list/listening_obj = list()
+	var/list/listening_falloff = list() //People that are quite far away from the person speaking, who just get a _quiet_ version of whatever's being said.
 
 	if(T)
 		//make sure the air can transmit speech - speaker's side
@@ -210,36 +224,77 @@ proc/get_radio_key_from_channel(var/channel)
 		if(pressure < ONE_ATMOSPHERE * 0.4)
 			italics = TRUE
 			sound_vol *= 0.5 //muffle the sound a bit, so it's like we're actually talking through contact
-
+		var/falloff = (message_range + round(3 * (chem_effects[CE_SPEECH_VOLUME] ? chem_effects[CE_SPEECH_VOLUME] : 1))) //A wider radius where you're heard, but only quietly. This means you can hear people offscreen.
 		//DO NOT FUCKING CHANGE THIS TO GET_OBJ_OR_MOB_AND_BULLSHIT() -- Hugs and Kisses ~Ccomp
 		var/list/hear = hear(message_range, T)
+		var/list/hear_falloff = hear(falloff, T)
 
-		for(var/mob/M in mob_list)
+		for(var/X in SSmobs.mob_list)
+			if(!ismob(X))
+				continue
+			var/mob/M = X
+			if(M.stat == DEAD && M.get_preference_value(/datum/client_preference/ghost_ears) == GLOB.PREF_ALL_SPEECH)
+				listening |= M
+				continue
 			if(M.locs.len && M.locs[1] in hear)
 				listening |= M
-			else if(M.stat == DEAD && M.is_preference_enabled(/datum/client_preference/ghost_ears))
-				listening |= M
+				continue //To avoid seeing BOTH normal message and quiet message
+			else if(M.locs.len && M.locs[1] in hear_falloff)
+				listening_falloff |= M
 
-		for(var/obj/O in hearing_objects)
+		for(var/X in hearing_objects)
+			if(!isobj(X))
+				continue
+			var/obj/O = X
 			if(O.locs.len && O.locs[1] in hear)
 				listening_obj |= O
 
 	var/speech_bubble_test = say_test(message)
 	var/image/speech_bubble = image('icons/mob/talk.dmi', src, "h[speech_bubble_test]")
-	spawn(30)
-		qdel(speech_bubble)
+	speech_bubble.layer = ABOVE_MOB_LAYER
+	QDEL_IN(speech_bubble, 30)
 
-	for(var/mob/M in listening)
-		M << speech_bubble
-		M.hear_say(message, verb, speaking, alt_name, italics, src, speech_sound, sound_vol)
+	var/list/speech_bubble_recipients = list()
+	for(var/X in listening) //Again, as we're dealing with a lot of mobs, typeless gives us a tangible speed boost.
+		if(!ismob(X))
+			continue
+		var/mob/M = X
+		if(M.client)
+			speech_bubble_recipients += M.client
+		M.hear_say(message, verb, speaking, alt_name, italics, src, speech_sound, sound_vol, getSpeechVolume(message))
+	for(var/X in listening_falloff)
+		if(!ismob(X))
+			continue
+		var/mob/M = X
+		if(M.client)
+			speech_bubble_recipients += M.client
+		M.hear_say(message, verb, speaking, alt_name, italics, src, speech_sound, sound_vol, 1)
+
+	animate_speechbubble(speech_bubble, speech_bubble_recipients, 30)
 
 	for(var/obj/O in listening_obj)
 		spawn(0)
 			if(O) //It's possible that it could be deleted in the meantime.
-				O.hear_talk(src, message, verb, speaking)
+				O.hear_talk(src, message, verb, speaking, getSpeechVolume(message))
+
 
 	log_say("[name]/[key] : [message]")
 	return TRUE
+
+
+/proc/animate_speechbubble(image/I, list/show_to, duration)
+	var/matrix/M = matrix()
+	M.Scale(0,0)
+	I.transform = M
+	I.alpha = 0
+	for(var/client/C in show_to)
+		C.images += I
+	animate(I, transform = 0, alpha = 255, time = 5, easing = ELASTIC_EASING)
+	addtimer(CALLBACK(GLOBAL_PROC, .proc/fade_speechbubble, I), duration-5)
+
+/proc/fade_speechbubble(image/I)
+	animate(I, alpha = 0, time = 5, easing = EASE_IN)
+
 
 /mob/living/proc/say_signlang(var/message, var/verb="gestures", var/datum/language/language)
 	for (var/mob/O in viewers(src, null))
@@ -253,7 +308,7 @@ proc/get_radio_key_from_channel(var/channel)
 	return name
 
 /mob/living/hear_say(message, verb = "says", datum/language/language = null, alt_name = "", italics = FALSE,\
-		mob/speaker = null, speech_sound, sound_vol)
+		mob/speaker = null, speech_sound, sound_vol, speech_volume)
 	if(!client)
 		return
 
@@ -261,13 +316,13 @@ proc/get_radio_key_from_channel(var/channel)
 		// INNATE is the flag for audible-emote-language, so we don't want to show an "x talks but you cannot hear them" message if it's set
 		if(!language || !language.flags&INNATE)
 			if(speaker == src)
-				src << SPAN_WARNING("You cannot hear yourself speak!")
+				to_chat(src, SPAN_WARNING("You cannot hear yourself speak!"))
 			else
 				var/speaker_name = speaker.name
 				if(ishuman(speaker))
 					var/mob/living/carbon/human/H = speaker
 					speaker_name = H.rank_prefix_name(speaker_name)
-				src << "<span class='name'>[speaker_name]</span>[alt_name] talks but you cannot hear \him."
+				to_chat(src,"<span class='name'>[speaker_name]</span>[alt_name] talks but you cannot hear \him.")
 		return
 
 	//make sure the air can transmit speech - hearer's side
@@ -297,7 +352,8 @@ proc/get_radio_key_from_channel(var/channel)
 		if(!say_understands(speaker, language))
 			if(isanimal(speaker))
 				var/mob/living/simple_animal/S = speaker
-				message = pick(S.speak)
+				if(S.speak.len)
+					message = pick(S.speak)
 			else
 				if(language)
 					message = language.scramble(message)
@@ -313,7 +369,7 @@ proc/get_radio_key_from_channel(var/channel)
 
 	if(sdisabilities&DEAF || ear_deaf)
 		if(prob(20))
-			src << SPAN_WARNING("You feel your headset vibrate but can hear nothing from it!")
+			to_chat(src, SPAN_WARNING("You feel your headset vibrate but can hear nothing from it!"))
 		return
 
 	if(sleeping || stat == UNCONSCIOUS) //If unconscious or sleeping
@@ -355,10 +411,10 @@ proc/get_radio_key_from_channel(var/channel)
 		if(copytext(heardword, 1, 1) in punctuation)
 			heardword = copytext(heardword, 2)
 		if(copytext(heardword, -1) in punctuation)
-			heardword = copytext(heardword, 1, lentext(heardword))
+			heardword = copytext(heardword, 1, length(heardword))
 		heard = "<span class = 'game_say'>...You hear something about...[heardword]</span>"
 
 	else
 		heard = "<span class = 'game_say'>...<i>You almost hear someone talking</i>...</span>"
 
-	src << heard
+	to_chat(src, heard)

@@ -4,7 +4,7 @@
 	icon_state = "engineering_pod"
 	initial_icon = "engineering_pod"
 	internal_damage_threshold = 80
-	step_in = 4
+	step_in = 3
 	step_energy_drain = 10
 	max_temperature = 20000
 	health = 150
@@ -12,14 +12,14 @@
 	wreckage = /obj/effect/decal/mecha_wreckage/hoverpod
 	cargo_capacity = 5
 	max_equip = 3
-	var/datum/effect/effect/system/ion_trail_follow/ion_trail
+	var/datum/effect/effect/system/trail/ion/trail
 	var/stabilization_enabled = 1
 
 /obj/mecha/working/hoverpod/New()
 	..()
-	ion_trail = new /datum/effect/effect/system/ion_trail_follow()
-	ion_trail.set_up(src)
-	ion_trail.start()
+	trail = new /datum/effect/effect/system/trail/ion()
+	trail.set_up(src)
+	trail.start()
 
 //Modified phazon code
 /obj/mecha/working/hoverpod/Topic(href, href_list)
@@ -45,13 +45,12 @@
 /obj/mecha/working/hoverpod/check_for_support()
 	//does the hoverpod have enough charge left to stabilize itself?
 	if (!has_charge(step_energy_drain))
-		ion_trail.stop()
+		trail.stop()
 	else
-		if (!ion_trail.on)
-			ion_trail.start()
+		trail.start()
 		if (stabilization_enabled)
 			return 1
-	
+
 	return ..()
 
 //these three procs overriden to play different sounds

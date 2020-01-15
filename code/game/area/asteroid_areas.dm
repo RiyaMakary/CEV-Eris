@@ -4,6 +4,7 @@
 	icon_state = "mining"
 	forced_ambience = list('sound/ambience/mineambience.ogg')
 	sound_env = ASTEROID
+	vessel = null
 
 /area/mine/explored
 	name = "Mine"
@@ -28,6 +29,10 @@
 /area/outpost/abandoned
 	name = "Abandoned Outpost"
 	icon_state = "dark"
+
+/area/outpost/abandoned_fortress
+	name = "Abandoned Fortress"
+	icon_state = "yellow"
 
 // Main mining outpost
 /area/outpost/mining_main

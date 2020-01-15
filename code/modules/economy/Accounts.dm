@@ -1,34 +1,57 @@
 
 /datum/money_account
 	var/owner_name = ""
+	var/account_name = "" //Some accounts have a name that is distinct from the name of the owner
 	var/account_number = 0
 	var/remote_access_pin = 0
 	var/money = 0
 	var/list/transaction_log = list()
 	var/suspended = 0
-	var/security_level = 1	//0 - auto-identify from worn ID, require only account number
+	var/security_level = 0	//0 - auto-identify from worn ID, require only account number
 							//1 - require manual login / account number and pin
 							//2 - require card and manual login
 
+//One-stop safety checks for accounts
+/datum/money_account/proc/is_valid()
+	if (suspended)
+		return FALSE
+
+	return TRUE
+
+//Try to get the name of the account
+/datum/money_account/proc/get_name()
+	if (account_name)
+		return account_name
+	return owner_name
+
+//Attempts to return the associated data record for this account
+/datum/money_account/proc/get_record()
+	return find_general_record("pay_account", account_number)
+
 /datum/transaction
 	var/target_name = ""
+	var/target_account = 0
 	var/purpose = ""
 	var/amount = 0
 	var/date = ""
 	var/time = ""
 	var/source_terminal = ""
 
-/datum/transaction/New(var/amount = 0, var/target_name, var/purpose, var/source_terminal)
+/datum/transaction/New(amount = 0, target_name, purpose, source_terminal)
 	src.amount = amount
 	src.target_name = target_name
 	src.purpose = purpose
 	src.source_terminal = source_terminal
 
+	if(istype(source_terminal, /atom))
+		var/atom/terminal_atom = source_terminal
+		src.source_terminal = "[terminal_atom.name] at [get_area(terminal_atom)]"
+
 	src.date = current_date_string
 	src.time = stationtime2text()
 
 /datum/transaction/proc/apply_to(var/datum/money_account/account)
-	if(!istype(account) || account.suspended)
+	if(!istype(account) || !account.is_valid())
 		return FALSE
 
 	if(isnum(amount))
@@ -45,7 +68,7 @@
 		src.time = stationtime2text()
 
 /datum/transaction/proc/Copy()
-	var/datum/transaction/T = PoolOrNew(/datum/transaction)
+	var/datum/transaction/T = new
 	T.target_name = src.target_name
 	T.purpose = src.purpose
 	T.amount = src.amount
@@ -55,7 +78,7 @@
 	return T
 
 
-/proc/create_account(var/new_owner_name = "Default user", var/starting_funds = 0, var/obj/machinery/account_database/source_db)
+/proc/create_account(new_owner_name = "Default user", starting_funds = 0, obj/machinery/account_database/source_db)
 
 	//create a new account
 	var/datum/money_account/M = new()
@@ -72,7 +95,7 @@
 		//set a random date, time and location some time over the past few decades
 		T.date = "[num2text(rand(1,31))] [pick("January","February","March","April","May","June","July","August","September","October","November","December")], 25[rand(10,56)]"
 		T.time = "[rand(0,24)]:[rand(11,59)]"
-		T.source_terminal = "NTGalaxyNet Terminal #[rand(111,1111)]"
+		T.source_terminal = "Asters Guild Banking Terminal #[rand(111,1111)]"
 
 		M.account_number = rand(11111, 99999)
 	else
@@ -93,10 +116,10 @@
 		R.info += "<i>Account holder:</i> [M.owner_name]<br>"
 		R.info += "<i>Account number:</i> [M.account_number]<br>"
 		R.info += "<i>Account pin:</i> [M.remote_access_pin]<br>"
-		R.info += "<i>Starting balance:</i> $[M.money]<br>"
+		R.info += "<i>Starting balance:</i> [M.money][CREDS]<br>"
 		R.info += "<i>Date and time:</i> [stationtime2text()], [current_date_string]<br><br>"
 		R.info += "<i>Creation terminal ID:</i> [source_db.machine_id]<br>"
-		R.info += "<i>Authorised NT officer overseeing creation:</i> [source_db.held_card.registered_name]<br>"
+		R.info += "<i>Authorised official overseeing creation:</i> [source_db.held_card.registered_name]<br>"
 
 		//stamp the paper
 		var/image/stampoverlay = image('icons/obj/bureaucracy.dmi')
@@ -113,24 +136,73 @@
 
 	return M
 
-/proc/charge_to_account(var/attempt_account_number, var/source_name, var/purpose, var/terminal_id, var/amount)
-	for(var/datum/money_account/D in all_money_accounts)
-		if(D.account_number == attempt_account_number && !D.suspended)
-			//create a transaction log entry
-			var/datum/transaction/T = new(amount, source_name, purpose, terminal_id)
-			return T.apply_to(D)
+//Charges an account a certain amount of money which is functionally just removed from existence
+/proc/charge_to_account(attempt_account_number, target_name, purpose, terminal_id, amount)
+	var/datum/money_account/D = get_account(attempt_account_number)
+	if (D)
+		//create a transaction log entry
+		var/datum/transaction/T = new(amount*-1, target_name, purpose, terminal_id)
+		return T.apply_to(D)
+
+	return FALSE
+
+//Creates money from nothing and deposits it in an account
+/proc/deposit_to_account(attempt_account_number, source_name, purpose, terminal_id, amount)
+	var/datum/money_account/D = get_account(attempt_account_number)
+	if (D)
+		//create a transaction log entry
+		var/datum/transaction/T = new(amount, source_name, purpose, terminal_id)
+		return T.apply_to(D)
+
+	return FALSE
+
+//Transfers funds from one account to another
+/proc/transfer_funds(source_account, target_account, purpose, terminal_id, amount)
+	var/datum/money_account/source = get_account(source_account)
+	var/datum/money_account/target = get_account(target_account)
+
+	if (!source || !target)
+		return FALSE
+	if (!source.is_valid() || !target.is_valid())
+		return FALSE
+
+	//We've got both accounts and confirmed they are valid
+
+	//The transaction to take the money
+	var/datum/transaction/T1 = new(amount*-1, target.get_name(), purpose, terminal_id)
+	if (T1.apply_to(source))
+
+		//The transaction to give the money
+		var/datum/transaction/T2 = new(amount, source.get_name(), purpose, terminal_id)
+		return T2.apply_to(target)
 
 	return FALSE
 
 //this returns the first account datum that matches the supplied accnum/pin combination, it returns null if the combination did not match any account
-/proc/attempt_account_access(var/attempt_account_number, var/attempt_pin_number, var/security_level_passed = 0)
-	for(var/datum/money_account/D in all_money_accounts)
-		if(D.account_number == attempt_account_number)
-			if( D.security_level <= security_level_passed && (!D.security_level || D.remote_access_pin == attempt_pin_number) )
-				return D
-			break
+/proc/attempt_account_access(account_number, attempt_pin_number, security_level_passed = 0, force_security = FALSE)
+	var/datum/money_account/D = get_account(account_number)
 
-/proc/get_account(var/account_number)
+	if(!D || D.security_level > security_level_passed)
+		return
+
+	if((!D.security_level && !force_security) || D.remote_access_pin == attempt_pin_number)
+		return D
+
+
+/proc/get_account(account_number)
+	// For convinience's sake
+	if(istype(account_number, /datum/money_account))
+		return account_number
+
 	for(var/datum/money_account/D in all_money_accounts)
 		if(D.account_number == account_number)
 			return D
+
+
+// Accepts both account numbers and actual account datums
+/proc/get_account_credits(account_number)
+	var/datum/money_account/account = get_account(account_number)
+	if(!account || !account.is_valid())
+		return 0
+
+	return account.money

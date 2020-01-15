@@ -13,17 +13,17 @@
 		// Handle things that are part of this interface but not removing/replacing a given item.
 		if("pockets")
 			visible_message(SPAN_DANGER("\The [user] is trying to empty \the [src]'s pockets!"))
-			if(do_mob(user,src,HUMAN_STRIP_DELAY,progress = 0))
+			if(do_mob(user,src,HUMAN_STRIP_DELAY,progress = 1))
 				empty_pockets(user)
 			return
 		if("splints")
 			visible_message(SPAN_DANGER("\The [user] is trying to remove \the [src]'s splints!"))
-			if(do_mob(user,src,HUMAN_STRIP_DELAY,progress = 0))
+			if(do_mob(user,src,HUMAN_STRIP_DELAY,progress = 1))
 				remove_splints(user)
 			return
 		if("internals")
 			visible_message(SPAN_DANGER("\The [usr] is trying to set \the [src]'s internals!"))
-			if(do_mob(user,src,HUMAN_STRIP_DELAY, progress = 0))
+			if(do_mob(user,src,HUMAN_STRIP_DELAY, progress = 1))
 				toggle_internals(user)
 			return
 		if("tie")
@@ -35,7 +35,7 @@
 				return
 			visible_message(SPAN_DANGER("\The [usr] is trying to remove \the [src]'s [A.name]!"))
 
-			if(!do_mob(user,src,HUMAN_STRIP_DELAY,progress=0))
+			if(!do_mob(user,src,HUMAN_STRIP_DELAY,progress=1))
 				return
 
 			if(!A || suit.loc != src || !(A in suit.accessories))
@@ -57,7 +57,7 @@
 		if(!istype(target_slot))  // They aren't holding anything valid and there's nothing to remove, why are we even here?
 			return
 		if(!target_slot.canremove)
-			user << SPAN_WARNING("You cannot remove \the [src]'s [target_slot.name].")
+			to_chat(user, SPAN_WARNING("You cannot remove \the [src]'s [target_slot.name]."))
 			return
 		stripping = 1
 
@@ -66,7 +66,7 @@
 	else
 		visible_message(SPAN_DANGER("\The [user] is trying to put \a [held] on \the [src]!"))
 
-	if(!do_mob(user,src,HUMAN_STRIP_DELAY,progress = 0))
+	if(!do_mob(user,src,HUMAN_STRIP_DELAY,progress = 1))
 		return
 
 	if(!stripping && user.get_active_hand() != held)
@@ -76,14 +76,14 @@
 		admin_attack_log(user, src, "Attempted to remove \a [target_slot]", "Target of an attempt to remove \a [target_slot].", "attempted to remove \a [target_slot] from")
 		unEquip(target_slot)
 	else if(user.unEquip(held))
-		equip_to_slot_if_possible(held, text2num(slot_to_strip), 0, 1, 1)
+		equip_to_slot_if_possible(held, text2num(slot_to_strip), TRUE) // Disable warning
 		if(held.loc != src)
 			user.put_in_hands(held)
 
 // Empty out everything in the target's pockets.
 /mob/living/carbon/human/proc/empty_pockets(var/mob/living/user)
 	if(!r_store && !l_store)
-		user << SPAN_WARNING("\The [src] has nothing in their pockets.")
+		to_chat(user, SPAN_WARNING("\The [src] has nothing in their pockets."))
 		return
 	if(r_store)
 		unEquip(r_store)
@@ -98,7 +98,7 @@
 	if(istype(wear_suit,/obj/item/clothing/suit/space))
 		var/obj/item/clothing/suit/space/suit = wear_suit
 		if(suit.supporting_limbs && suit.supporting_limbs.len)
-			user << SPAN_WARNING("You cannot remove the splints - [src]'s [suit] is supporting some of the breaks.")
+			to_chat(user, SPAN_WARNING("You cannot remove the splints - [src]'s [suit] is supporting some of the breaks."))
 			can_reach_splints = 0
 
 	if(can_reach_splints)
@@ -113,16 +113,14 @@
 		if(removed_splint)
 			visible_message(SPAN_DANGER("\The [user] removes \the [src]'s splints!"))
 		else
-			user << SPAN_WARNING("\The [src] has no splints to remove.")
+			to_chat(user, SPAN_WARNING("\The [src] has no splints to remove."))
 
 // Set internals on or off.
 /mob/living/carbon/human/proc/toggle_internals(var/mob/living/user)
 	if(internal)
+		visible_message(SPAN_DANGER("\The [user] disables \the [src]'s internals!"))
 		internal.add_fingerprint(user)
 		internal = null
-		if(HUDneed.Find("internal"))
-			var/obj/screen/HUDelm = HUDneed["internal"]
-			HUDelm.icon_state = "internal0"
 	else
 		// Check for airtight mask/helmet.
 		if(!(istype(wear_mask, /obj/item/clothing/mask) || istype(head, /obj/item/clothing/head/helmet/space)))
@@ -134,14 +132,9 @@
 			internal = s_store
 		else if(istype(belt, /obj/item/weapon/tank))
 			internal = belt
-
-	if(internal)
 		visible_message(SPAN_WARNING("\The [src] is now running on internals!"))
 		internal.add_fingerprint(user)
-/*		if (internals)
-			internals.icon_state = "internal1"*/
-		if(HUDneed.Find("internal"))
-			var/obj/screen/HUDelm = HUDneed["internal"]
-			HUDelm.icon_state = "internal1"
-	else
-		visible_message(SPAN_DANGER("\The [user] disables \the [src]'s internals!"))
+
+	if(HUDneed.Find("internal"))
+		var/obj/screen/HUDelm = HUDneed["internal"]
+		HUDelm.update_icon()

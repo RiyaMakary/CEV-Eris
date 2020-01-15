@@ -9,7 +9,7 @@ proc/cardinalrange(var/center)
 
 /obj/machinery/am_shielding
 	name = "antimatter reactor section"
-	desc = "This device was built using a plasma life-form that seems to increase plasma's natural ability to react with neutrinos while reducing the combustibility."
+	desc = "A device built using a plasma-based life-form with the ability to increase plasma's natural ability to react with neutrinos while reducing its combustibility."
 
 	icon = 'icons/obj/machines/antimatter.dmi'
 	icon_state = "shield"
@@ -70,8 +70,7 @@ proc/cardinalrange(var/center)
 	if(processing)	shutdown_core()
 	visible_message("\red The [src.name] melts!")
 	//Might want to have it leave a mess on the floor but no sprites for now
-	..()
-	return
+	return ..()
 
 
 /obj/machinery/am_shielding/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
@@ -79,7 +78,7 @@ proc/cardinalrange(var/center)
 	return 0
 
 
-/obj/machinery/am_shielding/process()
+/obj/machinery/am_shielding/Process()
 	if(!processing) . = PROCESS_KILL
 	//TODO: core functions and stability
 	//TODO: think about checking the airmix for plasma and increasing power output
@@ -103,7 +102,7 @@ proc/cardinalrange(var/center)
 
 
 /obj/machinery/am_shielding/bullet_act(var/obj/item/projectile/Proj)
-	if(Proj.check_armour != "bullet")
+	if(Proj.check_armour != ARMOR_BULLET)
 		stability -= Proj.force/2
 	return 0
 
@@ -151,7 +150,7 @@ proc/cardinalrange(var/center)
 
 /obj/machinery/am_shielding/proc/setup_core()
 	processing = 1
-	machines.Add(src)
+	SSmachines.machinery.Add(src)
 	if(!control_unit)	return
 	control_unit.linked_cores.Add(src)
 	control_unit.reported_core_efficiency += efficiency
@@ -187,19 +186,19 @@ proc/cardinalrange(var/center)
 
 /obj/item/device/am_shielding_container
 	name = "packaged antimatter reactor section"
-	desc = "A small storage unit containing an antimatter reactor section.  To use place near an antimatter control unit or deployed antimatter reactor section and use a multitool to activate this package."
+	desc = "A small storage unit containing an antimatter reactor section.  To use it, place it near an antimatter control unit or deployed antimatter reactor section and use a multitool to activate this package."
 	icon = 'icons/obj/machines/antimatter.dmi'
 	icon_state = "box"
 	item_state = "electronic"
-	w_class = ITEM_SIZE_LARGE
+	w_class = ITEM_SIZE_BULKY
 	flags = CONDUCT
 	throwforce = 5
 	throw_speed = 1
 	throw_range = 2
-	matter = list(DEFAULT_WALL_MATERIAL = 100, "waste" = 2000)
+	matter = list(MATERIAL_STEEL = 3)
 
 /obj/item/device/am_shielding_container/attackby(var/obj/item/I, var/mob/user)
-	if(istype(I, /obj/item/device/multitool) && istype(src.loc,/turf))
+	if(istype(I, /obj/item/weapon/tool/multitool) && istype(src.loc,/turf))
 		new/obj/machinery/am_shielding(src.loc)
 		qdel(src)
 		return

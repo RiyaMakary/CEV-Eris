@@ -5,15 +5,13 @@
 	name = "manual switching valve"
 	desc = "A pipe valve"
 
-	level = 1
+	level = BELOW_PLATING_LEVEL
 	dir = SOUTH
 	initialize_directions = SOUTH|NORTH|WEST
 
 	var/state = 0 // 0 = go straight, 1 = go to side
 
 	// like a trinary component, node1 is input, node2 is side output, node3 is straight output
-	var/obj/machinery/atmospherics/node1
-	var/obj/machinery/atmospherics/node2
 	var/obj/machinery/atmospherics/node3
 
 	var/datum/pipe_network/network_node1
@@ -118,7 +116,7 @@
 	node2 = null
 	node3 = null
 
-	..()
+	. = ..()
 
 /obj/machinery/atmospherics/tvalve/proc/go_to_side()
 
@@ -181,14 +179,14 @@
 	else
 		src.go_to_side()
 
-/obj/machinery/atmospherics/tvalve/process()
+/obj/machinery/atmospherics/tvalve/Process()
 	..()
 	. = PROCESS_KILL
 	//machines.Remove(src)
 
 	return
 
-/obj/machinery/atmospherics/tvalve/initialize()
+/obj/machinery/atmospherics/tvalve/atmos_init()
 	var/node1_dir
 	var/node2_dir
 	var/node3_dir
@@ -308,21 +306,21 @@
 	if(!powered())
 		return
 	if(!src.allowed(user))
-		user << SPAN_WARNING("Access denied.")
+		to_chat(user, SPAN_WARNING("Access denied."))
 		return
 	..()
 
 //Radio remote control
 
 /obj/machinery/atmospherics/tvalve/digital/proc/set_frequency(new_frequency)
-	radio_controller.remove_object(src, frequency)
+	SSradio.remove_object(src, frequency)
 	frequency = new_frequency
 	if(frequency)
-		radio_connection = radio_controller.add_object(src, frequency, RADIO_ATMOSIA)
+		radio_connection = SSradio.add_object(src, frequency, RADIO_ATMOSIA)
 
 
 
-/obj/machinery/atmospherics/tvalve/digital/initialize()
+/obj/machinery/atmospherics/tvalve/digital/atmos_init()
 	..()
 	if(frequency)
 		set_frequency(frequency)
@@ -346,21 +344,20 @@
 			else
 				go_to_side()
 
-/obj/machinery/atmospherics/tvalve/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
-	if (!istype(W, /obj/item/weapon/wrench))
+/obj/machinery/atmospherics/tvalve/attackby(var/obj/item/I, var/mob/user)
+	if(!(QUALITY_BOLT_TURNING in I.tool_qualities))
 		return ..()
 	if (istype(src, /obj/machinery/atmospherics/tvalve/digital))
-		user << SPAN_WARNING("You cannot unwrench \the [src], it's too complicated.")
+		to_chat(user, SPAN_WARNING("You cannot unwrench \the [src], it's too complicated."))
 		return 1
 	var/datum/gas_mixture/int_air = return_air()
 	var/datum/gas_mixture/env_air = loc.return_air()
 	if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-		user << "<span class='warnng'>You cannot unwrench \the [src], it too exerted due to internal pressure.</span>"
+		to_chat(user, "<span class='warnng'>You cannot unwrench \the [src], it too exerted due to internal pressure.</span>")
 		add_fingerprint(user)
 		return 1
-	playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
-	user << SPAN_NOTICE("You begin to unfasten \the [src]...")
-	if (do_after(user, 40, src))
+	to_chat(user, SPAN_NOTICE("You begin to unfasten \the [src]..."))
+	if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_BOLT_TURNING, FAILCHANCE_EASY, required_stat = STAT_MEC))
 		user.visible_message( \
 			SPAN_NOTICE("\The [user] unfastens \the [src]."), \
 			SPAN_NOTICE("You have unfastened \the [src]."), \
@@ -386,7 +383,7 @@
 		if(WEST)
 			initialize_directions = EAST|WEST|SOUTH
 
-/obj/machinery/atmospherics/tvalve/mirrored/initialize()
+/obj/machinery/atmospherics/tvalve/mirrored/atmos_init()
 	var/node1_dir
 	var/node2_dir
 	var/node3_dir
@@ -448,19 +445,19 @@
 	if(!powered())
 		return
 	if(!src.allowed(user))
-		user << SPAN_WARNING("Access denied.")
+		to_chat(user, SPAN_WARNING("Access denied."))
 		return
 	..()
 
 //Radio remote control -eh?
 
 /obj/machinery/atmospherics/tvalve/mirrored/digital/proc/set_frequency(new_frequency)
-	radio_controller.remove_object(src, frequency)
+	SSradio.remove_object(src, frequency)
 	frequency = new_frequency
 	if(frequency)
-		radio_connection = radio_controller.add_object(src, frequency, RADIO_ATMOSIA)
+		radio_connection = SSradio.add_object(src, frequency, RADIO_ATMOSIA)
 
-/obj/machinery/atmospherics/tvalve/mirrored/digital/initialize()
+/obj/machinery/atmospherics/tvalve/mirrored/digital/atmos_init()
 	..()
 	if(frequency)
 		set_frequency(frequency)

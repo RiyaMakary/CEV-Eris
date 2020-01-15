@@ -2,15 +2,10 @@
 
 // Crates, boxes, lockers.
 /datum/export/large/crate
-	cost = 500
+	cost = 200
 	unit_name = "crate"
 	export_types = list(/obj/structure/closet/crate)
 	exclude_types = list(/obj/structure/closet/crate/large)
-
-/datum/export/large/crate/total_printout() // That's why a goddamn metal crate costs that much.
-	. = ..()
-	if(.)
-		. += " Thanks for participating in Nanotrasen Crates Recycling Program."
 
 /datum/export/large/crate/wooden
 	cost = 100
@@ -92,10 +87,10 @@
 
 
 // Misc
-/datum/export/large/iv
+/datum/export/large/medical_stand
 	cost = 300
-	unit_name = "iv drip"
-	export_types = list(/obj/machinery/iv_drip)
+	unit_name = "medical stand"
+	export_types = list(/obj/structure/medical_stand)
 
 /datum/export/large/barrier
 	cost = 325

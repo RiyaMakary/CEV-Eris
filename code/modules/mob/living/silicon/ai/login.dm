@@ -1,4 +1,4 @@
-/mob/living/silicon/ai/Login()	//ThisIsDumb(TM) TODO: tidy this up ¬_¬ ~Carn
+/mob/living/silicon/ai/Login()	//ThisIsDumb(TM) TODO: tidy this up Â¬_Â¬ ~Carn
 	..()
 	regenerate_icons()
 /*	flash = new /obj/screen()
@@ -16,8 +16,9 @@
 	client.screen.Add( blind, flash )*/
 
 	if(stat != DEAD)
-		for(var/obj/machinery/ai_status_display/O in machines) //change status
+		for(var/obj/machinery/ai_status_display/O in SSmachines.machinery) //change status
 			O.mode = 1
 			O.emotion = "Neutral"
 	src.view_core()
-	return
+	
+	client.CAN_MOVE_DIAGONALLY = TRUE

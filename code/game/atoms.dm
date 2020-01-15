@@ -1,7 +1,8 @@
 /atom
-	layer = 2
-	appearance_flags = TILE_BOUND
-	var/level = 2
+	layer = TURF_LAYER
+	plane = GAME_PLANE
+	appearance_flags = TILE_BOUND|PIXEL_SCALE|LONG_GLIDE
+	var/level = ABOVE_PLATING_LEVEL
 	var/flags = 0
 	var/list/fingerprints
 	var/list/fingerprintshidden
@@ -16,30 +17,76 @@
 	var/simulated = TRUE //filter for actions - used by lighting overlays
 	var/fluorescent // Shows up under a UV light.
 	var/allow_spin = TRUE
-
-	var/list/footstep_sounds = list() // Footsteps sound
+	var/used_now = FALSE //For tools system, check for it should forbid to work on atom for more than one user at time
 
 	///Chemistry.
+	var/reagent_flags = NONE
 	var/datum/reagents/reagents = null
-
-	//var/chem_is_open_container = 0
-	// replaced by OPENCONTAINER flags and atom/proc/is_open_container()
-	///Chemistry.
 
 	//Detective Work, used for the duplicate data points kept in the scanners
 	var/list/original_atom
 
+	var/auto_init = TRUE
+
+	var/initialized = FALSE
+
+	var/list/preloaded_reagents = null
+
+	var/sanity_damage = 0
+
+/atom/New(loc, ...)
+	init_plane()
+	update_plane()
+	var/do_initialize = SSatoms.init_state
+	if(do_initialize > INITIALIZATION_INSSATOMS)
+		args[1] = do_initialize == INITIALIZATION_INNEW_MAPLOAD
+		if(SSatoms.InitAtom(src, args))
+			//we were deleted
+			return
+
+	var/list/created = SSatoms.created_atoms
+	if(created)
+		created += src
+
+
+//Called after New if the map is being loaded. mapload = TRUE
+//Called from base of New if the map is not being loaded. mapload = FALSE
+//This base must be called or derivatives must set initialized to TRUE
+//must not sleep
+//Other parameters are passed from New (excluding loc), this does not happen if mapload is TRUE
+//Must return an Initialize hint. Defined in __DEFINES/subsystems.dm
+
+/atom/proc/Initialize(mapload, ...)
+	if(initialized)
+		crash_with("Warning: [src]([type]) initialized multiple times!")
+	initialized = TRUE
+
+	if(light_power && light_range)
+		update_light()
+
+	update_plane()
+
+	if(preloaded_reagents)
+		if(!reagents)
+			var/volume = 0
+			for(var/reagent in preloaded_reagents)
+				volume += preloaded_reagents[reagent]
+			create_reagents(volume)
+		for(var/reagent in preloaded_reagents)
+			reagents.add_reagent(reagent, preloaded_reagents[reagent])
+
+
+	return INITIALIZE_HINT_NORMAL
+
+//called if Initialize returns INITIALIZE_HINT_LATELOAD
+/atom/proc/LateInitialize()
+	return
+
 /atom/Destroy()
-	if(reagents)
-		qdel(reagents)
-		reagents = null
+	QDEL_NULL(reagents)
 	spawn()
 		update_openspace()
 	. = ..()
-
-/atom/proc/initialize()
-	if(!isnull(gcDestroyed))
-		crash_with("GC: -- [type] had initialize() called after qdel() --")
 
 /atom/proc/reveal_blood()
 	return
@@ -69,20 +116,22 @@
 /atom/proc/Bumped(AM as mob|obj)
 	return
 
-// Convenience proc to see if a container is open for chemistry handling
-// returns true if open
-// false if closed
+// Convenience procs to see if a container is open for chemistry handling
 /atom/proc/is_open_container()
-	return flags & OPENCONTAINER
+	return is_refillable() && is_drainable()
 
-/*//Convenience proc to see whether a container can be accessed in a certain way.
+/atom/proc/is_injectable(allowmobs = TRUE)
+	return reagents && (reagent_flags & (INJECTABLE | REFILLABLE))
 
-	proc/can_subract_container()
-		return flags & EXTRACT_CONTAINER
+/atom/proc/is_drawable(allowmobs = TRUE)
+	return reagents && (reagent_flags & (DRAWABLE | DRAINABLE))
 
-	proc/can_add_container()
-		return flags & INSERT_CONTAINER
-*/
+/atom/proc/is_refillable()
+	return reagents && (reagent_flags & REFILLABLE)
+
+/atom/proc/is_drainable()
+	return reagents && (reagent_flags & DRAINABLE)
+
 
 /atom/proc/CheckExit()
 	return TRUE
@@ -97,7 +146,7 @@
 
 
 /atom/proc/bullet_act(obj/item/projectile/P, def_zone)
-	P.on_hit(src, 0, def_zone)
+	P.on_hit(src, def_zone)
 	. = FALSE
 
 /atom/proc/in_contents_of(container)//can take class or object instance as argument
@@ -133,6 +182,9 @@
 			found += A.search_contents_for(path, filter_path)
 	return found
 
+//This proc is called on the location of an atom when the atom is Destroy()'d
+/atom/proc/handle_atom_del(atom/A)
+	return
 
 
 
@@ -220,14 +272,43 @@ its easier to just keep the beam vertical.
 			full_name += "oil-stained [name][infix]."
 
 	if(isobserver(user))
-		user << "\icon[src] This is [full_name] [suffix]"
+		to_chat(user, "\icon[src] This is [full_name] [suffix]")
 	else
 		user.visible_message("<font size=1>[user.name] looks at [src].</font>", "\icon[src] This is [full_name] [suffix]")
 
-	if(desc)
-		user << desc
+	to_chat(user, show_stat_verbs()) //rewrite to show_stat_verbs(user)?
 
-	return distance == -1 || (get_dist(src, user) <= distance)
+	if(desc)
+		to_chat(user, desc)
+
+	if(reagents)
+		if(reagent_flags & TRANSPARENT)
+			to_chat(user, "<span class='notice'>It contains:</span>")
+			if(reagents.reagent_list.len)
+				for(var/I in reagents.reagent_list)
+					var/datum/reagent/R = I
+					to_chat(user, "<span class='notice'>[R.volume] units of [R.name]</span>")
+
+				// TODO: reagent vision googles? code below:
+				/*
+				if(user.can_see_reagents()) //Show each individual reagent
+					for(var/I in reagents.reagent_list)
+						var/datum/reagent/R = I
+						to_chat(user, "<span class='notice'>[R.volume] units of [R.name]</span>")
+				else //Otherwise, just show the total volume
+					if(reagents && reagents.reagent_list.len)
+						to_chat(user, "<span class='notice'>[reagents.total_volume] units of various reagents.</span>")
+				*/
+			else
+				to_chat(user, "<span class='notice'>Nothing.</span>	")
+		else if(reagent_flags & AMOUNT_VISIBLE)
+			if(reagents.total_volume)
+				to_chat(user, "<span class='notice'>It has [reagents.total_volume] unit\s left.</span>")
+			else
+				to_chat(user, "<span class='danger'>It's empty.</span>")
+	SEND_SIGNAL(src, COMSIG_EXAMINE, user, distance)
+
+	return distance == -1 || (get_dist(src, user) <= distance) || isobserver(user)
 
 // called by mobs when e.g. having the atom as their machine, pulledby, loc (AKA mob being inside the atom) or buckled var set.
 // see code/modules/mob/mob_movement.dm for more.
@@ -240,9 +321,14 @@ its easier to just keep the beam vertical.
 	if(new_dir == old_dir)
 		return FALSE
 
+	for(var/i in src.contents)
+		var/atom/A = i
+		A.container_dir_changed(new_dir)
 	dir = new_dir
-	dir_set_event.raise_event(src, old_dir, new_dir)
 	return TRUE
+
+/atom/proc/container_dir_changed(new_dir)
+	return
 
 /atom/proc/ex_act()
 	return
@@ -254,6 +340,9 @@ its easier to just keep the beam vertical.
 	return
 
 /atom/proc/melt()
+	return
+
+/atom/proc/ignite_act()	//Proc called on connected igniter activation
 	return
 
 /atom/proc/hitby(atom/movable/AM as mob|obj)
@@ -457,7 +546,6 @@ its easier to just keep the beam vertical.
 		cur_y = y_arr.Find(src.z)
 		if(cur_y)
 			break
-//	world << "X = [cur_x]; Y = [cur_y]"
 	if(cur_x && cur_y)
 		return list("x"=cur_x, "y"=cur_y)
 	else
@@ -473,12 +561,13 @@ its easier to just keep the beam vertical.
 		return FALSE
 
 //Multi-z falling procs
-/atom/movable/proc/can_fall()
-	return !anchored
+
 
 //Execution by grand piano!
-/atom/movable/proc/get_fall_damage()
+/atom/movable/proc/get_fall_damage(var/turf/from, var/turf/dest)
 	return 42
+
+/atom/movable/proc/fall_impact(var/turf/from, var/turf/dest)
 
 //If atom stands under open space, it can prevent fall, or not
 /atom/proc/can_prevent_fall()
@@ -488,22 +577,23 @@ its easier to just keep the beam vertical.
 // Use for objects performing visible actions
 // message is output to anyone who can see, e.g. "The [src] does something!"
 // blind_message (optional) is what blind people will hear e.g. "You hear something!"
-/atom/proc/visible_message(var/message, var/blind_message)
+/atom/proc/visible_message(var/message, var/blind_message, var/range = world.view)
+	var/turf/T = get_turf(src)
+	var/list/mobs = list()
+	var/list/objs = list()
+	get_mobs_and_objs_in_view_fast(T,range, mobs, objs, ONLY_GHOSTS_IN_VIEW)
 
-	var/list/see = get_mobs_or_objects_in_view(world.view, src) | viewers(get_turf(src), null)
+	for(var/o in objs)
+		var/obj/O = o
+		O.show_message(message,1,blind_message,2)
 
-	for(var/I in see)
-		if(isobj(I))
-			spawn(0)
-				if(I) //It's possible that it could be deleted in the meantime.
-					var/obj/O = I
-					O.show_message( message, 1, blind_message, 2)
-		else if(ismob(I))
-			var/mob/M = I
-			if(M.see_invisible >= invisibility) // Cannot view the invisible
-				M.show_message( message, 1, blind_message, 2)
-			else if (blind_message)
-				M.show_message(blind_message, 2)
+	for(var/m in mobs)
+		var/mob/M = m
+		if(M.see_invisible >= invisibility)
+			M.show_message(message,1,blind_message,2)
+		else if(blind_message)
+			M.show_message(blind_message, 2)
+
 
 // Show a message to all mobs and objects in earshot of this atom
 // Use for objects performing audible actions
@@ -515,22 +605,26 @@ its easier to just keep the beam vertical.
 	var/range = world.view
 	if(hearing_distance)
 		range = hearing_distance
-	var/list/hear = get_mobs_or_objects_in_view(range, src)
+	var/turf/T = get_turf(src)
+	var/list/mobs = list()
+	var/list/objs = list()
+	get_mobs_and_objs_in_view_fast(T,range, mobs, objs, ONLY_GHOSTS_IN_VIEW)
 
-	for(var/I in hear)
-		if(isobj(I))
-			spawn(0)
-				if(I) //It's possible that it could be deleted in the meantime.
-					var/obj/O = I
-					O.show_message( message, 2, deaf_message, 1)
-		else if(ismob(I))
-			var/mob/M = I
-			M.show_message( message, 2, deaf_message, 1)
+	for(var/m in mobs)
+		var/mob/M = m
+		M.show_message(message,2,deaf_message,1)
+	for(var/o in objs)
+		var/obj/O = o
+		O.show_message(message,2,deaf_message,1)
 
 /atom/Entered(var/atom/movable/AM, var/atom/old_loc, var/special_event)
-	if(loc && MOVED_DROP == special_event)
-		AM.forceMove(loc, MOVED_DROP)
-		return CANCEL_MOVE_EVENT
+	if(loc)
+		for(var/i in AM.contents)
+			var/atom/movable/A = i
+			A.entered_with_container(old_loc)
+		if(MOVED_DROP == special_event)
+			AM.forceMove(loc, MOVED_DROP)
+			return CANCEL_MOVE_EVENT
 	return ..()
 
 /turf/Entered(var/atom/movable/AM, var/atom/old_loc, var/special_event)
@@ -538,3 +632,82 @@ its easier to just keep the beam vertical.
 
 /atom/proc/get_footstep_sound()
 	return
+
+/atom/proc/set_density(var/new_density)
+	if(density != new_density)
+		density = !!new_density
+
+//This proc is called when objects are created during the round by players.
+//This allows them to behave differently from objects that are mapped in, adminspawned, or purchased
+/atom/proc/Created(var/mob/user)
+	return
+	//Should be called when:
+		//An item is printed at an autolathe or protolathe **COMPLETE**
+		//Item is created at mech fab, organ printer, prosthetics builder, or any other machine which creates things
+		//An item is constructed from sheets or any similar crafting system
+
+	//Should NOT be called when:
+		//An item is mapped in
+		//An item is adminspawned
+		//An item is spawned by events
+		//An item is delivered on the cargo shuttle
+		//An item is purchased or dispensed from a vendor (Those things contain premade items and just release them)
+
+/atom/proc/get_cell()
+	return
+
+/atom/proc/get_coords()
+	var/turf/T = get_turf(src)
+	if (T)
+		var/datum/coords/C = new
+		C.x_pos = T.x
+		C.y_pos = T.y
+		C.z_pos = T.z
+		return C
+
+/atom/proc/change_area(var/area/old_area, var/area/new_area)
+	return
+
+//Bullethole shit.
+/atom/proc/create_bullethole(var/obj/item/projectile/Proj)
+	var/p_x = Proj.p_x + pick(0,0,0,0,0,-1,1) // really ugly way of coding "sometimes offset Proj.p_x!"
+	var/p_y = Proj.p_y + pick(0,0,0,0,0,-1,1) // Used for bulletholes
+	var/obj/effect/overlay/bmark/BM = new(src)
+
+	BM.pixel_x = p_x
+	BM.pixel_y = p_y
+	// offset correction
+	BM.pixel_x--
+	BM.pixel_y--
+
+	if(Proj.damage >= WEAPON_FORCE_DANGEROUS)//If it does a lot of damage it makes a nice big black hole.
+		BM.icon_state = "scorch"
+		BM.set_dir(pick(NORTH,SOUTH,EAST,WEST)) // random scorch design
+	else //Otherwise it's a light dent.
+		BM.icon_state = "light_scorch"
+
+/atom/proc/clear_bulletholes()
+	for(var/obj/effect/overlay/bmark/BM in src)
+		qdel(BM)
+
+
+//Returns a list of things in this atom, can be overridden for more nuanced behaviour
+/atom/proc/get_contents()
+	return contents
+
+
+/atom/proc/get_recursive_contents()
+	var/list/result = list()
+	for (var/atom/a in contents)
+		result += a
+		result |= a.get_recursive_contents()
+	return result
+
+/atom/proc/AllowDrop()
+	return FALSE
+
+/atom/proc/drop_location()
+	var/atom/L = loc
+	if(!L)
+		return null
+	return L.AllowDrop() ? L : L.drop_location()

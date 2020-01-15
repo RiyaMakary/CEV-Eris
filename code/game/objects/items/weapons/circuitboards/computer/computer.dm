@@ -28,7 +28,7 @@
 
 /obj/item/weapon/circuitboard/communications
 	name = T_BOARD("command and communications console")
-	build_path = /obj/machinery/computer/communications
+	build_path = /obj/item/modular_computer/console/preset/command
 	origin_tech = list(TECH_DATA = 2, TECH_MAGNET = 2)
 
 /obj/item/weapon/circuitboard/teleporter
@@ -105,11 +105,6 @@
 	name = T_BOARD("R&D server control console")
 	build_path = /obj/machinery/computer/rdservercontrol
 
-/obj/item/weapon/circuitboard/crew
-	name = T_BOARD("crew monitoring console")
-	build_path = /obj/machinery/computer/crew
-	origin_tech = list(TECH_DATA = 3, TECH_BIO = 2, TECH_MAGNET = 2)
-
 /obj/item/weapon/circuitboard/operating
 	name = T_BOARD("patient monitoring console")
 	build_path = /obj/machinery/computer/operating
@@ -123,9 +118,25 @@
 	name = T_BOARD("disease splicer")
 	build_path = /obj/machinery/computer/diseasesplicer
 
+/obj/item/weapon/circuitboard/centrifuge
+	name = T_BOARD("centrifuge")
+	build_path = /obj/machinery/centrifuge
+	origin_tech = list(TECH_DATA = 2, TECH_BIO = 2)
+	req_components = list(
+		/obj/item/weapon/stock_parts/manipulator = 3
+	)
+
+/obj/item/weapon/circuitboard/helm
+	name = T_BOARD("helm control console")
+	build_path = /obj/machinery/computer/helm
+
+/obj/item/weapon/circuitboard/nav
+	name = T_BOARD("navigation console")
+	build_path = /obj/machinery/computer/navigation
+
 /obj/item/weapon/circuitboard/ordercomp
 	name = T_BOARD("supply ordering console")
-	build_path = /obj/machinery/computer/ordercomp
+	build_path = /obj/machinery/computer/supplycomp/order
 	origin_tech = list(TECH_DATA = 2)
 
 /obj/item/weapon/circuitboard/mining_shuttle
@@ -158,7 +169,12 @@
 	build_path = /obj/machinery/computer/prison_shuttle
 	origin_tech = list(TECH_DATA = 2)
 
-/obj/item/weapon/circuitboard/rcon_console
-	name = T_BOARD("RCON remote control console")
-	build_path = /obj/machinery/computer/rcon
-	origin_tech = list(TECH_DATA = 4, TECH_ENGINEERING = 3, TECH_POWER = 5)
+/obj/item/weapon/circuitboard/engines
+	name = T_BOARD("engine control console")
+	build_path = /obj/machinery/computer/engines
+	origin_tech = list(TECH_DATA = 2)
+
+/obj/item/weapon/circuitboard/guestpass
+	name = T_BOARD("guest pass console")
+	build_path = /obj/machinery/computer/guestpass
+	origin_tech = list(TECH_DATA = 2)

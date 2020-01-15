@@ -14,11 +14,11 @@ ADMIN_VERB_ADD(/client/proc/show_plant_genes, R_DEBUG, FALSE)
 	if(!holder)	return
 
 	if(!plant_controller || !plant_controller.gene_tag_masks)
-		usr << "Gene masks not set."
+		to_chat(usr, "Gene masks not set.")
 		return
 
 	for(var/mask in plant_controller.gene_tag_masks)
-		usr << "[mask]: [plant_controller.gene_tag_masks[mask]]"
+		to_chat(usr, "[mask]: [plant_controller.gene_tag_masks[mask]]")
 
 var/global/datum/controller/plants/plant_controller // Set in New().
 
@@ -41,7 +41,7 @@ var/global/datum/controller/plants/plant_controller // Set in New().
 		qdel(plant_controller)
 	plant_controller = src
 	setup()
-	process()
+	Process()
 
 // Predefined/roundstart varieties use a string key to make it
 // easier to grab the new variety when mutating. Post-roundstart
@@ -120,7 +120,7 @@ var/global/datum/controller/plants/plant_controller // Set in New().
 		seed.set_trait(TRAIT_HIGHKPA_TOLERANCE,200)
 	return seed
 
-/datum/controller/plants/proc/process()
+/datum/controller/plants/Process()
 	processing = 1
 	spawn(0)
 		set background = 1
@@ -139,7 +139,7 @@ var/global/datum/controller/plants/plant_controller // Set in New().
 						plant_queue -= plant
 						if(!istype(plant))
 							continue
-						plant.process()
+						plant.Process()
 						processed++
 						sleep(1) // Stagger processing out so previous tick can resolve (overlapping plant segments etc)
 				sleep(max(1,(plant_tick_time-processed)))

@@ -5,6 +5,7 @@
 	item_state = "clipboard"
 	throwforce = 0
 	w_class = ITEM_SIZE_SMALL
+	item_flags = DRAG_AND_DROP_UNEQUIP
 	throw_speed = 3
 	throw_range = 10
 	var/obj/item/weapon/pen/haspen		//The stored pen.
@@ -13,25 +14,6 @@
 
 /obj/item/weapon/clipboard/New()
 	update_icon()
-
-/obj/item/weapon/clipboard/MouseDrop(obj/over_object as obj) //Quick clipboard fix. -Agouri
-	if(ishuman(usr))
-		var/mob/M = usr
-		if(!(istype(over_object, /obj/screen) ))
-			return ..()
-
-		if(!M.restrained() && !M.stat && istype(over_object, /obj/screen/inventory/hand))
-			var/obj/screen/inventory/hand/H = over_object
-			switch(H.slot_id)
-				if(slot_r_hand)
-					M.u_equip(src)
-					M.put_in_r_hand(src)
-				if(slot_l_hand)
-					M.u_equip(src)
-					M.put_in_l_hand(src)
-
-			add_fingerprint(usr)
-			return
 
 /obj/item/weapon/clipboard/update_icon()
 	overlays.Cut()
@@ -50,7 +32,7 @@
 		W.loc = src
 		if(istype(W, /obj/item/weapon/paper))
 			toppaper = W
-		user << SPAN_NOTICE("You clip the [W] onto \the [src].")
+		to_chat(user, SPAN_NOTICE("You clip the [W] onto \the [src]."))
 		update_icon()
 
 	else if(istype(toppaper) && istype(W, /obj/item/weapon/pen))
@@ -103,7 +85,7 @@
 					usr.drop_item()
 					W.loc = src
 					haspen = W
-					usr << SPAN_NOTICE("You slot the pen into \the [src].")
+					to_chat(usr, SPAN_NOTICE("You slot the pen into \the [src]."))
 
 		else if(href_list["write"])
 			var/obj/item/weapon/P = locate(href_list["write"])
@@ -164,7 +146,7 @@
 			var/obj/item/P = locate(href_list["top"])
 			if(P && (P.loc == src) && istype(P, /obj/item/weapon/paper) )
 				toppaper = P
-				usr << SPAN_NOTICE("You move [P.name] to the top.")
+				to_chat(usr, SPAN_NOTICE("You move [P.name] to the top."))
 
 		//Update everything
 		attack_self(usr)

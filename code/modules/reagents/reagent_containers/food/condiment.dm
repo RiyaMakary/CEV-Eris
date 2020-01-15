@@ -10,7 +10,7 @@
 	desc = "Just your average condiment container."
 	icon = 'icons/obj/food.dmi'
 	icon_state = "emptycondiment"
-	flags = OPENCONTAINER
+	reagent_flags = OPENCONTAINER
 	possible_transfer_amounts = list(1,5,10)
 	center_of_mass = list("x"=16, "y"=6)
 	volume = 50
@@ -22,29 +22,28 @@
 		return
 
 	attack(var/mob/M as mob, var/mob/user as mob, var/def_zone)
-		if(standard_feed_mob(user, M))
-			return
+		standard_feed_mob(user, M)
 
 	afterattack(var/obj/target, var/mob/user, var/proximity)
 		if(!proximity)
 			return
-	
-		if(standard_dispenser_refill(user, target))
-			return
+
 		if(standard_pour_into(user, target))
+			return
+		if(standard_dispenser_refill(user, target))
 			return
 
 		if(istype(target, /obj/item/weapon/reagent_containers/food/snacks)) // These are not opencontainers but we can transfer to them
 			if(!reagents || !reagents.total_volume)
-				user << SPAN_NOTICE("There is no condiment left in \the [src].")
+				to_chat(user, SPAN_NOTICE("There is no condiment left in \the [src]."))
 				return
 
 			if(!target.reagents.get_free_space())
-				user << SPAN_NOTICE("You can't add more condiment to \the [target].")
+				to_chat(user, SPAN_NOTICE("You can't add more condiment to \the [target]."))
 				return
 
 			var/trans = reagents.trans_to_obj(target, amount_per_transfer_from_this)
-			user << SPAN_NOTICE("You add [trans] units of the condiment to \the [target].")
+			to_chat(user, SPAN_NOTICE("You add [trans] units of the condiment to \the [target]."))
 		else
 			..()
 
@@ -52,7 +51,7 @@
 		playsound(user.loc, 'sound/items/drink.ogg', rand(10, 50), 1)
 
 	self_feed_message(var/mob/user)
-		user << SPAN_NOTICE("You swallow some of contents of \the [src].")
+		to_chat(user, SPAN_NOTICE("You swallow some of contents of \the [src]."))
 
 	on_reagent_change()
 		if(icon_state == "saltshakersmall" || icon_state == "peppermillsmall" || icon_state == "flour")
@@ -122,36 +121,29 @@
 	name = "Universal Enzyme"
 	desc = "Used in cooking various dishes."
 	icon_state = "enzyme"
-	New()
-		..()
-		reagents.add_reagent("enzyme", 50)
+	preloaded_reagents = list("enzyme" = 50)
 
 /obj/item/weapon/reagent_containers/food/condiment/sugar
-	New()
-		..()
-		reagents.add_reagent("sugar", 50)
+	preloaded_reagents = list("sugar" = 50)
 
-/obj/item/weapon/reagent_containers/food/condiment/saltshaker		//Seperate from above since it's a small shaker rather then
-	name = "Salt Shaker"											//	a large one.
+//Seperate from above since it's a small shaker rather then a large one.
+/obj/item/weapon/reagent_containers/food/condiment/saltshaker
+	name = "salt shaker"
 	desc = "Salt. From space oceans, presumably."
 	icon_state = "saltshakersmall"
 	possible_transfer_amounts = list(1,20) //for clown turning the lid off
 	amount_per_transfer_from_this = 1
 	volume = 20
-	New()
-		..()
-		reagents.add_reagent("sodiumchloride", 20)
+	preloaded_reagents = list("sodiumchloride" = 20)
 
 /obj/item/weapon/reagent_containers/food/condiment/peppermill
-	name = "Pepper Mill"
+	name = "pepper mill"
 	desc = "Often used to flavor food or make people sneeze."
 	icon_state = "peppermillsmall"
 	possible_transfer_amounts = list(1,20) //for clown turning the lid off
 	amount_per_transfer_from_this = 1
 	volume = 20
-	New()
-		..()
-		reagents.add_reagent("blackpepper", 20)
+	preloaded_reagents = list("blackpepper" = 20)
 
 /obj/item/weapon/reagent_containers/food/condiment/flour
 	name = "flour sack"
@@ -159,8 +151,5 @@
 	icon = 'icons/obj/food.dmi'
 	icon_state = "flour"
 	item_state = "flour"
-	New()
-		..()
-		reagents.add_reagent("flour", 30)
-		src.pixel_x = rand(-10.0, 10)
-		src.pixel_y = rand(-10.0, 10)
+	preloaded_reagents = list("flour" = 30)
+

@@ -12,7 +12,7 @@
 	var/obj/item/weapon/cell/large/cell = null
 	var/icon_update_tick = 0	// Used to rebuild the overlay only once every 10 ticks
 	var/charging = 0
-
+	var/efficiency = 0.9
 	var/charging_power			// W. Power rating used for charging the cyborg. 120 kW if un-upgraded
 	var/restore_power_active	// W. Power drawn from APC when an occupant is charging. 40 kW if un-upgraded
 	var/restore_power_passive	// W. Power drawn from APC when idle. 7 kW if un-upgraded
@@ -22,15 +22,16 @@
 	var/weld_power_use = 2300	// power used per point of brute damage repaired. 2.3 kW ~ about the same power usage of a handheld arc welder
 	var/wire_power_use = 500	// power used per point of burn damage repaired.
 
-/obj/machinery/recharge_station/New()
-	..()
+	var/exit_timer
 
+/obj/machinery/recharge_station/Initialize()
+	. = ..()
 	update_icon()
 
 /obj/machinery/recharge_station/proc/has_cell_power()
 	return cell && cell.percent() > 0
 
-/obj/machinery/recharge_station/process()
+/obj/machinery/recharge_station/Process()
 	if(stat & (BROKEN))
 		return
 	if(!cell) // Shouldn't be possible, but sanity check
@@ -52,7 +53,7 @@
 		// Calculating amount of power to draw
 		recharge_amount = (occupant ? restore_power_active : restore_power_passive) * CELLRATE
 
-		recharge_amount = cell.give(recharge_amount)
+		recharge_amount = cell.give(recharge_amount* efficiency)
 		use_power(recharge_amount / CELLRATE)
 
 	if(icon_update_tick >= 10)
@@ -86,7 +87,7 @@
 		if(R.cell && !R.cell.fully_charged())
 			var/diff = min(R.cell.maxcharge - R.cell.charge, charging_power * CELLRATE) // Capped by charging_power / tick
 			var/charge_used = cell.use(diff)
-			R.cell.give(charge_used)
+			R.cell.give(charge_used*efficiency)
 
 		//Lastly, attempt to repair the cyborg if enabled
 		if(weld_rate && R.getBruteLoss() && cell.checked_use(weld_power_use * weld_rate * CELLRATE))
@@ -95,13 +96,13 @@
 			R.adjustFireLoss(-wire_rate)
 	else if(ishuman(occupant))
 		var/mob/living/carbon/human/H = occupant
-		if(!isnull(H.internal_organs_by_name[O_CELL]) && H.nutrition < 450)
+		if(!isnull(H.internal_organs_by_name[BP_CELL]) && H.nutrition < 450)
 			H.nutrition = min(H.nutrition+10, 450)
 			cell.use(7000/450*10)
 
 /obj/machinery/recharge_station/examine(mob/user)
 	..(user)
-	user << "The charge meter reads: [round(chargepercentage())]%"
+	to_chat(user, "The charge meter reads: [round(chargepercentage())]%")
 
 /obj/machinery/recharge_station/proc/chargepercentage()
 	if(!cell)
@@ -109,7 +110,9 @@
 	return cell.percent()
 
 /obj/machinery/recharge_station/relaymove(mob/user as mob)
-	if(user.stat)
+	if(user.incapacitated())
+		return
+	if(world.time < exit_timer)
 		return
 	go_out()
 	return
@@ -122,14 +125,16 @@
 		cell.emp_act(severity)
 	..(severity)
 
-/obj/machinery/recharge_station/attackby(var/obj/item/O as obj, var/mob/user as mob)
-	if(!occupant)
-		if(default_deconstruction_screwdriver(user, O))
-			return
-		if(default_deconstruction_crowbar(user, O))
-			return
-		if(default_part_replacement(user, O))
-			return
+/obj/machinery/recharge_station/attackby(var/obj/item/I, var/mob/user as mob)
+	if(occupant)
+		to_chat(user, SPAN_NOTICE("You cant do anything with [src] while someone inside of it."))
+		return
+
+	if(default_deconstruction(I, user))
+		return
+
+	if(default_part_replacement(I, user))
+		return
 
 	..()
 
@@ -205,6 +210,7 @@
 	M.forceMove(src)
 	occupant = M
 	update_icon()
+	exit_timer = world.time + 10 //magik numbers, yey
 	return 1
 
 /obj/machinery/recharge_station/proc/hascell(var/mob/M)
@@ -214,7 +220,7 @@
 			return 1
 	if(ishuman(M))
 		var/mob/living/carbon/human/H = M
-		if(!isnull(H.internal_organs_by_name[O_CELL]))
+		if(!isnull(H.internal_organs_by_name[BP_CELL]))
 			return 1
 	return 0
 
@@ -247,3 +253,16 @@
 	if(!usr.incapacitated())
 		return
 	go_in(usr)
+
+/obj/machinery/recharge_station/MouseDrop_T(var/mob/target, var/mob/user)
+	if(!CanMouseDrop(target, user))
+		return
+	if(!istype(target,/mob/living/silicon))
+		return
+	if(target.buckled)
+		to_chat(user, "<span class='warning'>Unbuckle the robot before attempting to move it.</span>")
+		return
+	user.visible_message("<span class='notice'>\The [user] started hauling \the [target] into \the [src].</span>",
+							"<span class='notice'>You started hauling \the [target] into \the [src].</span>")
+	if(user.stat != DEAD && do_after(user,rand(150,200),src))
+		go_in(target, user)

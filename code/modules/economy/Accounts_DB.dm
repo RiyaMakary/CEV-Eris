@@ -23,7 +23,7 @@
 			return 1
 
 	proc/create_transation(target, reason, amount)
-		return PoolOrNew(/datum/transaction, list(amount, target, reason, machine_id))
+		return new /datum/transaction(amount, target, reason, machine_id)
 
 	proc/accounting_letterhead(report_name)
 		return {"
@@ -46,7 +46,7 @@
 		O.loc = src
 		held_card = O
 
-		nanomanager.update_uis(src)
+		SSnano.update_uis(src)
 
 	attack_hand(user)
 
@@ -54,7 +54,7 @@
 	if(stat & (NOPOWER|BROKEN)) return
 	ui_interact(user)
 
-/obj/machinery/account_database/ui_interact(mob/user, ui_key="main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/account_database/ui_interact(mob/user, ui_key="main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	user.set_machine(src)
 
 	var/data[0]
@@ -100,7 +100,7 @@
 	if (accounts.len > 0)
 		data["accounts"] = accounts
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "accounts_terminal.tmpl", src.name, 400, 640)
 		ui.set_initial_data(data)
@@ -110,7 +110,7 @@
 	if(..())
 		return 1
 
-	var/datum/nanoui/ui = nanomanager.get_open_ui(usr, src, "main")
+	var/datum/nanoui/ui = SSnano.get_open_ui(usr, src, "main")
 
 	if(href_list["choice"])
 		switch(href_list["choice"])
@@ -136,7 +136,7 @@
 				var/account_name = href_list["holder_name"]
 				var/starting_funds = max(text2num(href_list["starting_funds"]), 0)
 
-				starting_funds = Clamp(starting_funds, 0, station_account.money)	// Not authorized to put the station in debt.
+				starting_funds = CLAMP(starting_funds, 0, station_account.money)	// Not authorized to put the station in debt.
 				starting_funds = min(starting_funds, fund_cap)						// Not authorized to give more than the fund cap.
 
 				create_account(account_name, starting_funds, src)
@@ -199,7 +199,7 @@
 					text = {"
 						[accounting_letterhead(title)]
 						<u>Holder:</u> [detailed_account_view.owner_name]<br>
-						<u>Balance:</u> $[detailed_account_view.money]<br>
+						<u>Balance:</u> [detailed_account_view.money][CREDS]<br>
 						<u>Status:</u> [detailed_account_view.suspended ? "Suspended" : "Active"]<br>
 						<u>Transactions:</u> ([detailed_account_view.transaction_log.len])<br>
 						<table>
@@ -254,7 +254,7 @@
 								<tr>
 									<td>#[D.account_number]</td>
 									<td>[D.owner_name]</td>
-									<td>$[D.money]</td>
+									<td>[D.money][CREDS]</td>
 									<td>[D.suspended ? "Suspended" : "Active"]</td>
 								</tr>
 						"}

@@ -3,7 +3,7 @@
 	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "med_key"
 	icon_screen = "crew"
-	light_color = COLOR_LIME
+	light_color = COLOR_LIGHTING_GREEN_MACHINERY
 	CheckFaceFlag = 0
 	var/datum/disease2/effectholder/memorybank = null
 	var/list/species_buffer = null
@@ -14,13 +14,13 @@
 	var/scanning = 0
 
 /obj/machinery/computer/diseasesplicer/attackby(var/obj/I as obj, var/mob/user as mob)
-	if(istype(I, /obj/item/weapon/screwdriver))
+	if(istype(I, /obj/item/weapon/tool/screwdriver))
 		return ..(I,user)
 
 	if(istype(I,/obj/item/weapon/virusdish))
 		var/mob/living/carbon/c = user
 		if (dish)
-			user << "\The [src] is already loaded."
+			to_chat(user, "\The [src] is already loaded.")
 			return
 
 		dish = I
@@ -28,21 +28,18 @@
 		I.loc = src
 
 	if(istype(I,/obj/item/weapon/diseasedisk))
-		user << "You upload the contents of the disk onto the buffer."
+		to_chat(user, "You upload the contents of the disk onto the buffer.")
 		memorybank = I:effect
 		species_buffer = I:species
 		analysed = I:analysed
 
 	src.attack_hand(user)
 
-/obj/machinery/computer/diseasesplicer/attack_ai(var/mob/user as mob)
-	return src.attack_hand(user)
-
-/obj/machinery/computer/diseasesplicer/attack_hand(var/mob/user as mob)
+/obj/machinery/computer/diseasesplicer/attack_hand(mob/user)
 	if(..()) return
 	ui_interact(user)
 
-/obj/machinery/computer/diseasesplicer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/computer/diseasesplicer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	user.set_machine(src)
 
 	var/data[0]
@@ -80,13 +77,13 @@
 	else
 		data["info"] = "No dish loaded."
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "disease_splicer.tmpl", src.name, 400, 600)
 		ui.set_initial_data(data)
 		ui.open()
 
-/obj/machinery/computer/diseasesplicer/process()
+/obj/machinery/computer/diseasesplicer/Process()
 	if(stat & (NOPOWER|BROKEN))
 		return
 
@@ -94,12 +91,12 @@
 		scanning -= 1
 		if(!scanning)
 			ping("\The [src] pings, \"Analysis complete.\"")
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 	if(splicing)
 		splicing -= 1
 		if(!splicing)
 			ping("\The [src] pings, \"Splicing operation complete.\"")
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 	if(burning)
 		burning -= 1
 		if(!burning)
@@ -121,15 +118,13 @@
 					d.species = species_buffer
 
 			ping("\The [src] pings, \"Backup disk saved.\"")
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 
 /obj/machinery/computer/diseasesplicer/Topic(href, href_list)
 	if(..()) return 1
 
 	var/mob/user = usr
-	var/datum/nanoui/ui = nanomanager.get_open_ui(user, src, "main")
-
-	src.add_fingerprint(user)
+	var/datum/nanoui/ui = SSnano.get_open_ui(user, src, "main")
 
 	if (href_list["close"])
 		user.unset_machine()

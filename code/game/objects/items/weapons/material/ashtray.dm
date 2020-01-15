@@ -48,7 +48,7 @@ var/global/list/ashtray_cache = list()
 		return
 	if (istype(W,/obj/item/weapon/cigbutt) || istype(W,/obj/item/clothing/mask/smokable/cigarette) || istype(W, /obj/item/weapon/flame/match))
 		if (contents.len >= max_butts)
-			user << "\The [src] is full."
+			to_chat(user, "\The [src] is full.")
 			return
 		user.remove_from_mob(W)
 		W.loc = src
@@ -57,7 +57,7 @@ var/global/list/ashtray_cache = list()
 			var/obj/item/clothing/mask/smokable/cigarette/cig = W
 			if (cig.lit == 1)
 				src.visible_message("[user] crushes [cig] in \the [src], putting it out.")
-				processing_objects.Remove(cig)
+				STOP_PROCESSING(SSobj, cig)
 				var/obj/item/butt = new cig.type_butt(src)
 				cig.transfer_fingerprints_to(butt)
 				qdel(cig)
@@ -65,16 +65,14 @@ var/global/list/ashtray_cache = list()
 				//spawn(1)
 				//	TemperatureAct(150)
 			else if (cig.lit == 0)
-				user << "You place [cig] in [src] without even smoking it. Why would you do that?"
+				to_chat(user, "You place [cig] in [src] without even smoking it. Why would you do that?")
 
 		src.visible_message("[user] places [W] in [src].")
-		user.update_inv_l_hand()
-		user.update_inv_r_hand()
 		add_fingerprint(user)
 		update_icon()
 	else
 		health = max(0,health - W.force)
-		user << "You hit [src] with [W]."
+		to_chat(user, "You hit [src] with [W].")
 		if (health < 1)
 			shatter()
 	return
@@ -91,12 +89,3 @@ var/global/list/ashtray_cache = list()
 			return
 		update_icon()
 	return ..()
-
-/obj/item/weapon/material/ashtray/plastic/New(var/newloc)
-	..(newloc, "plastic")
-
-/obj/item/weapon/material/ashtray/bronze/New(var/newloc)
-	..(newloc, "bronze")
-
-/obj/item/weapon/material/ashtray/glass/New(var/newloc)
-	..(newloc, "glass")

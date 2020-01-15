@@ -5,8 +5,8 @@
 	desc = "Used to view, edit and maintain medical records."
 	icon_keyboard = "med_key"
 	icon_screen = "medcomp"
-	light_color = COLOR_LIME
-	req_one_access = list(access_medical, access_forensics_lockers)
+	light_color = COLOR_LIGHTING_GREEN_MACHINERY
+	req_one_access = list(access_moebius, access_forensics_lockers)
 	circuit = /obj/item/weapon/circuitboard/med_data
 	var/obj/item/weapon/card/id/scan = null
 	var/authenticated = null
@@ -26,25 +26,22 @@
 	if(!usr || usr.stat || usr.lying)	return
 
 	if(scan)
-		usr << "You remove \the [scan] from \the [src]."
+		to_chat(usr, "You remove \the [scan] from \the [src].")
 		scan.loc = get_turf(src)
 		if(!usr.get_active_hand() && ishuman(usr))
 			usr.put_in_hands(scan)
 		scan = null
 	else
-		usr << "There is nothing to remove from the console."
+		to_chat(usr, "There is nothing to remove from the console.")
 	return
 
 /obj/machinery/computer/med_data/attackby(var/obj/item/O, var/mob/user)
 	if(istype(O, /obj/item/weapon/card/id) && !scan && user.unEquip(O))
 		O.loc = src
 		scan = O
-		user << "You insert \the [O]."
+		to_chat(user, "You insert \the [O].")
 	else
 		..()
-
-/obj/machinery/computer/med_data/attack_ai(user as mob)
-	return src.attack_hand(user)
 
 /obj/machinery/computer/med_data/attack_hand(mob/user as mob)
 	if(..())
@@ -147,7 +144,7 @@
 				else
 		else
 			dat += text("<A href='?src=\ref[];login=1'>{Log In}</A>", src)
-	user << browse(text("<HEAD><TITLE>Medical Records</TITLE></HEAD><TT>[]</TT>", dat), "window=med_rec")
+	user << browse(russian_to_utf8(text("<HEAD><TITLE>Medical Records</TITLE></HEAD><TT>[]</TT>", dat)), "window=med_rec")
 	onclose(user, "med_rec")
 	return
 
@@ -531,7 +528,7 @@
 		if(prob(10/severity))
 			switch(rand(1,6))
 				if(1)
-					R.fields["name"] = "[pick(pick(first_names_male), pick(first_names_female))] [pick(last_names)]"
+					R.fields["name"] = "[pick(pick(GLOB.first_names_male), pick(GLOB.first_names_female))] [pick(GLOB.last_names)]"
 				if(2)
 					R.fields["sex"]	= pick("Male", "Female")
 				if(3)

@@ -1,3 +1,36 @@
+/*
+see multiz/movement.dm for some info.
+*/
+/turf/proc/CanZPass(atom/A, direction)
+	if(z == A.z) //moving FROM this turf
+		return direction == UP //can't go below
+	else
+		return !density
+
+/turf/simulated/open/CanZPass(atom/A, direction)
+	var/obj/effect/shield/turf_shield = getEffectShield()
+	if(locate(/obj/structure/catwalk, src) || (turf_shield && !turf_shield.CanPass(A)))
+		if(z == A.z)
+			if(direction == DOWN)
+				return 0
+		else if(direction == UP)
+			return 0
+	return 1
+
+/turf/space/CanZPass(atom/A, direction)
+	var/obj/effect/shield/turf_shield = getEffectShield()
+	if(locate(/obj/structure/catwalk, src) || (turf_shield && !turf_shield.CanPass(A)))
+		if(z == A.z)
+			if(direction == DOWN)
+				return 0
+		else if(direction == UP)
+			return 0
+	return 1
+
+/turf/simulated/floor/CanZPass(atom/A, direction)
+	return direction != DOWN
+/////////////////////////////////////
+
 /turf/simulated/open
 	name = "open space"
 	icon = 'icons/turf/space.dmi'
@@ -10,11 +43,22 @@
 	var/turf/below
 	var/list/underlay_references
 	var/global/overlay_map = list()
+	is_hole = TRUE
 
-/turf/simulated/open/initialize()
+	// A lazy list to contain a list of mobs who are currently scaling
+	// up this turf. Used in human/can_fall.
+
+	var/tmp/list/climbers
+
+/turf/simulated/open/New()
+	icon_state = "transparentclickable"
 	..()
+
+/turf/simulated/open/LateInitialize()
+	. = ..()
 	below = GetBelow(src)
 	ASSERT(HasBelow(z))
+	update_icon()
 
 /turf/simulated/open/is_plating()
 	return TRUE
@@ -55,12 +99,20 @@
 
 	return TRUE
 
-/turf/simulated/open/proc/fallThrough(var/atom/movable/mover)
+/turf/proc/fallThrough(var/atom/movable/mover)
+	return
+
+/turf/simulated/open/fallThrough(var/atom/movable/mover)
 	if(!mover.can_fall())
 		return
 
+
 	// No gravit, No fall.
 	if(!has_gravity(src))
+		return
+
+	var/obj/effect/shield/turf_shield = getEffectShield()
+	if (turf_shield && !turf_shield.CanPass(mover))
 		return
 
 	// See if something prevents us from falling.
@@ -77,6 +129,7 @@
 		playsound(src, 'sound/hallucinations/scream.ogg', 100)
 
 	if(!soft)
+
 		if(!isliving(mover))
 			if(istype(below, /turf/simulated/open))
 				mover.visible_message(
@@ -101,26 +154,27 @@
 					"You land on \the [below].", "You hear a soft whoosh and a crunch"
 				)
 
-			// Handle people getting hurt, it's funny!
-			if (ishuman(mover))
-				var/mob/living/carbon/human/H = mover
-				var/damage = 5
-				for(var/organ in list(BP_CHEST, BP_R_ARM, BP_L_ARM, BP_R_LEG, BP_L_LEG))
-					H.apply_damage(rand(0, damage), BRUTE, organ)
+		// Handle people getting hurt, it's funny!
+		mover.fall_impact(src, below)
 
-				H.Weaken(4)
-				H.updatehealth()
 
-		var/fall_damage = mover.get_fall_damage()
+
 		for(var/mob/living/M in below)
+			var/fall_damage = mover.get_fall_damage()
 			if(M == mover)
 				continue
 			M.Weaken(10)
 			if(fall_damage >= FALL_GIB_DAMAGE)
 				M.gib()
 			else
-				for(var/organ in list(BP_HEAD, BP_CHEST, BP_R_ARM, BP_L_ARM))
-					M.apply_damage(rand(0, fall_damage), BRUTE, organ)
+				var/tmp_damage	// Tmp variable to give the highest possible dmg on the head and less on the rest
+				var/organ = BP_HEAD
+
+				while(fall_damage > 0)
+					fall_damage -= tmp_damage = rand(0, fall_damage)
+					M.apply_damage(tmp_damage, BRUTE, organ)
+					organ = pickweight(list(BP_HEAD = 0.3, BP_CHEST = 0.8, BP_R_ARM = 0.6, BP_L_ARM = 0.6))
+
 
 // override to make sure nothing is hidden
 /turf/simulated/open/levelupdate()
@@ -135,21 +189,54 @@
 			return
 		var/obj/item/stack/rods/R = C
 		if (R.use(1))
-			user << SPAN_NOTICE("Constructing support lattice ...")
+			to_chat(user, SPAN_NOTICE("Constructing support lattice ..."))
 			playsound(src, 'sound/weapons/Genhit.ogg', 50, 1)
 			ReplaceWithLattice()
 		return
 
-	if (istype(C, /obj/item/stack/tile/floor))
+	if (istype(C, /obj/item/stack/material))
+		var/obj/item/stack/material/M = C
+
+		var/material/mat = M.get_material()
+		if (!mat.name == MATERIAL_STEEL)
+
+			return
+
 		var/obj/structure/lattice/L = locate(/obj/structure/lattice, src)
+
 		if(L)
 			var/obj/item/stack/tile/floor/S = C
-			if (S.get_amount() < 1)
+			if (S.get_amount() < 4)
 				return
-			qdel(L)
+
+			to_chat(user, SPAN_NOTICE("You start constructing underplating on the lattice."))
 			playsound(src, 'sound/weapons/Genhit.ogg', 50, 1)
-			S.use(1)
-			ChangeTurf(/turf/simulated/floor/airless)
+			if(do_after(user,80, src))
+				qdel(L)
+				S.use(4)
+				ChangeTurf(/turf/simulated/floor/plating/under)
 			return
 		else
-			user << SPAN_WARNING("The plating is going to need some support.")
+			to_chat(user, SPAN_WARNING("The plating is going to need some support."))
+
+	if(istype(C, /obj/item/stack/cable_coil))
+		var/obj/item/stack/cable_coil/coil = C
+		coil.turf_place(src, user)
+		return
+
+//Some effect handling procs for openspaces
+
+//Add tracks is called when a mob with bloody feet walks across the tile.
+//Since there's no floor to walk on, this will simply not happen. Return without doing anything
+/turf/simulated/open/AddTracks(var/typepath,var/bloodDNA,var/comingdir,var/goingdir,var/bloodcolor="#A10808")
+	return
+
+
+//Since walking around on openspaces wasn't possible before i fixed jetpacks, nobody thought to fix this
+/turf/simulated/open/get_footstep_sound(var/mobtype)
+	var/obj/structure/catwalk/catwalk = locate(/obj/structure/catwalk) in src
+	if(catwalk)
+		return footstep_sound("catwalk")
+	else
+		return null
+

@@ -5,13 +5,13 @@
 	var/datum/computer/file/embedded_program/docking/airlock/docking_program
 	tag_secure = 1
 
-/obj/machinery/embedded_controller/radio/airlock/docking_port/initialize()
-	..()
+/obj/machinery/embedded_controller/radio/airlock/docking_port/New()
+	. = ..()
 	airlock_program = new/datum/computer/file/embedded_program/airlock/docking(src)
 	docking_program = new/datum/computer/file/embedded_program/docking/airlock(src, airlock_program)
 	program = docking_program
 
-/obj/machinery/embedded_controller/radio/airlock/docking_port/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/embedded_controller/radio/airlock/docking_port/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	var/data[0]
 
 	data = list(
@@ -24,7 +24,7 @@
 		"override_enabled" = docking_program.override_enabled,
 	)
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 
 	if (!ui)
 		ui = new(user, src, ui_key, "docking_airlock_console.tmpl", name, 470, 290)
@@ -39,20 +39,10 @@
 	usr.set_machine(src)
 	src.add_fingerprint(usr)
 
-	var/clean = 0
-	switch(href_list["command"])	//anti-HTML-hacking checks
-		if("cycle_ext")
-			clean = 1
-		if("cycle_int")
-			clean = 1
-		if("force_ext")
-			clean = 1
-		if("force_int")
-			clean = 1
-		if("abort")
-			clean = 1
-		if("toggle_override")
-			clean = 1
+	var/clean = FALSE
+	switch(href_list["command"])
+		if("cycle_ext", "cycle_int", "force_ext", "force_int", "abort", "toggle_override")
+			clean = TRUE
 
 	if(clean)
 		program.receive_user_command(href_list["command"])
@@ -81,8 +71,8 @@
 	..(command)
 	airlock_program.receive_user_command(command)	//pass along to subprograms
 
-/datum/computer/file/embedded_program/docking/airlock/process()
-	airlock_program.process()
+/datum/computer/file/embedded_program/docking/airlock/Process()
+	airlock_program.Process()
 	..()
 
 /datum/computer/file/embedded_program/docking/airlock/receive_signal(datum/signal/signal, receive_method, receive_param)
@@ -95,6 +85,11 @@
 
 //are we ready for docking?
 /datum/computer/file/embedded_program/docking/airlock/ready_for_docking()
+	//Unsimulated turfs have no atmos simulation so don't bother trying to cycle anything
+	//just short circuit this and be always ready
+	if (istype(master.loc, /turf/unsimulated))
+		return TRUE
+
 	return airlock_program.done_cycling()
 
 //we are docked, open the doors or whatever.
@@ -140,16 +135,16 @@
 /*** DEBUG VERBS ***
 
 /datum/computer/file/embedded_program/docking/proc/print_state()
-	world << "id_tag: [id_tag]"
-	world << "dock_state: [dock_state]"
-	world << "control_mode: [control_mode]"
-	world << "tag_target: [tag_target]"
-	world << "response_sent: [response_sent]"
+	to_chat(world, "id_tag: [id_tag]")
+	to_chat(world, "dock_state: [dock_state]")
+	to_chat(world, "control_mode: [control_mode]")
+	to_chat(world, "tag_target: [tag_target]")
+	to_chat(world, "response_sent: [response_sent]")
 
 /datum/computer/file/embedded_program/docking/post_signal(datum/signal/signal, comm_line)
-	world << "Program [id_tag] sent a message!"
+	to_chat(world, "Program [id_tag] sent a message!")
 	print_state()
-	world << "[id_tag] sent command \"[signal.data["command"]]\" to \"[signal.data["recipient"]]\""
+	to_chat(world, "[id_tag] sent command \"[signal.data["command"]]\" to \"[signal.data["recipient"]]\"")
 	..(signal)
 
 /obj/machinery/embedded_controller/radio/airlock/docking_port/verb/view_state()

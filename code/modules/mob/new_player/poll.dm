@@ -7,7 +7,7 @@
 	if(dbcon.IsConnected())
 		var/DBQuery/select_query = dbcon.NewQuery("SELECT id, question FROM polls WHERE Now() BETWEEN start AND end")
 		if(!select_query.Execute())
-			world.log << "Failed to retrieve active player polls. Error message: [select_query.ErrorMsg()]."
+			log_world("Failed to retrieve active player polls. Error message: [select_query.ErrorMsg()].")
 			return
 
 		var/output = "<div align='center'><B>Player polls</B>"
@@ -41,7 +41,7 @@
 
 		var/DBQuery/select_query = dbcon.NewQuery("SELECT start, end, question, type, FROM polls WHERE id = [poll_id]")
 		if(!select_query.Execute())
-			world.log << "Failed to get poll with id [poll_id]. Error message: [select_query.ErrorMsg()]."
+			log_world("Failed to get poll with id [poll_id]. Error message: [select_query.ErrorMsg()].")
 			return
 
 		var/start_time = ""
@@ -55,7 +55,7 @@
 			question = select_query.item[3]
 			type = select_query.item[4]
 		else
-			usr << SPAN_DANGER("Poll question details not found.")
+			to_chat(usr, SPAN_DANGER("Poll question details not found."))
 			return
 
 		switch(type)
@@ -63,7 +63,7 @@
 			if("OPTION")
 				var/DBQuery/voted_query = dbcon.NewQuery("SELECT option_id FROM poll_votes WHERE poll_id = [poll_id] AND player_id = [client.id]")
 				if(!voted_query.Execute())
-					world.log << "Failed to retrieve votes from poll [poll_id] for player [client.id]. Error message: [voted_query.ErrorMsg()]."
+					log_world("Failed to retrieve votes from poll [poll_id] for player [client.id]. Error message: [voted_query.ErrorMsg()].")
 					return
 
 				var/voted = FALSE
@@ -77,7 +77,7 @@
 
 				var/DBQuery/options_query = dbcon.NewQuery("SELECT id, text FROM poll_options WHERE poll_id = [poll_id]")
 				if(!options_query.Execute())
-					world.log << "Failed to get poll options for poll with id [poll_id]. Error message: [options_query.ErrorMsg()]."
+					log_world("Failed to get poll options for poll with id [poll_id]. Error message: [options_query.ErrorMsg()].")
 					return
 				while(options_query.NextRow())
 					var/datum/poll_option/option = new()
@@ -120,7 +120,7 @@
 			if("TEXT")
 				var/DBQuery/voted_query = dbcon.NewQuery("SELECT text FROM poll_text_replies WHERE poll_id = [poll_id] AND player_id = [client.id]")
 				if(!voted_query.Execute())
-					world.log << "Failed to get votes from text poll [poll_id] for user [client.id]. Error message: [voted_query.ErrorMsg()]."
+					log_world("Failed to get votes from text poll [poll_id] for user [client.id]. Error message: [voted_query.ErrorMsg()].")
 					return
 
 				var/voted = FALSE
@@ -172,41 +172,41 @@
 
 		var/DBQuery/select_query = dbcon.NewQuery("SELECT start, end, question, type, FROM polls WHERE id = [poll_id] AND Now() BETWEEN start AND end")
 		if(!select_query.Execute())
-			world.log << "Failed to get poll [poll_id]. Error message: [select_query.ErrorMsg()]."
+			log_world("Failed to get poll [poll_id]. Error message: [select_query.ErrorMsg()].")
 			return
 
 		if(select_query.NextRow())
 			if(select_query.item[4] != "OPTION")
-				usr << SPAN_DANGER("Invalid poll type.")
+				to_chat(usr, SPAN_DANGER("Invalid poll type."))
 				return
 		else
-			usr << SPAN_DANGER("Poll not found.")
+			to_chat(usr, SPAN_DANGER("Poll not found."))
 			return
 
 		var/DBQuery/select_query2 = dbcon.NewQuery("SELECT id FROM poll_options WHERE id = [option_id] AND poll_id = [poll_id]")
 		if(!select_query2.Execute())
-			world.log << "Failed to get poll options for poll [poll_id]. Error message: [select_query2.ErrorMsg()]."
+			log_world("Failed to get poll options for poll [poll_id]. Error message: [select_query2.ErrorMsg()].")
 			return
 
 		if(!select_query2.NextRow())
-			usr << SPAN_WARNING("Invalid poll options.")
+			to_chat(usr, SPAN_WARNING("Invalid poll options."))
 			return
 
 		var/DBQuery/voted_query = dbcon.NewQuery("SELECT id FROM poll_votes WHERE poll_id = [poll_id] AND player_id = [client.id]")
 		if(!voted_query.Execute())
-			world.log << "Failed to get votes for poll [poll_id]. Error message: [voted_query.ErrorMsg()]."
+			log_world("Failed to get votes for poll [poll_id]. Error message: [voted_query.ErrorMsg()].")
 			return
 
 		if(voted_query.NextRow())
-			usr << SPAN_WARNING("You already voted in this poll.")
+			to_chat(usr, SPAN_WARNING("You already voted in this poll."))
 			return
 
 		var/DBQuery/insert_query = dbcon.NewQuery("INSERT INTO poll_votes (time, option_id, poll_id, player_id) VALUES (Now(), [option_id], [poll_id], [client.id])")
 		if(!insert_query.Execute())
-			world.log << "Failed to insert vote from [client.id] for poll [poll_id]. Error message: [insert_query.ErrorMsg()]."
+			log_world("Failed to insert vote from [client.id] for poll [poll_id]. Error message: [insert_query.ErrorMsg()].")
 			return
 
-		usr << SPAN_NOTICE("Vote successful.")
+		to_chat(usr, SPAN_NOTICE("Vote successful."))
 		usr << browse(null,"window=playerpoll")
 
 
@@ -221,20 +221,20 @@
 
 		var/DBQuery/select_query = dbcon.NewQuery("SELECT start, end, question, type FROM polls WHERE id = [poll_id] AND Now() BETWEEN start AND end")
 		if(!select_query.Execute())
-			world.log << "Failed to get poll  [poll_id]. Error message: [select_query.ErrorMsg()]."
+			log_world("Failed to get poll  [poll_id]. Error message: [select_query.ErrorMsg()].")
 			return
 
 		if(select_query.NextRow() && select_query.item[4] != "TEXT")
-			usr << SPAN_WARNING("Invalid poll type.")
+			to_chat(usr, SPAN_WARNING("Invalid poll type."))
 			return
 
 		var/DBQuery/voted_query = dbcon.NewQuery("SELECT id FROM poll_text_replies WHERE poll_id = [poll_id] AND player_id = [client.id]")
 		if(!voted_query.Execute())
-			world.log << "Failed to get text replies for poll [poll_id] from user [client.id]. Error message: [voted_query.ErrorMsg()]."
+			log_world("Failed to get text replies for poll [poll_id] from user [client.id]. Error message: [voted_query.ErrorMsg()].")
 			return
 
 		if(voted_query.NextRow())
-			usr << SPAN_WARNING("You already sent your feedback for this poll.")
+			to_chat(usr, SPAN_WARNING("You already sent your feedback for this poll."))
 			return
 
 		reply_text = replacetext(reply_text, "%BR%", "")
@@ -243,13 +243,13 @@
 		reply_text = replacetext(reply_text, "%BR%", "<BR>")
 
 		if(!text_pass)
-			usr << SPAN_WARNING("The text you entered was blank, contained illegal characters or was too long. Please correct the text and submit again.")
+			to_chat(usr, SPAN_WARNING("The text you entered was blank, contained illegal characters or was too long. Please correct the text and submit again."))
 			return
 
 		var/DBQuery/insert_query = dbcon.NewQuery("INSERT INTO poll_text_replies (time, poll_id, player_id, text) VALUES (Now(), [poll_id], [client.id], '[reply_text]')")
 		if(!insert_query.Execute())
-			world.log << "Failed to insert text vote reply for [poll_id] from user [client.id]. Error message: [insert_query.ErrorMsg()]."
+			log_world("Failed to insert text vote reply for [poll_id] from user [client.id]. Error message: [insert_query.ErrorMsg()].")
 			return
 
-		usr << SPAN_NOTICE("Vote successful.")
+		to_chat(usr, SPAN_NOTICE("Vote successful."))
 		usr << browse(null,"window=playerpoll")

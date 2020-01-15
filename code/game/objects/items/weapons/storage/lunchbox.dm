@@ -10,7 +10,7 @@
 	item_state = "lunchbox_heart"
 	w_class = ITEM_SIZE_NORMAL
 	max_w_class = ITEM_SIZE_NORMAL
-	max_storage_space = 8
+	max_storage_space = DEFAULT_NORMAL_STORAGE
 	attack_verb = "lunched"
 
 	can_hold = list(
@@ -24,7 +24,7 @@
 	item_state = "lunchbox_rainbow"
 
 /obj/item/weapon/storage/lunchbox/cat
-	name = "cat luncbox"
+	name = "cat lunchbox"
 	desc = "Meowbox."
 	icon_state = "lunchbox_cat"
 	item_state = "lunchbox_cat"

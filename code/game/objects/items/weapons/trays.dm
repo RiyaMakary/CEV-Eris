@@ -12,7 +12,7 @@
 	throw_range = 5
 	w_class = ITEM_SIZE_NORMAL
 	flags = CONDUCT
-	matter = list(DEFAULT_WALL_MATERIAL = 3000)
+	matter = list(MATERIAL_STEEL = 3)
 	var/list/carrying = list() // List of things on the tray. - Doohl
 	var/max_carry = 10
 
@@ -32,7 +32,7 @@
 
 
 	if((CLUMSY in user.mutations) && prob(50))              //What if he's a clown?
-		M << SPAN_WARNING("You accidentally slam yourself with the [src]!")
+		to_chat(M, SPAN_WARNING("You accidentally slam yourself with the [src]!"))
 		M.Weaken(1)
 		user.take_organ_damage(2)
 		if(prob(50))
@@ -45,7 +45,7 @@
 	var/mob/living/carbon/human/H = M      ///////////////////////////////////// /Let's have this ready for later.
 
 
-	if(!(user.targeted_organ in list(O_EYES, BP_HEAD))) //////////////hitting anything else other than the eyes
+	if(!(user.targeted_organ in list(BP_EYES, BP_HEAD))) //////////////hitting anything else other than the eyes
 		if(prob(33))
 			src.add_blood(H)
 			var/turf/location = H.loc
@@ -81,7 +81,7 @@
 			break
 
 	if(protected)
-		M << SPAN_WARNING("You get slammed in the face with the tray, against your mask!")
+		to_chat(M, SPAN_WARNING("You get slammed in the face with the tray, against your mask!"))
 		if(prob(33))
 			src.add_blood(H)
 			if (H.wear_mask)
@@ -111,7 +111,7 @@
 			return
 
 	else //No eye or head protection, tough luck!
-		M << SPAN_WARNING("You get slammed in the face with the tray!")
+		to_chat(M, SPAN_WARNING("You get slammed in the face with the tray!"))
 		if(prob(33))
 			src.add_blood(M)
 			var/turf/location = H.loc
@@ -169,10 +169,9 @@
 
 	return val
 
-/obj/item/weapon/tray/pickup(mob/user)
-
+/obj/item/weapon/tray/pre_pickup(mob/user)
 	if(!isturf(loc))
-		return
+		return FALSE
 
 	for(var/obj/item/I in loc)
 		if( I != src && !I.anchored && !istype(I, /obj/item/clothing/under) && !istype(I, /obj/item/clothing/suit) && !istype(I, /obj/item/projectile) )
@@ -188,28 +187,30 @@
 
 			I.loc = src
 			carrying.Add(I)
-			overlays += image("icon" = I.icon, "icon_state" = I.icon_state, "layer" = 30 + I.layer)
+			overlays += image("icon" = I.icon, "icon_state" = I.icon_state, "layer" = 30 + I.layer, "pixel_x" = I.pixel_x, "pixel_y" = I.pixel_y)
+
+	return ..()
 
 /obj/item/weapon/tray/dropped(mob/user)
 
-	var/mob/living/M
-	for(M in src.loc) //to handle hand switching
-		return
+	spawn(1) //why sleep 1? Because forceMove first drops us on the ground.
+		if(!isturf(loc)) //to handle hand switching
+			return
 
-	var/foundtable = 0
-	for(var/obj/structure/table/T in loc)
-		foundtable = 1
-		break
+		var/foundtable = 0
+		for(var/obj/structure/table/T in loc)
+			foundtable = 1
+			break
 
-	overlays.Cut()
+		overlays.Cut()
 
-	for(var/obj/item/I in carrying)
-		I.loc = loc
-		carrying.Remove(I)
-		if(!foundtable && isturf(loc))
+		for(var/obj/item/I in carrying)
+			I.loc = loc
+			carrying.Remove(I)
+			if(!foundtable && isturf(loc))
 			// if no table, presume that the person just shittily dropped the tray on the ground and made a mess everywhere!
-			spawn()
-				for(var/i = 1, i <= rand(1,2), i++)
-					if(I)
-						step(I, pick(NORTH,SOUTH,EAST,WEST))
-						sleep(rand(2,4))
+				spawn()
+					for(var/i = 1, i <= rand(1,2), i++)
+						if(I)
+							step(I, pick(NORTH,SOUTH,EAST,WEST))
+							sleep(rand(2,4))

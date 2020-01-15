@@ -8,7 +8,7 @@
 	if(!deploy_path)
 		return
 	playsound(loc, 'sound/items/zip.ogg', 75, 1)
-	user << SPAN_NOTICE("You inflate \the [src].")
+	to_chat(user, SPAN_NOTICE("You inflate \the [src]."))
 	var/obj/structure/inflatable/R = new deploy_path(user.loc)
 	src.transfer_fingerprints_to(R)
 	R.add_fingerprint(user)
@@ -49,7 +49,7 @@
 
 /obj/structure/inflatable/Destroy()
 	update_nearby_tiles()
-	..()
+	. = ..()
 
 /obj/structure/inflatable/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
 	return 0
@@ -143,7 +143,7 @@
 	name = "inflatable door"
 	density = 1
 	anchored = 1
-	opacity = 0
+	opacity = FALSE
 
 	icon_state = "door_closed"
 	undeploy_path = /obj/item/inflatable/door
@@ -191,20 +191,18 @@
 
 /obj/structure/inflatable/door/proc/Open()
 	isSwitchingStates = 1
-	flick("door_opening",src)
+	flick("door_opening", src)
 	sleep(10)
 	density = 0
-	opacity = 0
 	state = 1
 	update_icon()
 	isSwitchingStates = 0
 
 /obj/structure/inflatable/door/proc/Close()
 	isSwitchingStates = 1
-	flick("door_closing",src)
+	flick("door_closing", src)
 	sleep(10)
 	density = 1
-	opacity = 0
 	state = 0
 	update_icon()
 	isSwitchingStates = 0
@@ -236,7 +234,7 @@
 	icon_state = "folded_wall_torn"
 
 	attack_self(mob/user)
-		user << SPAN_NOTICE("The inflatable wall is too torn to be inflated!")
+		to_chat(user, SPAN_NOTICE("The inflatable wall is too torn to be inflated!"))
 		add_fingerprint(user)
 
 /obj/item/inflatable/door/torn
@@ -246,7 +244,7 @@
 	icon_state = "folded_door_torn"
 
 	attack_self(mob/user)
-		user << SPAN_NOTICE("The inflatable door is too torn to be inflated!")
+		to_chat(user, SPAN_NOTICE("The inflatable door is too torn to be inflated!"))
 		add_fingerprint(user)
 
 /obj/item/weapon/storage/briefcase/inflatable

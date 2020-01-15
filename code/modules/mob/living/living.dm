@@ -55,12 +55,12 @@ default behaviour is:
 			for(var/mob/living/M in range(tmob, 1))
 				if(tmob.pinned.len ||  ((M.pulling == tmob && ( tmob.restrained() && !( M.restrained() ) && M.stat == 0)) || locate(/obj/item/weapon/grab, tmob.grabbed_by.len)) )
 					if ( !(world.time % 5) )
-						src << "<span class='warning'>[tmob] is restrained, you cannot push past</span>"
+						to_chat(src, "<span class='warning'>[tmob] is restrained, you cannot push past</span>")
 					now_pushing = FALSE
 					return
 				if( tmob.pulling == M && ( M.restrained() && !( tmob.restrained() ) && tmob.stat == 0) )
 					if ( !(world.time % 5) )
-						src << "<span class='warning'>[tmob] is restraining [M], you cannot push past</span>"
+						to_chat(src, "<span class='warning'>[tmob] is restraining [M], you cannot push past</span>")
 					now_pushing = FALSE
 					return
 
@@ -87,11 +87,6 @@ default behaviour is:
 			if(a_intent == I_HELP || src.restrained())
 				now_pushing = FALSE
 				return
-			if(ishuman(tmob) && (FAT in tmob.mutations))
-				if(prob(40) && !(FAT in src.mutations))
-					src << "<span class='danger'>You fail to push [tmob]'s fat ass out of the way.</span>"
-					now_pushing = FALSE
-					return
 			if(tmob.r_hand && istype(tmob.r_hand, /obj/item/weapon/shield/riot))
 				if(prob(99))
 					now_pushing = FALSE
@@ -120,10 +115,10 @@ default behaviour is:
 						for(var/obj/structure/window/win in get_step(AM,t))
 							now_pushing = FALSE
 							return
-					step(AM, t)
+					step_glide(AM, t, glide_size)
 					if(ishuman(AM) && AM:grabbed_by)
 						for(var/obj/item/weapon/grab/G in AM:grabbed_by)
-							step(G:assailant, get_dir(G:assailant, AM))
+							step_glide(G:assailant, get_dir(G:assailant, AM), glide_size)
 							G.adjust_position()
 				now_pushing = FALSE
 			return
@@ -161,7 +156,7 @@ default behaviour is:
 	if ((src.health < 0 && src.health > (5-src.maxHealth))) // Health below Zero but above 5-away-from-death, as before, but variable
 		src.adjustOxyLoss(src.health + src.maxHealth * 2) // Deal 2x health in OxyLoss damage, as before but variable.
 		src.health = src.maxHealth - src.getOxyLoss() - src.getToxLoss() - src.getFireLoss() - src.getBruteLoss()
-		src << "\blue You have given up life and succumbed to death."
+		to_chat(src, "\blue You have given up life and succumbed to death.")
 
 
 /mob/living/proc/updatehealth()
@@ -311,7 +306,8 @@ default behaviour is:
 
 // ++++ROCKDTBEN++++ MOB PROCS //END
 
-/mob/proc/get_contents()
+/mob/get_contents()
+	return contents
 
 
 //Recursive function to find everything a mob is holding.
@@ -365,42 +361,22 @@ default behaviour is:
 /mob/living/proc/can_inject()
 	return TRUE
 
+/mob/living/is_injectable(allowmobs = TRUE)
+	return (allowmobs && reagents && can_inject())
+
+/mob/living/is_drawable(allowmobs = TRUE)
+	return (allowmobs && reagents && can_inject())
+
+
 /mob/living/proc/get_organ_target()
 	var/mob/shooter = src
 	var/t = shooter:targeted_organ
-	if(t in list(O_EYES, "mouth"))
+	if(t in list(BP_EYES, BP_MOUTH))
 		t = BP_HEAD
 	var/obj/item/organ/external/def_zone = ran_zone(t)
 	return def_zone
 
 
-// heal ONE external organ, organ gets randomly selected from damaged ones.
-/mob/living/proc/heal_organ_damage(var/brute, var/burn)
-	adjustBruteLoss(-brute)
-	adjustFireLoss(-burn)
-	src.updatehealth()
-
-// damage ONE external organ, organ gets randomly selected from damaged ones.
-/mob/living/proc/take_organ_damage(var/brute, var/burn, var/emp=0)
-	if(status_flags & GODMODE)
-		return FALSE	//godmode
-	adjustBruteLoss(brute)
-	adjustFireLoss(burn)
-	src.updatehealth()
-
-// heal MANY external organs, in random order
-/mob/living/proc/heal_overall_damage(var/brute, var/burn)
-	adjustBruteLoss(-brute)
-	adjustFireLoss(-burn)
-	src.updatehealth()
-
-// damage MANY external organs, in random order
-/mob/living/proc/take_overall_damage(var/brute, var/burn, var/used_weapon = null)
-	if(status_flags & GODMODE)
-		return FALSE	//godmode
-	adjustBruteLoss(brute)
-	adjustFireLoss(burn)
-	src.updatehealth()
 
 /mob/living/proc/restore_all_organs()
 	return
@@ -426,7 +402,8 @@ default behaviour is:
 	fire_stacks = 0
 
 /mob/living/proc/rejuvenate()
-	reagents.clear_reagents()
+	if (reagents)
+		reagents.clear_reagents()
 
 	// shut down various types of badness
 	setToxLoss(0)
@@ -456,8 +433,8 @@ default behaviour is:
 
 	// remove the character from the list of the dead
 	if(stat == DEAD)
-		dead_mob_list -= src
-		living_mob_list += src
+		GLOB.dead_mob_list -= src
+		GLOB.living_mob_list += src
 		tod = null
 		timeofdeath = 0
 
@@ -478,23 +455,7 @@ default behaviour is:
 /mob/living/proc/UpdateDamageIcon()
 	return
 
-
-/mob/living/proc/Examine_OOC()
-	set name = "Examine Meta-Info (OOC)"
-	set category = "OOC"
-	set src in view()
-
-	if(config.allow_Metadata)
-		if(client)
-			usr << "[src]'s Metainfo:<br>[client.prefs.metadata]"
-		else
-			usr << "[src] does not have any stored infomation!"
-	else
-		usr << "OOC Metadata is not supported by this server!"
-
-	return
-
-/mob/living/Move(a, b, flag)
+/mob/living/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	if (buckled)
 		return
 
@@ -507,7 +468,7 @@ default behaviour is:
 		for(var/mob/living/M in range(src, 1))
 			if ((M.pulling == src && M.stat == 0 && !( M.restrained() )))
 				t7 = null
-	if ((t7 && (pulling && ((get_dist(src, pulling) <= 1 || pulling.loc == loc) && (client && client.moving)))))
+	if ((t7 && (pulling && ((get_dist(src, pulling) <= 1 || pulling.loc == loc) && (moving)))))
 		var/turf/T = loc
 		. = ..()
 
@@ -569,10 +530,10 @@ default behaviour is:
 												var/mob/living/carbon/human/H = M
 												var/blood_volume = round(H.vessel.get_reagent_amount("blood"))
 												if(blood_volume > 0)
-													H.vessel.remove_reagent("blood", 1)
+													H.vessel.remove_reagent("blood", 0.5)
 
 
-						step(pulling, get_dir(pulling.loc, T))
+						step_glide(pulling, get_dir(pulling.loc, T), glide_size)
 						if(t)
 							M.start_pulling(t)
 				else
@@ -583,7 +544,7 @@ default behaviour is:
 								for(var/obj/structure/window/win in get_step(pulling,get_dir(pulling.loc, T)))
 									stop_pulling()
 					if (pulling)
-						step(pulling, get_dir(pulling.loc, T))
+						step_glide(pulling, get_dir(pulling.loc, T), glide_size)
 	else
 		stop_pulling()
 		. = ..()
@@ -597,208 +558,58 @@ default behaviour is:
 		for(var/mob/living/carbon/slime/M in view(1,src))
 			M.UpdateFeed(src)
 
-/mob/living/proc/handle_footstep(turf/T)
-	if(istype(T))
-		return TRUE
-	return FALSE
 
-/mob/living/verb/resist()
-	set name = "Resist"
-	set category = "IC"
 
-	if(!stat && canClick())
-		setClickCooldown(20)
-		resist_grab()
-		if(!weakened)
-			process_resist()
-
-/mob/living/proc/process_resist()
-	//Getting out of someone's inventory.
-	if(istype(src.loc, /obj/item/weapon/holder))
-		escape_inventory(src.loc)
-		return
-
-	//unbuckling yourself
-	if(buckled)
-		spawn() escape_buckle()
-		return TRUE
-
-	//Breaking out of a locker?
-	if( src.loc && (istype(src.loc, /obj/structure/closet)) )
-		var/obj/structure/closet/C = loc
-		spawn() C.mob_breakout(src)
-		return TRUE
-
-/mob/living/proc/escape_inventory(obj/item/weapon/holder/H)
-	if(H != src.loc) return
-
-	var/mob/M = H.loc //Get our mob holder (if any).
-
-	if(istype(M))
-		M.drop_from_inventory(H)
-		M << "<span class='warning'>\The [H] wriggles out of your grip!</span>"
-		src << "<span class='warning'>You wriggle out of \the [M]'s grip!</span>"
-
-		// Update whether or not this mob needs to pass emotes to contents.
-		for(var/atom/A in M.contents)
-			if(istype(A,/mob/living/simple_animal/borer) || istype(A,/obj/item/weapon/holder))
-				return
-		M.status_flags &= ~PASSEMOTES
-
-	else if(istype(H.loc,/obj/item/clothing/accessory/holster))
-		var/obj/item/clothing/accessory/holster/holster = H.loc
-		if(holster.holstered == H)
-			holster.clear_holster()
-		src << "<span class='warning'>You extricate yourself from \the [holster].</span>"
-		H.forceMove(get_turf(H))
-	else if(istype(H.loc,/obj/item))
-		src << "<span class='warning'>You struggle free of \the [H.loc].</span>"
-		H.forceMove(get_turf(H))
-
-/mob/living/proc/escape_buckle()
-	if(buckled)
-		buckled.user_unbuckle_mob(src)
-
-/mob/living/proc/resist_grab()
-	var/resisting = 0
-	for(var/obj/O in requests)
-		requests.Remove(O)
-		qdel(O)
-		resisting++
-	for(var/obj/item/weapon/grab/G in grabbed_by)
-		resisting++
-		switch(G.state)
-			if(GRAB_PASSIVE)
-				qdel(G)
-			if(GRAB_AGGRESSIVE)
-				if(prob(60)) //same chance of breaking the grab as disarm
-					visible_message("<span class='warning'>[src] has broken free of [G.assailant]'s grip!</span>")
-					qdel(G)
-			if(GRAB_NECK)
-				//If the you move when grabbing someone then it's easier for them to break free. Same if the affected mob is immune to stun.
-				if (((world.time - G.assailant.l_move_time < 30 || !stunned) && prob(15)) || prob(3))
-					visible_message("<span class='warning'>[src] has broken free of [G.assailant]'s headlock!</span>")
-					qdel(G)
-	if(resisting)
-		visible_message("<span class='danger'>[src] resists!</span>")
 
 /mob/living/verb/lay_down()
 	set name = "Rest"
 	set category = "IC"
 
-	resting = !resting
-	src << "<span class='notice'>You are now [resting ? "resting" : "getting up"]</span>"
+	var/state_changed = FALSE
+	if(resting && can_stand_up())
+		resting = FALSE
+		state_changed = TRUE
 
-/mob/living/proc/is_allowed_vent_crawl_item(var/obj/item/carried_item)
-	return isnull(get_inventory_slot(carried_item))
+
+	else if (!resting)
+		if(ishuman(src))
+			var/obj/item/weapon/bedsheet/BS = locate(/obj/item/weapon/bedsheet) in get_turf(src)
+			// If there is unrolled bedsheet roll and unroll it to get in bed like a proper adult does
+			if(BS && !BS.rolled && !BS.folded)
+				resting = TRUE
+				BS.toggle_roll(src, no_message = TRUE)
+				BS.toggle_roll(src)
+			else
+				resting = TRUE
+			state_changed = TRUE
+		else
+			resting = TRUE
+			state_changed = TRUE
+	if(state_changed)
+		to_chat(src, "<span class='notice'>You are now [resting ? "resting" : "getting up"]</span>")
+		update_lying_buckled_and_verb_status()
+
+/mob/living/proc/can_stand_up()
+	var/no_blankets = FALSE
+	no_blankets = unblanket()
+
+	if(no_blankets)
+		return TRUE
+	else
+		to_chat(src, SPAN_WARNING("You can't stand up, bedsheets are in the way and you struggle to get rid of them."))
+		return FALSE
+
+//used to push away bedsheets in order to stand up, only humans will roll them (see overriden human proc)
+/mob/living/proc/unblanket()
+	var/obj/item/weapon/bedsheet/blankets = (locate(/obj/item/weapon/bedsheet) in loc)
+	if (blankets && !blankets.rolled && !blankets.folded)
+		return blankets.toggle_roll(src)
+	return TRUE
 
 /mob/living/simple_animal/spiderbot/is_allowed_vent_crawl_item(var/obj/item/carried_item)
 	if(carried_item == held_item)
 		return FALSE
 	return ..()
-
-/mob/living/proc/handle_ventcrawl(var/obj/machinery/atmospherics/unary/vent_pump/vent_found = null, var/ignore_items = 0) // -- TLE -- Merged by Carn
-	if(stat)
-		src << "You must be conscious to do this!"
-		return
-	if(lying)
-		src << "You can't vent crawl while you're stunned!"
-		return
-
-	var/special_fail_msg = cannot_use_vents()
-	if(special_fail_msg)
-		src << "<span class='warning'>[special_fail_msg]</span>"
-		return
-
-	if(vent_found) // one was passed in, probably from vent/AltClick()
-		if(vent_found.welded)
-			src << "That vent is welded shut."
-			return
-		if(!vent_found.Adjacent(src))
-			return // don't even acknowledge that
-	else
-		for(var/obj/machinery/atmospherics/unary/vent_pump/v in range(1,src))
-			if(!v.welded)
-				if(v.Adjacent(src))
-					vent_found = v
-	if(!vent_found)
-		src << "You'll need a non-welded vent to crawl into!"
-		return
-
-	if(!vent_found.network || !vent_found.network.normal_members.len)
-		src << "This vent is not connected to anything."
-		return
-
-	var/list/vents = list()
-	for(var/obj/machinery/atmospherics/unary/vent_pump/temp_vent in vent_found.network.normal_members)
-		if(temp_vent.welded)
-			continue
-		if(temp_vent in loc)
-			continue
-		var/turf/T = get_turf(temp_vent)
-
-		if(!T || T.z != loc.z)
-			continue
-
-		var/i = 1
-		var/index = "[T.loc.name]\[[i]\]"
-		while(index in vents)
-			i++
-			index = "[T.loc.name]\[[i]\]"
-		vents[index] = temp_vent
-	if(!vents.len)
-		src << "\red There are no available vents to travel to, they could be welded."
-		return
-
-	var/obj/selection = input("Select a destination.", "Duct System") as null|anything in sortAssoc(vents)
-	if(!selection)
-		return
-
-	if(!vent_found.Adjacent(src))
-		src << "Never mind, you left."
-		return
-
-	if(!ignore_items)
-		for(var/obj/item/carried_item in contents)//If the monkey got on objects.
-			if(is_allowed_vent_crawl_item(carried_item))
-				continue
-			src << "<span class='warning'>You can't be carrying items or have items equipped when vent crawling!</span>"
-			return
-
-	if(isslime(src))
-		var/mob/living/carbon/slime/S = src
-		if(S.Victim)
-			src << "\red You'll have to let [S.Victim] go or finish eating \him first."
-			return
-
-	var/obj/machinery/atmospherics/unary/vent_pump/target_vent = vents[selection]
-	if(!target_vent)
-		return
-
-	for(var/mob/O in viewers(src, null))
-		O.show_message(text("<B>[src] scrambles into the ventillation ducts!</B>"), 1)
-	loc = target_vent
-
-	var/travel_time = round(get_dist(loc, target_vent.loc) / 2)
-
-	spawn(travel_time)
-
-		if(!target_vent)
-			return
-		for(var/mob/O in hearers(target_vent,null))
-			O.show_message("You hear something squeezing through the ventilation ducts.",2)
-
-		sleep(travel_time)
-
-		if(!target_vent)
-			return
-		if(target_vent.welded)			//the vent can be welded while alien scrolled through the list or travelled.
-			target_vent = vent_found 	//travel back. No additional time required.
-			src << "\red The vent you were heading to appears to be welded."
-		loc = target_vent.loc
-		var/area/new_area = get_area(loc)
-		if(new_area)
-			new_area.Entered(src)
 
 /mob/living/proc/cannot_use_vents()
 	return "You can't fit into that vent."
@@ -831,12 +642,12 @@ default behaviour is:
 	if(!..())
 		return FALSE
 	if(!possession_candidate)
-		possessor << "<span class='warning'>That animal cannot be possessed.</span>"
+		to_chat(possessor, "<span class='warning'>That animal cannot be possessed.</span>")
 		return FALSE
 	if(jobban_isbanned(possessor, "Animal"))
-		possessor << "<span class='warning'>You are banned from animal roles.</span>"
+		to_chat(possessor, "<span class='warning'>You are banned from animal roles.</span>")
 		return FALSE
-	if(!possessor.MayRespawn(1,ANIMAL_SPAWN_DELAY))
+	if(!possessor.MayRespawn(0 ,ANIMAL))
 		return FALSE
 	return TRUE
 
@@ -846,7 +657,7 @@ default behaviour is:
 		return FALSE
 
 	if(src.ckey || src.client)
-		possessor << "<span class='warning'>\The [src] already has a player.</span>"
+		to_chat(possessor, "<span class='warning'>\The [src] already has a player.</span>")
 		return FALSE
 
 	message_admins("<span class='adminnotice'>[key_name_admin(possessor)] has taken control of \the [src].</span>")
@@ -854,9 +665,16 @@ default behaviour is:
 	src.ckey = possessor.ckey
 	qdel(possessor)
 
-	src << "<b>You are now \the [src]!</b>"
-	src << "<span class='notice'>Remember to stay in character for a mob of this type!</span>"
+	to_chat(src, "<b>You are now \the [src]!</b>")
+	to_chat(src, "<span class='notice'>Remember to stay in character for a mob of this type!</span>")
 	return TRUE
+
+/mob/living/reset_layer()
+	if(hiding)
+		set_plane(HIDING_MOB_PLANE)
+		layer = HIDING_MOB_LAYER
+	else
+		..()
 
 /mob/living/throw_mode_off()
 	src.in_throw_mode = 0
@@ -895,22 +713,22 @@ default behaviour is:
 		return
 
 	if (AM.anchored)
-		src << "<span class='warning'>It won't budge!</span>"
+		to_chat(src, "<span class='warning'>It won't budge!</span>")
 		return
 
 	var/mob/M = AM
 	if(ismob(AM))
 
 		if(!can_pull_mobs || !can_pull_size)
-			src << "<span class='warning'>It won't budge!</span>"
+			to_chat(src, "<span class='warning'>It won't budge!</span>")
 			return
 
 		if((mob_size < M.mob_size) && (can_pull_mobs != MOB_PULL_LARGER))
-			src << "<span class='warning'>It won't budge!</span>"
+			to_chat(src, "<span class='warning'>It won't budge!</span>")
 			return
 
 		if((mob_size == M.mob_size) && (can_pull_mobs == MOB_PULL_SMALLER))
-			src << "<span class='warning'>It won't budge!</span>"
+			to_chat(src, "<span class='warning'>It won't budge!</span>")
 			return
 
 		// If your size is larger than theirs and you have some
@@ -925,7 +743,7 @@ default behaviour is:
 	else if(isobj(AM))
 		var/obj/I = AM
 		if(!can_pull_size || can_pull_size < I.w_class)
-			src << "<span class='warning'>It won't budge!</span>"
+			to_chat(src, "<span class='warning'>It won't budge!</span>")
 			return
 
 	if(pulling)
@@ -945,7 +763,7 @@ default behaviour is:
 	if(ishuman(AM))
 		var/mob/living/carbon/human/H = AM
 		if(H.pull_damage())
-			src << "\red <B>Pulling \the [H] in their current condition would probably be a bad idea.</B>"
+			to_chat(src, "\red <B>Pulling \the [H] in their current condition would probably be a bad idea.</B>")
 
 	//Attempted fix for people flying away through space when cuffed and dragged.
 	if(ismob(AM))
@@ -953,7 +771,7 @@ default behaviour is:
 		pulled.inertia_dir = 0
 
 
-// Static Overlays
+// Static Overlays and Stats
 
 /mob/living/proc/generate_static_overlay()
 	static_overlay = image(get_static_icon(new/icon(icon, icon_state)), loc = src)
@@ -961,8 +779,27 @@ default behaviour is:
 
 /mob/living/New()
 	..()
+
+	//Some mobs may need to create their stats datum farther up
+	if (!stats)
+		stats = new /datum/stat_holder
+
 	generate_static_overlay()
-	for(var/mob/observer/eye/angel/A in player_list)
+	for(var/mob/observer/eye/angel/A in GLOB.player_list)
 		if(A)
 			A.static_overlays |= static_overlay
 			A.client.images |= static_overlay
+
+/mob/living/proc/vomit()
+	return
+
+/mob/living/proc/adjustNutrition(var/amount)
+	nutrition += amount
+	nutrition = max(0,min(nutrition, max_nutrition))	//clamp the value
+
+/mob/living/proc/is_asystole()
+	return FALSE
+
+//Makes a blood drop, leaking amt units of blood from the mob
+/mob/living/proc/drip_blood(var/amt as num)
+	blood_splatter(src,src)

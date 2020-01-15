@@ -16,7 +16,7 @@
 	wander = 0
 	pass_flags = PASSTABLE
 	universal_understand = 1
-	holder_type = /obj/item/weapon/holder/borer
+	//holder_type = /obj/item/weapon/holder/borer //Theres no inhand sprites for holding borers, it turns you into a pink square
 
 	var/used_dominate
 	var/chemicals = 10                      // Chemicals used for reproduction and spitting neurotoxin.
@@ -34,8 +34,7 @@
 /mob/living/simple_animal/borer/Login()
 	..()
 	if(!roundstart && mind && !mind.antagonist.len)
-		var/a_type = antag_types[ROLE_BORER_REPRODUCED]
-		var/datum/antagonist/A = new a_type
+		var/datum/antagonist/A = create_antag_instance(ROLE_BORER_REPRODUCED)
 		A.create_antagonist(mind,update = FALSE)
 
 /mob/living/simple_animal/borer/New()
@@ -59,16 +58,16 @@
 			if(host.reagents.has_reagent("sugar"))
 				if(!docile)
 					if(controlling)
-						host << "\blue You feel the soporific flow of sugar in your host's blood, lulling you into docility."
+						to_chat(host, "\blue You feel the soporific flow of sugar in your host's blood, lulling you into docility.")
 					else
-						src << "\blue You feel the soporific flow of sugar in your host's blood, lulling you into docility."
+						to_chat(src, "\blue You feel the soporific flow of sugar in your host's blood, lulling you into docility.")
 					docile = 1
 			else
 				if(docile)
 					if(controlling)
-						host << "\blue You shake off your lethargy as the sugar leaves your host's blood."
+						to_chat(host, "\blue You shake off your lethargy as the sugar leaves your host's blood.")
 					else
-						src << "\blue You shake off your lethargy as the sugar leaves your host's blood."
+						to_chat(src, "\blue You shake off your lethargy as the sugar leaves your host's blood.")
 					docile = 0
 
 			if(chemicals < 250)
@@ -76,7 +75,7 @@
 			if(controlling)
 
 				if(docile)
-					host << "\blue You are feeling far too docile to continue controlling your host..."
+					to_chat(host, "\blue You are feeling far too docile to continue controlling your host...")
 					host.release_control()
 					return
 
@@ -87,11 +86,11 @@
 					host.say("*[pick(list("blink","blink_r","choke","aflap","drool","twitch","twitch_s","gasp"))]")
 
 /mob/living/simple_animal/borer/Stat()
-	..()
+	. = ..()
 	statpanel("Status")
 
-	if(emergency_shuttle)
-		var/eta_status = emergency_shuttle.get_status_panel_eta()
+	if(evacuation_controller)
+		var/eta_status = evacuation_controller.get_status_panel_eta()
 		if(eta_status)
 			stat(null, eta_status)
 
@@ -172,7 +171,7 @@
 //Procs for grabbing players.
 /mob/living/simple_animal/borer/proc/request_player()
 	var/datum/ghosttrap/G = get_ghost_trap("cortical borer")
-	G.request_player(src, "A cortical borer needs a player.")
+	G.request_player(src, "A cortical borer needs a player.", ANIMAL)
 
 /mob/living/simple_animal/borer/cannot_use_vents()
 	return

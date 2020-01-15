@@ -1,4 +1,4 @@
-var/global/const/base_law_type = /datum/ai_laws/nanotrasen
+var/global/const/base_law_type = /datum/ai_laws/eris
 
 /datum/ai_law
 	var/law = ""
@@ -21,6 +21,7 @@ var/global/const/base_law_type = /datum/ai_laws/nanotrasen
 	var/name = "Unknown Laws"
 	var/law_header = "Prime Directives"
 	var/selectable = 0
+	var/shackles = 0
 	var/datum/ai_law/zero/zeroth_law = null
 	var/datum/ai_law/zero/zeroth_law_borg = null
 	var/list/datum/ai_law/inherent_laws = list()
@@ -227,9 +228,9 @@ var/global/const/base_law_type = /datum/ai_laws/nanotrasen
 		if(law == zeroth_law_borg)
 			continue
 		if(law == zeroth_law)
-			who << SPAN_DANGER("[law.get_index()]. [law.law]")
+			to_chat(who, SPAN_DANGER("[law.get_index()]. [russian_to_cp1251(law.law)]"))
 		else
-			who << "[law.get_index()]. [law.law]"
+			to_chat(who, "[law.get_index()]. [russian_to_cp1251(law.law)]")
 
 /********************
 *	Stating Laws	*

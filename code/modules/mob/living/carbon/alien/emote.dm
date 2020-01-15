@@ -16,7 +16,7 @@
 				return
 			if (src.client)
 				if (client.prefs.muted & MUTE_IC)
-					src << "\red You cannot send IC messages (muted)."
+					to_chat(src, "\red You cannot send IC messages (muted).")
 					return
 				if (src.client.handle_spam_prevention(message,MUTE_IC))
 					return
@@ -111,17 +111,10 @@
 			playsound(src.loc, 'sound/misc/nymphchirp.ogg', 50, 0)
 			m_type = 2
 		if("help")
-			src << "burp, chirp, choke, collapse, dance, drool, gasp, shiver, gnarl, jump, moan, nod, roll, scratch,\nscretch, shake, sign-#, sulk, sway, tail, twitch, whimper"
+			to_chat(src, "burp, chirp, choke, collapse, dance, drool, gasp, shiver, gnarl, jump, moan, nod, roll, scratch,\nscretch, shake, sign-#, sulk, sway, tail, twitch, whimper")
 		else
-			src << text("Invalid Emote: []", act)
+			to_chat(src, text("Invalid Emote: []", act))
 	if ((message && src.stat == 0))
 		log_emote("[name]/[key] : [message]")
-		if (m_type & 1)
-			for(var/mob/O in viewers(src, null))
-				O.show_message(message, m_type)
-				//Foreach goto(703)
-		else
-			for(var/mob/O in hearers(src, null))
-				O.show_message(message, m_type)
-				//Foreach goto(746)
+		send_emote(message, m_type)
 	return

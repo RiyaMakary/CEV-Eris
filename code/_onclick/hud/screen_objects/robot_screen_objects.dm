@@ -10,7 +10,7 @@
 
 /obj/screen/silicon/radio/Click()
 	usr:radio_menu()
-
+	return TRUE
 
 
 /obj/screen/silicon/panel
@@ -19,6 +19,7 @@
 
 /obj/screen/silicon/panel/Click()
 	usr:installed_modules()
+	return TRUE
 
 /obj/screen/silicon/store
 	name = "store"
@@ -32,7 +33,9 @@
 		for (var/obj/screen/inv in parentmob.HUDinventory)
 			inv.update_icon()
 	else
-		R << "You haven't selected a module yet."
+		to_chat(R, "You haven't selected a module yet.")
+	return TRUE
+
 
 /obj/screen/silicon/module
 	name = "moduleNo"
@@ -75,16 +78,16 @@
 	if (isrobot(parentmob))
 		var/mob/living/silicon/robot/R = parentmob
 		R.toggle_module(module_num)
-		return
+		return TRUE
 	log_debug("[parentmob] have type [parentmob.type], but try use /obj/screen/silicon/module/Click() from [src]")
-	return
+	return TRUE
 
 /obj/screen/silicon/cell
 	name = "cell"
 	icon_state = "charge0"
 	process_flag = TRUE
 
-/obj/screen/silicon/cell/process()
+/obj/screen/silicon/cell/Process()
 	update_icon()
 
 /obj/screen/silicon/cell/update_icon()
@@ -105,7 +108,7 @@
 	else
 		icon_state = "charge-empty"
 
-/obj/screen/health/cyborg/process()
+/obj/screen/health/cyborg/Process()
 	update_icon()
 	return
 
@@ -139,7 +142,7 @@
 					icon_state = "health3"
 				if(0 to 50)
 					icon_state = "health4"
-				if(config.health_threshold_dead to 0)
+				if(HEALTH_THRESHOLD_DEAD to 0)
 					icon_state = "health5"
 				else
 					icon_state = "health6"
@@ -159,6 +162,7 @@
 			return TRUE
 		R.pick_module()
 		update_icon()
+	return TRUE
 
 /obj/screen/silicon/module_select/update_icon()
 	var/mob/living/silicon/robot/R = parentmob
@@ -173,7 +177,50 @@
 		var/mob/living/silicon/robot/R = parentmob
 		if(R.module)
 			R.toggle_show_robot_modules()
-			return TRUE
 		else
-			R << "You haven't selected a module yet."
+			to_chat(R, "You haven't selected a module yet.")
+
+	return TRUE
+
+
+
+
+/obj/screen/silicon/glasses_overlay
+	icon = null
+	name = "glasses"
+	screen_loc = "1,1"
+	mouse_opacity = 0
+	process_flag = TRUE
+	layer = 17 //The black screen overlay sets layer to 18 to display it, this one has to be just on top.
+
+
+/obj/screen/silicon/glasses_overlay/Process()
+	update_icon()
+	return
+
+/obj/screen/silicon/glasses_overlay/update_icon()
+	overlays.Cut()
+	var/mob/living/silicon/robot/R = parentmob
+	for (var/obj/item/borg/sight/S in list(R.module_state_1, R.module_state_2, R.module_state_3))
+		if(S.overlay)
+			overlays |= S.overlay
+
+
+/obj/screen/silicon/pull
+	name = "pull"
+	icon_state = "robotpull0"
+
+/obj/screen/silicon/pull/New()
+	..()
+	update_icon()
+
+/obj/screen/silicon/pull/Click()
+	usr.stop_pulling()
+	update_icon()
+
+/obj/screen/silicon/pull/update_icon()
+	if (parentmob.pulling)
+		icon_state = "robotpull1"
+	else
+		icon_state = "robotpull0"
 //-----------------------ROBOT stuff end---------------------

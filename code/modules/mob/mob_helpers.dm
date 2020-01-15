@@ -17,7 +17,7 @@
 /mob/living/carbon/human/isSynthetic()
 	// If they are 100% robotic, they count as synthetic.
 	for(var/obj/item/organ/external/E in organs)
-		if(E.robotic < ORGAN_ROBOT)
+		if(!BP_IS_ROBOTIC(E))
 			return FALSE
 	return TRUE
 
@@ -76,41 +76,33 @@ proc/getsensorlevel(A)
 
 //The base miss chance for the different defence zones
 var/list/global/base_miss_chance = list(
-	BP_HEAD = 40,
+	BP_HEAD = 45,
 	BP_CHEST = 10,
 	BP_GROIN = 20,
 	BP_L_LEG  = 20,
 	BP_R_LEG = 20,
 	BP_L_ARM = 20,
-	BP_R_ARM = 20,
-	BP_L_HAND = 50,
-	BP_R_HAND = 50,
-	BP_L_FOOT = 50,
-	BP_R_FOOT = 50,
-)
+	BP_R_ARM = 20
+	)
 
 //Used to weight organs when an organ is hit randomly (i.e. not a directed, aimed attack).
 //Also used to weight the protection value that armour provides for covering that body part when calculating protection from full-body effects.
 var/list/global/organ_rel_size = list(
-	BP_HEAD = 25,
+	BP_HEAD = 20,
 	BP_CHEST = 70,
 	BP_GROIN = 30,
 	BP_L_LEG  = 25,
 	BP_R_LEG = 25,
 	BP_L_ARM = 25,
-	BP_R_ARM = 25,
-	BP_L_HAND = 10,
-	BP_R_HAND = 10,
-	BP_L_FOOT = 10,
-	BP_R_FOOT = 10,
+	BP_R_ARM = 25
 )
 
 /proc/check_zone(zone)
 	if(!zone)	return BP_CHEST
 	switch(zone)
-		if(O_EYES)
+		if(BP_EYES)
 			zone = BP_HEAD
-		if("mouth")
+		if(BP_MOUTH)
 			zone = BP_HEAD
 	return zone
 
@@ -133,10 +125,6 @@ var/list/global/organ_rel_size = list(
 			organ_rel_size[BP_R_ARM]; BP_R_ARM,
 			organ_rel_size[BP_L_LEG ]; BP_L_LEG ,
 			organ_rel_size[BP_R_LEG]; BP_R_LEG,
-			organ_rel_size[BP_L_HAND]; BP_L_HAND,
-			organ_rel_size[BP_R_HAND]; BP_R_HAND,
-			organ_rel_size[BP_L_FOOT]; BP_L_FOOT,
-			organ_rel_size[BP_R_FOOT]; BP_R_FOOT,
 		)
 
 	return ran_zone
@@ -167,37 +155,51 @@ var/list/global/organ_rel_size = list(
 	return zone
 
 
-/proc/stars(n, pr)
-	if (pr == null)
-		pr = 25
-	if (pr <= 0)
+
+//Replaces some of the characters with *, used in whispers. pr = probability of no star.
+//Will try to preserve HTML formatting. re_encode controls whether the returned text is HTML encoded outside tags.
+/proc/stars(n, pr = 25, re_encode = 1)
+	if (pr < 0)
 		return null
-	else
-		if (pr >= 100)
-			return n
-	var/te = n
-	var/t = ""
-	n = length(n)
-	var/p = null
-	p = 1
+	else if (pr >= 100)
+		return n
+
 	var/intag = 0
-	while(p <= n)
-		var/char = copytext(te, p, p + 1)
-		if (char == "<") //let's try to not break tags
-			intag = !intag
-		if (intag || char == " " || prob(pr))
-			t = text("[][]", t, char)
+	var/block = list()
+	. = list()
+	for(var/i = 1, i <= length(n), i++)
+		var/char = copytext(n, i, i+1)
+		if(!intag && (char == "<"))
+			intag = 1
+			. += stars_no_html(JOINTEXT(block), pr, re_encode) //stars added here
+			block = list()
+		block += char
+		if(intag && (char == ">"))
+			intag = 0
+			. += block //We don't mess up html tags with stars
+			block = list()
+	. += (intag ? block : stars_no_html(JOINTEXT(block), pr, re_encode))
+	. = JOINTEXT(.)
+
+
+//Ingnores the possibility of breaking tags.
+/proc/stars_no_html(text, pr, re_encode)
+	text = html_decode(text) //We don't want to screw up escaped characters
+	. = list()
+	for(var/i = 1, i <= length(text), i++)
+		var/char = copytext(text, i, i+1)
+		if(char == " " || prob(pr))
+			. += char
 		else
-			t = text("[]*", t)
-		if (char == ">")
-			intag = !intag
-		p++
-	return t
+			. += "*"
+	. = JOINTEXT(.)
+	if(re_encode)
+		. = html_encode(.)
 
 proc/slur(phrase)
 	phrase = rhtml_decode(phrase)
-	var/leng=lentext(phrase)
-	var/counter=lentext(phrase)
+	var/leng=length(phrase)
+	var/counter=length(phrase)
 	var/newphrase=""
 	var/newletter=""
 	while(counter>=1)
@@ -287,35 +289,11 @@ It's fairly easy to fix if dealing with single letters but not so much with comp
 	return sanitize(t)
 
 
-/proc/shake_camera(mob/M, duration, strength=1)
-	if(!M || !M.client || M.shakecamera || M.stat || isEye(M) || isAI(M))
-		return
-	M.shakecamera = 1
-	spawn(1)
-		if(isnull(M))
-			return
 
-		if(!M.client)
-			return
-
-		var/atom/oldeye=M.client.eye
-		var/aiEyeFlag = 0
-		if(istype(oldeye, /mob/observer/eye/aiEye))
-			aiEyeFlag = 1
-
-		var/x
-		for(x=0; x<duration, x++)
-			if(aiEyeFlag)
-				M.client.eye = locate(dd_range(1,oldeye.loc.x+rand(-strength,strength),world.maxx),dd_range(1,oldeye.loc.y+rand(-strength,strength),world.maxy),oldeye.loc.z)
-			else
-				M.client.eye = locate(dd_range(1,M.loc.x+rand(-strength,strength),world.maxx),dd_range(1,M.loc.y+rand(-strength,strength),world.maxy),M.loc.z)
-			sleep(1)
-		M.client.eye=oldeye
-		M.shakecamera = 0
 
 
 /proc/findname(msg)
-	for(var/mob/M in mob_list)
+	for(var/mob/M in SSmobs.mob_list)
 		if (M.real_name == text("[msg]"))
 			return 1
 	return 0
@@ -402,7 +380,7 @@ proc/is_blind(A)
 
 /proc/mobs_in_area(var/area/A)
 	var/list/mobs = new
-	for(var/mob/living/M in mob_list)
+	for(var/mob/living/M in SSmobs.mob_list)
 		if(get_area(M) == A)
 			mobs += M
 	return mobs
@@ -428,8 +406,8 @@ proc/is_blind(A)
 			else
 				name = realname
 
-	for(var/mob/M in player_list)
-		if(M.client && (isghost(M) || (M.client.holder && !is_mentor(M.client))) && M.is_preference_enabled(/datum/client_preference/show_dsay))
+	for(var/mob/M in GLOB.player_list)
+		if(M.client && (isghost(M) || (M.client.holder && !is_mentor(M.client))) && M.get_preference_value(/datum/client_preference/show_dsay) == GLOB.PREF_SHOW)
 			var/follow
 			var/lname
 			if(subject)
@@ -450,7 +428,7 @@ proc/is_blind(A)
 					else										// Everyone else (dead people who didn't ghost yet, etc.)
 						lname = name
 				lname = "<span class='name'>[lname]</span> "
-			M << "<span class='deadsay'>" + create_text_tag("dead", "DEAD:", M.client) + " [lname][follow][message]</span>"
+			to_chat(M, "<span class='deadsay'>" + create_text_tag("dead", "DEAD:", M.client) + " [lname][follow][message]</span>")
 
 //Announces that a ghost has joined/left, mainly for use with wizards
 /proc/announce_ghost_joinleave(O, var/joined_ghosts = 1, var/message = "")
@@ -575,9 +553,12 @@ proc/is_blind(A)
 		threatcount += 4
 	return threatcount
 
+
+
+
 #undef SAFE_PERP
 
-/mob/proc/get_multitool(var/obj/item/device/multitool/P)
+/mob/proc/get_multitool(var/obj/item/weapon/tool/multitool/P)
 	if(istype(P))
 		return P
 
@@ -592,3 +573,54 @@ proc/is_blind(A)
 
 /mob/living/silicon/ai/get_multitool()
 	return ..(aiMulti)
+
+
+//This proc returns true if the mob has no health problems. EG, no damaged organs, alive, not poisoned, etc
+//It is used by cryopods to allow people to quickly respawn during peaceful times
+/mob/proc/in_perfect_health()
+	return
+
+/mob/living/in_perfect_health()
+	if (stat == DEAD)
+		return FALSE
+
+	if (brainloss || bruteloss || cloneloss || fireloss || halloss || oxyloss || toxloss)
+		return FALSE
+
+
+	return TRUE
+
+/mob/living/carbon/human/in_perfect_health()
+	for (var/a in bad_external_organs)
+		return FALSE
+
+	for (var/obj/item/organ/o in internal_organs)
+		if (o.damage)
+			return FALSE
+
+	return ..()
+
+/mob/proc/get_sex()
+	return gender
+
+//Tries to find the mob's email.
+/proc/find_email(real_name)
+	for(var/mob/mob in GLOB.living_mob_list)
+		if(mob.real_name == real_name)
+			if(!mob.mind)
+				return
+			return mob.mind.initial_email_login["login"]
+
+/proc/get_both_hands(mob/living/carbon/M)
+	if(!istype(M))
+		return
+	var/list/hands = list(M.l_hand, M.r_hand)
+	return hands
+
+/mob/proc/drop_embedded()
+	//Embedded list is defined at mob level so we can have this here too
+	for(var/obj/A in embedded)
+		if (A.loc == src)
+			A.forceMove(loc)
+			A.tumble()
+	embedded = list()

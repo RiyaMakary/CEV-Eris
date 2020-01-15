@@ -15,6 +15,9 @@
 	var/target_name = null
 	var/timeofdeath = null
 
+/obj/item/weapon/paper/autopsy_report
+	var/list/autopsy_data
+
 /datum/autopsy_data_scanner
 	var/weapon = null // this is the DEFINITE weapon type that was used
 	var/list/organs_scanned = list() // this maps a number of scanned organs to
@@ -79,8 +82,11 @@
 	set category = "Object"
 	set src in view(usr, 1)
 	set name = "Print Data"
-	if(usr.stat || !(ishuman(usr)))
-		usr << "No."
+	if(usr.stat)
+		to_chat(usr, "You must be conscious to do that!")
+		return
+
+	if (!usr.IsAdvancedToolUser())
 		return
 
 	var/scan_data = ""
@@ -154,20 +160,28 @@
 
 	sleep(10)
 
-	var/obj/item/weapon/paper/P = new(usr.loc)
+	var/obj/item/weapon/paper/autopsy_report/P = new(usr.loc)
 	P.name = "Autopsy Data ([target_name])"
 	P.info = "<tt>[scan_data]</tt>"
+	P.autopsy_data = list() // Copy autopsy data for science tool
+	for(var/wdata_idx in wdata)
+		var/datum/autopsy_data_scanner/D = wdata[wdata_idx]
+		for(var/wound_idx in D.organs_scanned)
+			var/datum/autopsy_data/W = D.organs_scanned[wound_idx]
+			P.autopsy_data += W.copy()
 	P.icon_state = "paper_words"
 
 	// place the item in the usr's hand if possible
 	usr.put_in_hands(P)
+	usr.setClickCooldown(DEFAULT_ATTACK_COOLDOWN*4) //To stop people spamclicking and generating tons of paper
 
 
 /obj/item/weapon/autopsy_scanner/attack(mob/living/carbon/human/M as mob, mob/living/carbon/user as mob)
 	if(!istype(M))
 		return
 
-	if(!can_operate(M))
+	if(!can_operate(M, user))
+		to_chat(user, SPAN_WARNING("You need to lay the cadaver down on a table first!"))
 		return
 
 	if(target_name != M.name)
@@ -175,16 +189,16 @@
 		src.wdata = list()
 		src.chemtraces = list()
 		src.timeofdeath = null
-		user << SPAN_NOTICE("A new patient has been registered.. Purging data for previous patient.")
+		to_chat(user, SPAN_NOTICE("A new patient has been registered.. Purging data for previous patient."))
 
 	src.timeofdeath = M.timeofdeath
 
 	var/obj/item/organ/external/S = M.get_organ(user.targeted_organ)
 	if(!S)
-		usr << SPAN_WARNING("You can't scan this body part.")
+		to_chat(usr, SPAN_WARNING("You can't scan this body part."))
 		return
 	if(!S.open)
-		usr << SPAN_WARNING("You have to cut the limb open first!")
+		to_chat(usr, SPAN_WARNING("You have to cut the limb open first!"))
 		return
 	for(var/mob/O in viewers(M))
 		O.show_message(SPAN_NOTICE("\The [user] scans the wounds on [M.name]'s [S.name] with \the [src]"), 1)
@@ -192,3 +206,7 @@
 	src.add_data(S)
 
 	return 1
+
+
+/obj/item/weapon/autopsy_scanner/attack_self()
+	print_data()

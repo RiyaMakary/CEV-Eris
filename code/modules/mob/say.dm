@@ -23,7 +23,7 @@
 	set name = "Say"
 	set hidden = TRUE
 	if(say_disabled)	//This is here to try to identify lag problems
-		usr << "\red Speech is currently admin-disabled."
+		to_chat(usr, "\red Speech is currently admin-disabled.")
 		return
 	set_typing_indicator(FALSE)
 	usr.say(message)
@@ -47,7 +47,7 @@
 	set hidden = TRUE
 
 	if(say_disabled)	//This is here to try to identify lag problems
-		usr << "\red Speech is currently admin-disabled."
+		to_chat(usr, "\red Speech is currently admin-disabled.")
 		return
 
 	message = sanitize(message)
@@ -60,19 +60,19 @@
 
 /mob/proc/say_dead(var/message)
 	if(say_disabled)	//This is here to try to identify lag problems
-		usr << SPAN_DANGER("Speech is currently admin-disabled.")
+		to_chat(usr, SPAN_DANGER("Speech is currently admin-disabled."))
 		return
 
 	if(!src.client.holder)
 		if(!config.dsay_allowed)
-			src << SPAN_DANGER("Deadchat is globally muted.")
+			to_chat(src, SPAN_DANGER("Deadchat is globally muted."))
 			return
 
-	if(!is_preference_enabled(/datum/client_preference/show_dsay))
-		usr << SPAN_DANGER("You have deadchat muted.")
+	if(get_preference_value(/datum/client_preference/show_dsay) == GLOB.PREF_HIDE)
+		to_chat(usr, SPAN_DANGER("You have deadchat muted."))
 		return
 
-	say_dead_direct("[pick("complains", "moans", "whines", "laments", "blubbers")], <span class='message'>\"[message]\"</span>", src)
+	say_dead_direct("[pick("complains", "moans", "whines", "laments", "blubbers")], <span class='message'>\"[emoji_parse(message)]\"</span>", src)
 
 /mob/proc/say_understands(var/mob/other, var/datum/language/speaking = null)
 
@@ -102,6 +102,7 @@
 	for(var/datum/language/L in src.languages)
 		if(speaking.name == L.name)
 			return TRUE
+
 
 	return FALSE
 
@@ -149,11 +150,11 @@
 //returns the message mode string or null for no message mode.
 //standard mode is the mode returned for the special ';' radio code.
 /mob/proc/parse_message_mode(var/message, var/standard_mode="headset")
-	if(length(message) >= 1 && copytext(message, 1, 2) == ";")
+	if(length(message) >= 1 && copytext(message,1,2) == get_prefix_key(/decl/prefix/radio_main_channel))
 		return standard_mode
 
-	if(length(message) >= 2 && copytext(message, 1, 2) in list(":", ".", "#"))
-		var/channel_prefix = sanitize_key(copytext(message, 2, 3))
+	if(length(message) >= 2 && copytext(message,1,2) == get_prefix_key(/decl/prefix/radio_channel_selection))
+		var/channel_prefix =  sanitize_key(copytext(message, 2, 3))
 		return department_radio_keys[channel_prefix]
 
 	return null
@@ -162,7 +163,7 @@
 //returns the language object only if the code corresponds to a language that src can speak, otherwise null.
 /mob/proc/parse_language(var/message)
 	var/prefix = copytext(message, 1, 2)
-	if(length(message) >= 1 && prefix == "!")
+	if(length(message) >= 1 && prefix == get_prefix_key(/decl/prefix/audible_emote))
 		return all_languages["Noise"]
 
 	if(length(message) >= 2 && is_language_prefix(prefix))

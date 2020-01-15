@@ -24,28 +24,28 @@
 	initialize_directions = dir
 	..()
 
-/obj/machinery/atmospherics/unary/freezer/initialize()
-	if(node)
+/obj/machinery/atmospherics/unary/freezer/atmos_init()
+	if(node1)
 		return
 
-	var/node_connect = dir
+	var/node1_connect = dir
 
-	for(var/obj/machinery/atmospherics/target in get_step(src, node_connect))
+	for(var/obj/machinery/atmospherics/target in get_step(src, node1_connect))
 		if(target.initialize_directions & get_dir(target, src))
-			node = target
+			node1 = target
 			break
 
 	//copied from pipe construction code since heaters/freezers don't use fittings and weren't doing this check - this all really really needs to be refactored someday.
 	//check that there are no incompatible pipes/machinery in our own location
 	for(var/obj/machinery/atmospherics/M in src.loc)
-		if(M != src && (M.initialize_directions & node_connect) && M.check_connect_types(M, src))	// matches at least one direction on either type of pipe & same connection type
-			node = null
+		if(M != src && (M.initialize_directions & node1_connect) && M.check_connect_types(M, src))	// matches at least one direction on either type of pipe & same connection type
+			node1 = null
 			break
 
 	update_icon()
 
 /obj/machinery/atmospherics/unary/freezer/update_icon()
-	if(node)
+	if(node1)
 		if(use_power && cooling)
 			icon_state = "freezer_1"
 		else
@@ -54,13 +54,10 @@
 		icon_state = "freezer_0"
 	return
 
-/obj/machinery/atmospherics/unary/freezer/attack_ai(mob/user as mob)
-	ui_interact(user)
-
 /obj/machinery/atmospherics/unary/freezer/attack_hand(mob/user as mob)
 	ui_interact(user)
 
-/obj/machinery/atmospherics/unary/freezer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/atmospherics/unary/freezer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	// this is the data which will be sent to the ui
 	var/data[0]
 	data["on"] = use_power ? 1 : 0
@@ -79,7 +76,7 @@
 	data["gasTemperatureClass"] = temp_class
 
 	// update the ui if it exists, returns null if no ui is passed/found
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if(!ui)
 		// the ui does not exist, so we'll create a new() one
         // for a list of parameters and their descriptions see the code docs in \code\modules\nano\nanoui.dm
@@ -96,6 +93,10 @@
 		return 1
 	if(href_list["toggleStatus"])
 		use_power = !use_power
+		if(use_power)
+			to_chat(usr, "[src] turned on.")
+		else
+			to_chat(usr, "[src] turned off.")
 		update_icon()
 	if(href_list["temp"])
 		var/amount = text2num(href_list["temp"])
@@ -109,7 +110,7 @@
 	playsound(loc, 'sound/machines/machine_switch.ogg', 100, 1)
 	add_fingerprint(usr)
 
-/obj/machinery/atmospherics/unary/freezer/process()
+/obj/machinery/atmospherics/unary/freezer/Process()
 	..()
 
 	if(stat & (NOPOWER|BROKEN) || !use_power)
@@ -164,17 +165,17 @@
 	power_setting = new_power_setting
 	power_rating = max_power_rating * (power_setting/100)
 
-/obj/machinery/atmospherics/unary/freezer/attackby(var/obj/item/O as obj, var/mob/user as mob)
-	if(default_deconstruction_screwdriver(user, O))
-		return
-	if(default_deconstruction_crowbar(user, O))
-		return
-	if(default_part_replacement(user, O))
+/obj/machinery/atmospherics/unary/freezer/attackby(var/obj/item/I, var/mob/user as mob)
+
+	if(default_deconstruction(I, user))
 		return
 
-	..()
+	if(default_part_replacement(I, user))
+		return
+
+	return
 
 /obj/machinery/atmospherics/unary/freezer/examine(mob/user)
 	..(user)
 	if(panel_open)
-		user << "The maintenance hatch is open."
+		to_chat(user, "The maintenance hatch is open.")

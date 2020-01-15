@@ -2,11 +2,13 @@
 	name = "showcase"
 	icon = 'icons/obj/doors/showcase.dmi'
 	icon_state = "closed"
-	health = 200
-	maxhealth = 200
+	health = 100
+	maxhealth = 100
+	resistance = RESISTANCE_NONE
 	opacity = 0
 	layer = 4.2
 	var/have_glass = TRUE
+	hitsound = 'sound/effects/Glasshit.ogg'
 
 /obj/machinery/door/blast/shutters/glass/is_block_dir(target_dir, border_only, atom/target)
 	if((stat&BROKEN) || !have_glass)
@@ -16,34 +18,25 @@
 
 /obj/machinery/door/blast/shutters/glass/attackby(obj/item/I, mob/user, params)
 	if(density)
-		if(istype(I, /obj/item/weapon/weldingtool))
-			var/obj/item/weapon/weldingtool/WT = I
+		if(QUALITY_WELDING in I.tool_qualities)
 			if((stat&BROKEN) && have_glass)
-				if(WT.remove_fuel(0,user))
-					user << SPAN_NOTICE("You begin slicing [src]'s debris...")
-					playsound(loc, 'sound/items/Welder.ogg', 40, 1)
-					if(do_after(user, 40, src))
-						have_glass = FALSE
-						update_icon()
-						playsound(loc, 'sound/items/Welder2.ogg', 50, 1)
-						return
+				if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_WELDING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+					have_glass = FALSE
+					update_icon()
+					return
 			else
 				if(user.a_intent == I_HELP)
 					if(health < maxhealth)
-						if(WT.remove_fuel(0,user))
-							user << SPAN_NOTICE("You begin repairing [src]...")
-							playsound(loc, 'sound/items/Welder.ogg', 40, 1)
-							if(do_after(user, 40, src))
-								health = maxhealth
-								playsound(loc, 'sound/items/Welder2.ogg', 50, 1)
-								update_icon()
+						if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_WELDING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+							health = maxhealth
+							update_icon()
 					return
 		else if(istype(I,/obj/item/stack/material/glass/reinforced))
 			if(!have_glass)
 				var/obj/item/stack/material/glass/reinforced/G = I
 				if(G.get_amount() >= 2)
 					playsound(loc, 'sound/items/Deconstruct.ogg', 50, 1)
-					user << SPAN_NOTICE("You start to put the glass into [src]...")
+					to_chat(user, SPAN_NOTICE("You start to put the glass into [src]..."))
 					if(do_after(user, 10, src))
 						if (density && G.use(2))
 							health = maxhealth
@@ -53,65 +46,26 @@
 							return
 
 		if(I.damtype == BRUTE || I.damtype == BURN)
-			user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
-			user.do_attack_animation(src)
-			hit(I.force)
-			user.visible_message(
-				SPAN_DANGER("[user] has hit the [name] with [I]!"),
-			)
+			hit(user, I)
+			return
 
 	else
-		user << SPAN_WARNING("It must be closed!")
+		to_chat(user, SPAN_WARNING("It must be closed!"))
 
 /obj/machinery/door/blast/shutters/glass/attack_hand(mob/user)
 	return
 
-/obj/machinery/door/blast/shutters/glass/hitby(AM as mob|obj)
-	..()
-	visible_message(SPAN_DANGER("[src] was hit by [AM]."))
-	var/throw_force = 0
-	if(ismob(AM))
-		throw_force = 10
 
-	else if(isobj(AM))
-		var/obj/item/I = AM
-		throw_force = I.throwforce
-
-	hit(throw_force)
-
-/obj/machinery/door/blast/shutters/glass/ex_act(severity, target)
-	..()
-	if(stat&BROKEN)
-		qdel(src)
-		return
-	switch(severity)
-		if(1.0)
-			qdel(src)
-			return
-		if(2.0)
-			hit(200, 0)
-			return
-		if(3.0)
-			hit(rand(50, 100), 0)
-			return
 
 /obj/machinery/door/blast/shutters/glass/bullet_act(var/obj/item/projectile/Proj)
 	if((Proj.damage_type == BRUTE || Proj.damage_type == BURN))
-		hit(Proj.damage)
+		take_damage(Proj.damage)
 	..()
 
-/obj/machinery/door/blast/shutters/glass/proc/hit(var/damage, var/sound_effect = 1)
-	if(stat&BROKEN)
-		return
 
-	health = max(0, health - damage)
-	if(sound_effect)
-		playsound(loc, 'sound/effects/Glasshit.ogg', 75, 1)
-	if(health <= 0)
-		stat |= BROKEN
-		playsound(loc, 'sound/effects/Glassbr3.ogg', 75, 1)
-		new /obj/item/weapon/material/shard(src.loc)
-	update_icon()
+/obj/machinery/door/blast/shutters/glass/set_broken()
+	stat |= BROKEN
+	qdel(src)
 
 /obj/machinery/door/blast/shutters/glass/Destroy()
 	playsound(loc, 'sound/effects/Glassbr3.ogg', 75, 1)
@@ -128,7 +82,7 @@
 			icon_state += "-broken"
 		else if(health < maxhealth)
 			var/ratio = health / maxhealth
-			ratio = Ceiling(ratio * 4) * 25
+			ratio = CEILING(ratio * 4, 1) * 25
 			overlays += "damage[ratio]"
 	else
 		icon_state = "open"
@@ -146,7 +100,7 @@
 
 	else
 		var/ratio = health / maxhealth
-		ratio = Ceiling(ratio * 4) * 25
+		ratio = CEILING(ratio * 4, 1) * 25
 		overlays.Cut()
 		flick("opening[ratio]", src)
 
@@ -171,7 +125,7 @@
 
 	else
 		var/ratio = health / maxhealth
-		ratio = Ceiling(ratio * 4) * 25
+		ratio = CEILING(ratio * 4, 1) * 25
 		flick("closing[ratio]", src)
 
 	density = 1

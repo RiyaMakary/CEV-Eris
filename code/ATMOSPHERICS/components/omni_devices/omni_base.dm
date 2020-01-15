@@ -7,7 +7,7 @@
 	icon_state = "base"
 	use_power = 1
 	initialize_directions = 0
-	level = 1
+	level = BELOW_PLATING_LEVEL
 
 	var/configuring = 0
 	//var/target_pressure = ONE_ATMOSPHERE	//a base type as abstract as this should NOT be making these kinds of assumptions
@@ -61,7 +61,7 @@
 /obj/machinery/atmospherics/omni/proc/error_check()
 	return
 
-/obj/machinery/atmospherics/omni/process()
+/obj/machinery/atmospherics/omni/Process()
 	last_power_draw = 0
 	last_flow_rate = 0
 
@@ -78,8 +78,8 @@
 	if(old_stat != stat)
 		update_icon()
 
-/obj/machinery/atmospherics/omni/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
-	if(!istype(W, /obj/item/weapon/wrench))
+/obj/machinery/atmospherics/omni/attackby(var/obj/item/I, var/mob/user)
+	if(!(QUALITY_BOLT_TURNING in I.tool_qualities))
 		return ..()
 
 	var/int_pressure = 0
@@ -87,12 +87,11 @@
 		int_pressure += P.air.return_pressure()
 	var/datum/gas_mixture/env_air = loc.return_air()
 	if ((int_pressure - env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-		user << SPAN_WARNING("You cannot unwrench \the [src], it is too exerted due to internal pressure.")
+		to_chat(user, SPAN_WARNING("You cannot unwrench \the [src], it is too exerted due to internal pressure."))
 		add_fingerprint(user)
 		return 1
-	user << SPAN_NOTICE("You begin to unfasten \the [src]...")
-	playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
-	if(do_after(user, 40, src))
+	to_chat(user, SPAN_NOTICE("You begin to unfasten \the [src]..."))
+	if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_BOLT_TURNING, FAILCHANCE_EASY, required_stat = STAT_MEC))
 		user.visible_message( \
 			SPAN_NOTICE("\The [user] unfastens \the [src]."), \
 			SPAN_NOTICE("You have unfastened \the [src]."), \
@@ -189,7 +188,7 @@
 		var/turf/T = get_turf(src)
 		if(!istype(T))
 			return
-		if(!T.is_plating() && istype(P.node, /obj/machinery/atmospherics/pipe) && P.node.level == 1 )
+		if(!T.is_plating() && istype(P.node, /obj/machinery/atmospherics/pipe) && P.node.level == BELOW_PLATING_LEVEL )
 			//pipe_state = icon_manager.get_atmos_icon("underlay_down", P.dir, color_cache_name(P.node))
 			pipe_state = icon_manager.get_atmos_icon("underlay", P.dir, color_cache_name(P.node), "down")
 		else
@@ -240,9 +239,9 @@
 			qdel(P.network)
 			P.node = null
 
-	..()
+	. = ..()
 
-/obj/machinery/atmospherics/omni/initialize()
+/obj/machinery/atmospherics/omni/atmos_init()
 	for(var/datum/omni_port/P in ports)
 		if(P.node || P.mode == 0)
 			continue

@@ -7,7 +7,7 @@
 	throw_speed = 2
 	throw_range = 4
 	flags = CONDUCT | PROXMOVE
-	var/status = 0   //0 - not readied //1 - bomb finished with welder
+	var/welded = FALSE   //0 - not readied //1 - bomb finished with welder
 	var/obj/item/device/assembly_holder/bombassembly = null   //The first part of the bomb is an assembly holder, holding an igniter+some device
 	var/obj/item/weapon/tank/bombtank = null //the second part of the bomb is a plasma tank
 
@@ -23,37 +23,47 @@
 		overlays += bombassembly.overlays
 		overlays += "bomb_assembly"
 
-/obj/item/device/onetankbomb/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if(istype(W, /obj/item/device/analyzer))
-		bombtank.attackby(W, user)
-		return
-	if(istype(W, /obj/item/weapon/wrench) && !status)	//This is basically bomb assembly code inverted. apparently it works.
+/obj/item/device/onetankbomb/attackby(obj/item/I, mob/user)
 
-		user << SPAN_NOTICE("You disassemble [src].")
-
-		bombassembly.loc = user.loc
-		bombassembly.master = null
-		bombassembly = null
-
-		bombtank.loc = user.loc
-		bombtank.master = null
-		bombtank = null
-
-		qdel(src)
-		return
-	if(istype(W, /obj/item/weapon/weldingtool))
-		var/obj/item/weapon/weldingtool/WT = W
-		if(WT.remove_fuel(1, user))
-			if(!status)
-				status = 1
-				bombers += "[key_name(user)] welded a single tank bomb. Temp: [bombtank.air_contents.temperature-T0C]"
-				message_admins("[key_name_admin(user)] welded a single tank bomb. Temp: [bombtank.air_contents.temperature-T0C]")
-				user << SPAN_NOTICE("A pressure hole has been bored to [bombtank] valve. \The [bombtank] can now be ignited.")
-			else
-				status = 0
-				bombers += "[key_name(user)] unwelded a single tank bomb. Temp: [bombtank.air_contents.temperature-T0C]"
-				user << SPAN_NOTICE("The hole has been closed.")
 	add_fingerprint(user)
+
+	var/tool_type = I.get_tool_type(user, list(QUALITY_BOLT_TURNING, QUALITY_WELDING), src)
+	switch(tool_type)
+
+		if(QUALITY_BOLT_TURNING)
+			if(I.use_tool(user, src, WORKTIME_FAST, tool_type, FAILCHANCE_VERY_EASY))
+				to_chat(user, SPAN_NOTICE("You disassemble [src]."))
+
+				bombassembly.loc = user.loc
+				bombassembly.master = null
+				bombassembly = null
+
+				bombtank.loc = user.loc
+				bombtank.master = null
+				bombtank = null
+
+				qdel(src)
+			return
+
+		if(QUALITY_WELDING)
+			if(I.use_tool(user, src, WORKTIME_FAST, tool_type, FAILCHANCE_VERY_EASY))
+				if(!welded)
+					welded = TRUE
+					bombers += "[key_name(user)] welded a single tank bomb. Temp: [bombtank.air_contents.temperature-T0C]"
+					message_admins("[key_name_admin(user)] welded a single tank bomb. Temp: [bombtank.air_contents.temperature-T0C]")
+					to_chat(user, SPAN_NOTICE("A pressure hole has been bored to [bombtank] valve. \The [bombtank] can now be ignited."))
+					return
+				else
+					welded = FALSE
+					bombers += "[key_name(user)] unwelded a single tank bomb. Temp: [bombtank.air_contents.temperature-T0C]"
+					to_chat(user, SPAN_NOTICE("The hole has been closed."))
+					return
+			return
+
+		if(ABORT_CHECK)
+			return
+
+
 	..()
 
 /obj/item/device/onetankbomb/attack_self(mob/user as mob) //pressing the bomb accesses its assembly
@@ -66,7 +76,7 @@
 	sleep(10)
 	if(!src)
 		return
-	if(status)
+	if(welded)
 		bombtank.ignite()	//if its not a dud, boom (or not boom if you made shitty mix) the ignite proc is below, in this file
 	else
 		bombtank.release()

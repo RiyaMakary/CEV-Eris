@@ -4,14 +4,16 @@
 	brightness_on = 4 // Pretty bright.
 	light_power = 2
 	color = null
-	light_color = "#e58775"
+	light_color = COLOR_LIGHTING_RED_BRIGHT
 	icon_state = "flare"
 	max_fuel = 1000
 	var/on_damage = 7
 	var/produce_heat = 1500
 	turn_on_sound = 'sound/effects/Custom_flare.ogg'
+	heat = 1873
+	preloaded_reagents = list("sulfur" = 10, "potassium" = 5, "hydrazine" = 5)
 
-/obj/item/device/lighting/glowstick/flare/process()
+/obj/item/device/lighting/glowstick/flare/Process()
 	..()
 	if(on)
 		var/turf/pos = get_turf(src)
@@ -47,4 +49,8 @@
 	else
 		icon_state = initial(icon_state)
 		set_light(0)
-	update_held_icon()
+	update_wear_icon()
+
+/obj/item/device/lighting/glowstick/flare/is_hot()
+	if (on)
+		return heat

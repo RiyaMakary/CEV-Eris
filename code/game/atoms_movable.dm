@@ -1,5 +1,5 @@
 /atom/movable
-	layer = 3
+	layer = OBJ_LAYER
 	var/last_move = null
 	var/anchored = 0
 	// var/elevation = 2    - not used anywhere
@@ -14,16 +14,10 @@
 	var/moved_recently = 0
 	var/mob/pulledby = null
 	var/item_state = null // Used to specify the item state for the on-mob overlays.
-
-	var/auto_init = 1
-
-/atom/movable/New()
-	..()
-	if(auto_init && ticker && ticker.current_state == GAME_STATE_PLAYING)
-		initialize()
+	var/inertia_dir = 0
 
 /atom/movable/Del()
-	if(isnull(gcDestroyed) && loc)
+	if(isnull(gc_destroyed) && loc)
 		testing("GC: -- [type] was deleted via del() rather than qdel() --")
 		crash_with("GC: -- [type] was deleted via del() rather than qdel() --") // stick a stack trace in the runtime logs
 //	else if(isnull(gcDestroyed))
@@ -36,6 +30,10 @@
 	. = ..()
 	for(var/atom/movable/AM in contents)
 		qdel(AM)
+
+	if(loc)
+		loc.handle_atom_del(src)
+
 	forceMove(null)
 	if (pulledby)
 		if (pulledby.pulling == src)
@@ -55,9 +53,15 @@
 	..()
 	return
 
-/atom/movable/proc/forceMove(atom/destination, var/special_event)
+/atom/movable/proc/entered_with_container(var/atom/old_loc)
+	return
+
+/atom/movable/proc/forceMove(atom/destination, var/special_event, glide_size_override=0)
 	if(loc == destination)
 		return 0
+
+	if (glide_size_override)
+		set_glide_size(glide_size_override)
 
 	var/is_origin_turf = isturf(loc)
 	var/is_destination_turf = isturf(destination)
@@ -85,16 +89,17 @@
 					AM.Crossed(src)
 			if(is_new_area && is_destination_turf)
 				destination.loc.Entered(src, origin)
+
+	SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED, origin, loc)
+
+	// Only update plane if we're located on map
+	if(isturf(loc))
+		// if we wasn't on map OR our Z coord was changed
+		if( !isturf(origin) || (get_z(loc) != get_z(origin)) )
+			update_plane()
+
 	return 1
 
-/atom/movable/proc/forceMoveOld(atom/destination)
-	if(destination)
-		if(loc)
-			loc.Exited(src)
-		loc = destination
-		loc.Entered(src)
-		return 1
-	return 0
 
 //called when src is thrown into hit_atom
 /atom/movable/proc/throw_impact(atom/hit_atom, var/speed)
@@ -134,6 +139,7 @@
 	if(!target || !src)	return 0
 	//use a modified version of Bresenham's algorithm to get from the atom's current position to that of the target
 
+	set_dir(pick(cardinal))
 	src.throwing = 1
 	if(target.allow_spin && src.allow_spin)
 		SpinAnimation(5,1)
@@ -163,8 +169,6 @@
 	var/area/a = get_area(src.loc)
 	if(dist_x > dist_y)
 		var/error = dist_x/2 - dist_y
-
-
 
 		while(src && target &&((((src.x < target.x && dx == EAST) || (src.x > target.x && dx == WEST)) && dist_travelled < range) || (a && a.has_gravity == 0)  || istype(src.loc, /turf/space)) && src.throwing && istype(src.loc, /turf))
 			// only stop when we've gone the whole distance (or max throw range) and are on a non-space tile, or hit something, or hit the end of the map, or someone picks it up
@@ -226,9 +230,10 @@
 
 	//done throwing, either because it hit something or it finished moving
 	var/turf/new_loc = get_turf(src)
-	if(isobj(src))
-		src.throw_impact(new_loc,speed)
-	new_loc.Entered(src)
+	if(new_loc)
+		if(isobj(src))
+			src.throw_impact(new_loc,speed)
+		new_loc.Entered(src)
 	src.throwing = 0
 	src.thrower = null
 	src.throw_source = null
@@ -255,7 +260,7 @@
 	return
 
 /atom/movable/proc/touch_map_edge()
-	if(z in config.sealed_levels)
+	if(z in maps_data.sealed_levels)
 		return
 
 	if(config.use_overmap)
@@ -263,37 +268,123 @@
 		return
 
 	var/move_to_z = src.get_transit_zlevel()
+	var/move_to_x = x
+	var/move_to_y = y
 	if(move_to_z)
-		z = move_to_z
-
 		if(x <= TRANSITIONEDGE)
-			x = world.maxx - TRANSITIONEDGE - 2
-			y = rand(TRANSITIONEDGE + 2, world.maxy - TRANSITIONEDGE - 2)
+			move_to_x = world.maxx - TRANSITIONEDGE - 2
+			move_to_y = rand(TRANSITIONEDGE + 2, world.maxy - TRANSITIONEDGE - 2)
 
 		else if (x >= (world.maxx - TRANSITIONEDGE + 1))
-			x = TRANSITIONEDGE + 1
-			y = rand(TRANSITIONEDGE + 2, world.maxy - TRANSITIONEDGE - 2)
+			move_to_x = TRANSITIONEDGE + 1
+			move_to_y = rand(TRANSITIONEDGE + 2, world.maxy - TRANSITIONEDGE - 2)
 
 		else if (y <= TRANSITIONEDGE)
-			y = world.maxy - TRANSITIONEDGE -2
-			x = rand(TRANSITIONEDGE + 2, world.maxx - TRANSITIONEDGE - 2)
+			move_to_y = world.maxy - TRANSITIONEDGE -2
+			move_to_x = rand(TRANSITIONEDGE + 2, world.maxx - TRANSITIONEDGE - 2)
 
 		else if (y >= (world.maxy - TRANSITIONEDGE + 1))
-			y = TRANSITIONEDGE + 1
-			x = rand(TRANSITIONEDGE + 2, world.maxx - TRANSITIONEDGE - 2)
+			move_to_y = TRANSITIONEDGE + 1
+			move_to_x = rand(TRANSITIONEDGE + 2, world.maxx - TRANSITIONEDGE - 2)
 
-		spawn(0)
-			if(loc) loc.Entered(src)
-
-//This list contains the z-level numbers which can be accessed via space travel and the percentile chances to get there.
-var/list/accessible_z_levels = list("1" = 5, "3" = 10, "4" = 15, "6" = 60)
+		forceMove(locate(move_to_x, move_to_y, move_to_z))
 
 //by default, transition randomly to another zlevel
 /atom/movable/proc/get_transit_zlevel()
-	var/list/candidates = accessible_z_levels.Copy()
+	var/list/candidates = maps_data.accessable_levels.Copy()
 	candidates.Remove("[src.z]")
+
+	//If something was ejected from the ship, it does not end up on another part of the ship.
+	if (z in maps_data.station_levels)
+		for (var/n in maps_data.station_levels)
+			candidates.Remove("[n]")
 
 	if(!candidates.len)
 		return null
 	return text2num(pickweight(candidates))
 
+
+/atom/movable/proc/set_glide_size(glide_size_override = 0, var/min = 0.2, var/max = world.icon_size/2)
+	if (!glide_size_override || glide_size_override > max)
+		glide_size = 0
+	else
+		glide_size = max(min, glide_size_override)
+
+	for (var/atom/movable/AM in contents)
+		AM.set_glide_size(glide_size, min, max)
+
+
+//This proc should never be overridden elsewhere at /atom/movable to keep directions sane.
+// Spoiler alert: it is, in moved.dm
+/atom/movable/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
+	if (glide_size_override > 0)
+		set_glide_size(glide_size_override)
+
+	// To prevent issues, diagonal movements are broken up into two cardinal movements.
+
+	// Is this a diagonal movement?
+	if (Dir & (Dir - 1))
+		if (Dir & NORTH)
+			if (Dir & EAST)
+				// Pretty simple really, try to move north -> east, else try east -> north
+				// Pretty much exactly the same for all the other cases here.
+				if (step(src, NORTH))
+					step(src, EAST)
+				else
+					if (step(src, EAST))
+						step(src, NORTH)
+			else
+				if (Dir & WEST)
+					if (step(src, NORTH))
+						step(src, WEST)
+					else
+						if (step(src, WEST))
+							step(src, NORTH)
+		else
+			if (Dir & SOUTH)
+				if (Dir & EAST)
+					if (step(src, SOUTH))
+						step(src, EAST)
+					else
+						if (step(src, EAST))
+							step(src, SOUTH)
+				else
+					if (Dir & WEST)
+						if (step(src, SOUTH))
+							step(src, WEST)
+						else
+							if (step(src, WEST))
+								step(src, SOUTH)
+	else
+		var/atom/oldloc = src.loc
+		var/olddir = dir //we can't override this without sacrificing the rest of movable/New()
+
+		. = ..()
+
+		if(Dir != olddir)
+			dir = olddir
+			set_dir(Dir)
+
+		src.move_speed = world.time - src.l_move_time
+		src.l_move_time = world.time
+		src.m_flag = 1
+
+		if (oldloc != src.loc && oldloc && oldloc.z == src.z)
+			src.last_move = get_dir(oldloc, src.loc)
+
+		// Only update plane if we're located on map
+		if(isturf(loc))
+			// if we wasn't on map OR our Z coord was changed
+			if( !isturf(oldloc) || (get_z(loc) != get_z(oldloc)) )
+				update_plane()
+
+		SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED, oldloc, loc)
+
+// Wrapper of step() that also sets glide size to a specific value.
+/proc/step_glide(var/atom/movable/am, var/dir, var/glide_size_override)
+	am.set_glide_size(glide_size_override)
+	return step(am, dir)
+
+// if this returns true, interaction to turf will be redirected to src instead
+/atom/movable/proc/preventsTurfInteractions()
+	return FALSE

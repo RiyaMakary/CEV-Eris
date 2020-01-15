@@ -1,152 +1,171 @@
-/obj/item/projectile/bullet/c9mm
-	damage = 18
-	sharp = 0
+/*
+IMPORTANT
 
-/obj/item/projectile/bullet/c9mmr
-	damage = 4
-	agony = 20
-	embed = 0
-	sharp = 0
+There are important things regarding this file:
 
-/obj/item/projectile/bullet/c9mmp
-	damage = 5
-	agony = 5
-	embed = 0
-	sharp = 0
+ * Rubbers are non sharp, embed capable objects, with non existing armor penetration. Their agony damage is generally lower then actuall one
+ * The caliber ammont was lowered for a reason, don't add more bloat. If you need different values, use gun vars.
+ * HV exist as antag option for better ammo.
+ * Step delays - default value is 1. Lower value makes bullet go faster, higher value makes bullet go slower.
 
-/obj/item/projectile/bullet/a10mm
-	damage = 35
-
-/obj/item/projectile/bullet/cl32r
-	damage = 20
-	sharp = 0
-
-/obj/item/projectile/bullet/cl32
-	damage = 6
-	agony = 30
-	embed = 0
-	sharp = 0
-
-/obj/item/projectile/bullet/a357
-	damage = 60
-
-/obj/item/projectile/bullet/c38
-	damage = 40
-
-/obj/item/projectile/bullet/c38r
-	damage = 8
-	agony = 40
-	embed = 0
-	sharp = 0
-
-/obj/item/projectile/bullet/cl44
-	damage = 51
-
-/obj/item/projectile/bullet/cl44r
-	damage = 10
-	agony = 80
-	embed = 0
-	sharp = 0
-
-/obj/item/projectile/bullet/c45
-	damage = 55
-
-/obj/item/projectile/bullet/c45p
-	damage = 7
-	agony = 7
-	embed = 0
-	sharp = 0
-
-/obj/item/projectile/bullet/c45r
-	damage = 10
-	agony = 85
-	embed = 0
-	sharp = 0
-
-/obj/item/projectile/bullet/a50
-	damage = 65
-
-/obj/item/projectile/bullet/a50r
-	damage = 10
-	agony = 85
-	embed = 0
-	sharp = 0
-
-/obj/item/projectile/bullet/a762
-	damage = 25
-	armor_penetration = 20
-	penetrating = 1
-
-/obj/item/projectile/bullet/a556
-	damage = 35
-	armor_penetration = 20
-	penetrating = 1
-
-/obj/item/projectile/bullet/a556p
-	damage = 10
-	agony = 10
-	embed = 0
-	sharp = 0
-
-/obj/item/projectile/bullet/c65
+*/
+//Low-caliber pistols and SMGs
+/obj/item/projectile/bullet/pistol
 	damage = 24
+	armor_penetration = 5
+	can_ricochet = TRUE
+
+/obj/item/projectile/bullet/pistol/hv
+	damage = 28
+	armor_penetration = 10
+	penetrating = 1
+	step_delay = 0.75
+
+/obj/item/projectile/bullet/pistol/practice
+	name = "practice bullet"
+	damage = 2
+	agony = 3
+	armor_penetration = 0
+	embed = FALSE
+	sharp = FALSE
+	can_ricochet = FALSE
+
+/obj/item/projectile/bullet/pistol/rubber
+	name = "rubber bullet"
+	damage = 3
+	agony = 22
+	armor_penetration = 0
+	embed = FALSE
+	sharp = FALSE
+
+//Carbines and rifles
+/obj/item/projectile/bullet/srifle
+	damage = 25
+	armor_penetration = 25
+	penetrating = 2
+	can_ricochet = TRUE
+
+/obj/item/projectile/bullet/srifle/nomuzzle
+	muzzle_type = null
+
+/obj/item/projectile/bullet/srifle/practice
+	name = "practice bullet"
+	damage = 2
+	agony = 2
+	armor_penetration = 0
+	embed = FALSE
+	sharp = FALSE
+	can_ricochet = FALSE
+
+/obj/item/projectile/bullet/clrifle
+	damage = 27
+	armor_penetration = 25
+	penetrating = 1
+	sharp = FALSE
+	can_ricochet = TRUE
+
+/obj/item/projectile/bullet/clrifle/rubber
+	name = "rubber bullet"
+	damage = 3
+	agony = 16
+	armor_penetration = 0
+	embed = FALSE
+	sharp = FALSE
+
+/obj/item/projectile/bullet/lrifle
+	damage = 28
 	armor_penetration = 20
 	penetrating = 1
-	sharp = 0
+	can_ricochet = TRUE
 
-/obj/item/projectile/bullet/c65r
+/obj/item/projectile/bullet/lrifle/hv
+	damage = 30
+	armor_penetration = 30
+	penetrating = 2
+	step_delay = 0.75
+
+//Revolvers and high-caliber pistols
+/obj/item/projectile/bullet/magnum
+	damage = 32
+	armor_penetration = 15
+	can_ricochet = TRUE
+
+/obj/item/projectile/bullet/magnum/hv
+	damage = 35
+	armor_penetration = 20
+	penetrating = 1
+	step_delay = 0.75
+
+/obj/item/projectile/bullet/magnum/rubber
+	name = "rubber bullet"
 	damage = 8
-	agony = 24
-	embed = 0
-	sharp = 0
+	agony = 32
+	armor_penetration = 0
+	embed = FALSE
+	sharp = FALSE
 
-/obj/item/projectile/bullet/a145
-	damage = 80
+
+//Sniper rifles
+/obj/item/projectile/bullet/antim
+	damage = 70
+	armor_penetration = 50
 	stun = 3
 	weaken = 3
 	penetrating = 5
-	armor_penetration = 80
-	hitscan = 1 //so the PTR isn't useless as a sniper weapon
+	hitscan = TRUE //so the PTR isn't useless as a sniper weapon
 
-/* Shotguns */
-
+//Shotguns
 /obj/item/projectile/bullet/shotgun
 	name = "slug"
-	damage = 50
-	armor_penetration = 15
+	icon_state = "slug"
+	damage = 54
+	armor_penetration = 10
+	knockback = 1
+	step_delay = 1.65
 
 /obj/item/projectile/bullet/shotgun/beanbag		//because beanbags are not bullets
 	name = "beanbag"
-	check_armour = "melee"
-	damage = 15
+	icon_state = "buckshot"
+	check_armour = ARMOR_MELEE
+	damage = 10
 	agony = 60
-	embed = 0
-	sharp = 0
+	armor_penetration = 0
+	embed = FALSE
+	sharp = FALSE
+
+/obj/item/projectile/bullet/shotgun/practice
+	name = "practice slug"
+	damage = 1
+	agony = 5
+	armor_penetration = 0
+	embed = FALSE
+	knockback = 0
 
 //Should do about 80 damage at 1 tile distance (adjacent), and 50 damage at 3 tiles distance.
 //Overall less damage than slugs in exchange for more damage at very close range and more embedding
 /obj/item/projectile/bullet/pellet/shotgun
 	name = "shrapnel"
-	damage = 13
-	pellets = 6
+	icon_state = "birdshot-1"
+	damage = 10
+	pellets = 8
 	range_step = 1
 	spread_step = 10
+	knockback = 1
 
-/obj/item/projectile/bullet/shotgun/practice
-	name = "practice"
-	damage = 5
+/obj/item/projectile/bullet/pellet/shotgun/Initialize()
+	. = ..()
+	icon_state = "birdshot-[rand(1,4)]"
 
-/* Miscellaneous */
-
+//Miscellaneous
 /obj/item/projectile/bullet/blank
 	invisibility = 101
 	damage = 1
-	embed = 0
+	embed = FALSE
 
 /obj/item/projectile/bullet/cap
 	name = "cap"
 	damage_type = HALLOSS
+	nodamage = TRUE
 	damage = 0
-	nodamage = 1
-	embed = 0
-	sharp = 0
+	embed = FALSE
+	sharp = FALSE

@@ -1,24 +1,42 @@
-/mob/living/proc/ventcrawl()
-	set name = "Crawl through Vent"
-	set desc = "Enter an air vent and crawl through the pipe system."
-	set category = "Abilities"
-
-	if(stat == DEAD || paralysis || weakened || stunned || restrained())
-		return
-
-	handle_ventcrawl()
+/mob/living
+	var/hiding
 
 /mob/living/proc/hide()
 	set name = "Hide"
 	set desc = "Allows to hide beneath tables or certain items. Toggled on or off."
 	set category = "Abilities"
 
-	if(stat == DEAD || paralysis || weakened || stunned || restrained())
+	if(incapacitated())
 		return
 
-	if (layer != 2.45)
-		layer = 2.45 //Just above cables with their 2.44
-		src << text("\blue You are now hiding.")
+	hiding = !hiding
+	if(hiding)
+		to_chat(src, SPAN_NOTICE("You are now hiding."))
 	else
-		layer = MOB_LAYER
-		src << text("\blue You have stopped hiding.")
+		to_chat(src, SPAN_NOTICE("You have stopped hiding."))
+	reset_layer()
+
+
+/mob/living/proc/activate_ai()
+	AI_inactive = FALSE
+	life_cycles_before_sleep = initial(life_cycles_before_sleep)
+
+
+/mob/living/proc/check_surrounding_area(var/dist = 7)
+	var/list/L = hearers(src, dist)
+
+	if(faction == "neutral")
+		return 1
+
+	if(faction == "station")
+		return 1
+
+	for (var/obj/mecha/M in mechas_list)
+		if (M.z == src.z && get_dist(src, M) <= dist)
+			return 1
+
+	for(var/mob/living/M in L)
+		if (M.faction != faction)
+			return 1
+
+	return 0

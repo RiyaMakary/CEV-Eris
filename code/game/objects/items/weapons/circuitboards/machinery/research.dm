@@ -1,8 +1,4 @@
-#ifndef T_BOARD
-#error T_BOARD macro is not defined but we need it!
-#endif
-
-obj/item/weapon/circuitboard/rdserver
+/obj/item/weapon/circuitboard/rdserver
 	name = T_BOARD("R&D server")
 	build_path = /obj/machinery/r_n_d/server
 	board_type = "machine"
@@ -34,31 +30,40 @@ obj/item/weapon/circuitboard/rdserver
 		/obj/item/weapon/stock_parts/console_screen = 1
 	)
 
+/obj/item/weapon/circuitboard/autolathe_disk_cloner
+	name = T_BOARD("autolathe disk cloner")
+	build_path = /obj/machinery/autolathe_disk_cloner
+	board_type = "machine"
+	origin_tech = list(TECH_ENGINEERING = 2, TECH_DATA = 2)
+	req_components = list(
+		/obj/item/weapon/stock_parts/scanning_module = 1,
+		/obj/item/weapon/stock_parts/micro_laser = 2,
+		/obj/item/weapon/stock_parts/console_screen = 1
+	)
+
 /obj/item/weapon/circuitboard/protolathe
 	name = T_BOARD("protolathe")
-	build_path = /obj/machinery/r_n_d/protolathe
+	build_path = /obj/machinery/autolathe/rnd/protolathe
 	board_type = "machine"
 	origin_tech = list(TECH_ENGINEERING = 2, TECH_DATA = 2)
 	req_components = list(
 		/obj/item/weapon/stock_parts/matter_bin = 2,
-		/obj/item/weapon/stock_parts/manipulator = 2,
-		/obj/item/weapon/reagent_containers/glass/beaker = 2
+		/obj/item/weapon/stock_parts/manipulator = 2
 	)
 
 /obj/item/weapon/circuitboard/circuit_imprinter
 	name = T_BOARD("circuit imprinter")
-	build_path = /obj/machinery/r_n_d/circuit_imprinter
+	build_path = /obj/machinery/autolathe/rnd/imprinter
 	board_type = "machine"
 	origin_tech = list(TECH_ENGINEERING = 2, TECH_DATA = 2)
 	req_components = list(
 		/obj/item/weapon/stock_parts/matter_bin = 1,
-		/obj/item/weapon/stock_parts/manipulator = 1,
-		/obj/item/weapon/reagent_containers/glass/beaker = 2
+		/obj/item/weapon/stock_parts/manipulator = 1
 	)
 
 /obj/item/weapon/circuitboard/mechfab
 	name = "Circuit board (Exosuit Fabricator)"
-	build_path = /obj/machinery/mecha_part_fabricator
+	build_path = /obj/machinery/autolathe/mechfab
 	board_type = "machine"
 	origin_tech = list(TECH_DATA = 3, TECH_ENGINEERING = 3)
 	req_components = list(

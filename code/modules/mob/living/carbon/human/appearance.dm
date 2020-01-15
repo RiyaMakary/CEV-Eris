@@ -1,4 +1,4 @@
-/mob/living/carbon/human/proc/change_appearance(var/flags = APPEARANCE_ALL_HAIR, var/location = src, var/mob/user = src, var/check_species_whitelist = 1, var/list/species_whitelist = list(), var/list/species_blacklist = list(), var/datum/topic_state/state = default_state)
+/mob/living/carbon/human/proc/change_appearance(var/flags = APPEARANCE_ALL_HAIR, var/location = src, var/mob/user = src, var/check_species_whitelist = 1, var/list/species_whitelist = list(), var/list/species_blacklist = list(), var/datum/topic_state/state =GLOB.default_state)
 	var/datum/nano_module/appearance_changer/AC = new(location, src, check_species_whitelist, species_whitelist, species_blacklist)
 	AC.flags = flags
 	AC.ui_interact(user, state = state)
@@ -17,14 +17,25 @@
 	reset_hair()
 	return 1
 
+/mob/living/carbon/human/proc/change_name(var/type)
+	if (type == "random")
+		var/datum/language/L = get_default_language()
+		L.set_random_name(src)
+
+	else
+		var/newname = input("Choose a name for your character.","Your Name", real_name)
+		fully_replace_character_name(real_name, newname)
+	to_chat(src, SPAN_NOTICE("Your name is now [real_name]"))
+
 /mob/living/carbon/human/proc/change_gender(var/gender)
 	if(src.gender == gender)
 		return
 
 	src.gender = gender
-	reset_hair()
-	update_body()
-	update_dna()
+	regenerate_icons() //This is overkill, but we do need to update all of the clothing. Maybe there's a more precise call
+	//reset_hair()
+	//update_body()
+	//update_dna()
 	return 1
 
 /mob/living/carbon/human/proc/change_hair(var/hair_style)
@@ -34,7 +45,7 @@
 	if(h_style == hair_style)
 		return
 
-	if(!(hair_style in hair_styles_list))
+	if(!(hair_style in GLOB.hair_styles_list))
 		return
 
 	h_style = hair_style
@@ -49,7 +60,7 @@
 	if(f_style == facial_hair_style)
 		return
 
-	if(!(facial_hair_style in facial_hair_styles_list))
+	if(!(facial_hair_style in GLOB.facial_hair_styles_list))
 		return
 
 	f_style = facial_hair_style
@@ -134,7 +145,7 @@
 	for(var/current_species_name in all_species)
 		var/datum/species/current_species = all_species[current_species_name]
 
-		if(check_whitelist && !check_rights(R_ADMIN, 0, src)) //If we're using the whitelist, make sure to check it!
+		if(check_whitelist)// && !check_rights(R_ADMIN, 0, src)) //If we're using the whitelist, make sure to check it!
 			if(!(current_species.spawn_flags & CAN_JOIN))
 				continue
 			if(whitelist.len && !(current_species_name in whitelist))
@@ -149,35 +160,19 @@
 	return valid_species
 
 /mob/living/carbon/human/proc/generate_valid_hairstyles(var/check_gender = 1)
-	var/list/valid_hairstyles = new()
-	for(var/hairstyle in hair_styles_list)
-		var/datum/sprite_accessory/S = hair_styles_list[hairstyle]
-
-		if(check_gender && gender == MALE && S.gender == FEMALE)
-			continue
-		if(check_gender && gender == FEMALE && S.gender == MALE)
-			continue
-		if(!(species.get_bodytype() in S.species_allowed))
-			continue
-		valid_hairstyles += hairstyle
-
-	return valid_hairstyles
+	. = list()
+	var/list/hair_styles = species.get_hair_styles()
+	for(var/hair_style in hair_styles)
+		var/datum/sprite_accessory/S = hair_styles[hair_style]
+		if(check_gender)
+			if(gender == MALE && S.gender == FEMALE)
+				continue
+			if(gender == FEMALE && S.gender == MALE)
+				continue
+		.[hair_style] = S
 
 /mob/living/carbon/human/proc/generate_valid_facial_hairstyles()
-	var/list/valid_facial_hairstyles = new()
-	for(var/facialhairstyle in facial_hair_styles_list)
-		var/datum/sprite_accessory/S = facial_hair_styles_list[facialhairstyle]
-
-		if(gender == MALE && S.gender == FEMALE)
-			continue
-		if(gender == FEMALE && S.gender == MALE)
-			continue
-		if(!(species.get_bodytype() in S.species_allowed))
-			continue
-
-		valid_facial_hairstyles += facialhairstyle
-
-	return valid_facial_hairstyles
+	return species.get_facial_hair_styles(gender)
 
 /mob/living/carbon/human/proc/force_update_limbs()
 	for(var/obj/item/organ/external/O in organs)

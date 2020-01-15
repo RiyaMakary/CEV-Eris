@@ -1,12 +1,10 @@
-//This file was auto-corrected by findeclaration.exe on 25.5.2012 20:42:31
-
-/obj/machinery/computer/secure_data//TODO:SANITY
+/obj/machinery/computer/secure_data
 	name = "security records console"
 	desc = "Used to view, edit and maintain security records"
 	icon_keyboard = "security_key"
 	icon_screen = "security"
-	light_color = COLOR_WHITE
-	req_one_access = list(access_forensics_lockers)
+	light_color = COLOR_LIGHTING_SCI_BRIGHT
+	req_one_access = list(access_security)
 	circuit = /obj/item/weapon/circuitboard/secure_data
 	var/obj/item/weapon/card/id/scan = null
 	var/authenticated = null
@@ -32,13 +30,13 @@
 	if(!usr || usr.stat || usr.lying)	return
 
 	if(scan)
-		usr << "You remove \the [scan] from \the [src]."
+		to_chat(usr, "You remove \the [scan] from \the [src].")
 		scan.loc = get_turf(src)
 		if(!usr.get_active_hand() && ishuman(usr))
 			usr.put_in_hands(scan)
 		scan = null
 	else
-		usr << "There is nothing to remove from the console."
+		to_chat(usr, "There is nothing to remove from the console.")
 	return
 
 /obj/machinery/computer/secure_data/attackby(obj/item/O as obj, user as mob)
@@ -46,11 +44,8 @@
 		usr.drop_item()
 		O.loc = src
 		scan = O
-		user << "You insert [O]."
+		to_chat(user, "You insert [O].")
 	..()
-
-/obj/machinery/computer/secure_data/attack_ai(mob/user as mob)
-	return attack_hand(user)
 
 //Someone needs to break down the dat += into chunks instead of long ass lines.
 /obj/machinery/computer/secure_data/attack_hand(mob/user as mob)
@@ -60,7 +55,7 @@
 
 /obj/machinery/computer/secure_data/ui_interact(user)
 	if (src.z > 6)
-		user << "<span class='warning'>Unable to establish a connection:</span> You're too far away from the station!"
+		to_chat(user, "<span class='warning'>Unable to establish a connection:</span> You're too far away from the station!")
 		return
 
 	var/dat
@@ -581,7 +576,7 @@ What a mess.*/
 
 					if ("Change Criminal Status")
 						if (active2)
-							for(var/mob/living/carbon/human/H in player_list)
+							for(var/mob/living/carbon/human/H in GLOB.player_list)
 								BITSET(H.hud_updateflag, WANTED_HUD)
 							switch(href_list["criminal2"])
 								if("none")
@@ -637,7 +632,7 @@ What a mess.*/
 		if(prob(10/severity))
 			switch(rand(1,6))
 				if(1)
-					R.fields["name"] = "[pick(pick(first_names_male), pick(first_names_female))] [pick(last_names)]"
+					R.fields["name"] = "[pick(pick(GLOB.first_names_male), pick(GLOB.first_names_female))] [pick(GLOB.last_names)]"
 				if(2)
 					R.fields["sex"]	= pick("Male", "Female")
 				if(3)

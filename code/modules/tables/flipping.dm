@@ -22,7 +22,7 @@
 		return
 
 	if(flipped < 0 || !flip(get_cardinal_dir(usr,src)))
-		usr << SPAN_NOTICE("It won't budge.")
+		to_chat(usr, SPAN_NOTICE("It won't budge."))
 		return
 
 	usr.visible_message(SPAN_WARNING("[usr] flips \the [src]!"))
@@ -40,7 +40,7 @@
 
 	var/obj/occupied = turf_is_crowded()
 	if(occupied)
-		usr << "There's \a [occupied] in the way."
+		to_chat(usr, "There's \a [occupied] in the way.")
 		return 0
 
 	var/list/L = list()
@@ -66,7 +66,7 @@
 		return
 
 	if (!unflipping_check())
-		usr << SPAN_NOTICE("It won't budge.")
+		to_chat(usr, SPAN_NOTICE("It won't budge."))
 		return
 	unflip()
 
@@ -99,7 +99,7 @@
 			var/material/glass/G = material
 			G.place_shard(src.loc)
 			if (G.is_reinforced())
-				PoolOrNew(/obj/item/stack/rods, src.loc)
+				new /obj/item/stack/rods(loc)
 			playsound(src, "shatter", 70, 1)
 			material = null
 	update_connections(1)

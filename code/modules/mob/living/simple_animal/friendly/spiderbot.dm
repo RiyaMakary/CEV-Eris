@@ -25,6 +25,7 @@
 
 	health = 10
 	maxHealth = 10
+	hunger_enabled = 0
 
 	attacktext = "shocked"
 	melee_damage_lower = 1
@@ -39,6 +40,7 @@
 	speed = -1                    //Spiderbots gotta go fast.
 	pass_flags = PASSTABLE
 	speak_emote = list("beeps","clicks","chirps")
+	can_burrow = TRUE
 
 /mob/living/simple_animal/spiderbot/New()
 	..()
@@ -52,31 +54,31 @@
 	if(istype(O, /obj/item/device/mmi))
 		var/obj/item/device/mmi/B = O
 		if(src.mmi)
-			user << SPAN_WARNING("There's already a brain in [src]!")
+			to_chat(user, SPAN_WARNING("There's already a brain in [src]!"))
 			return
 		if(!B.brainmob)
-			user << SPAN_WARNING("Sticking an empty MMI into the frame would sort of defeat the purpose.")
+			to_chat(user, SPAN_WARNING("Sticking an empty MMI into the frame would sort of defeat the purpose."))
 			return
 		if(!B.brainmob.key)
 			var/ghost_can_reenter = 0
 			if(B.brainmob.mind)
-				for(var/mob/observer/ghost/G in player_list)
+				for(var/mob/observer/ghost/G in GLOB.player_list)
 					if(G.can_reenter_corpse && G.mind == B.brainmob.mind)
 						ghost_can_reenter = 1
 						break
 			if(!ghost_can_reenter)
-				user << SPAN_NOTICE("[O] is completely unresponsive; there's no point.")
+				to_chat(user, SPAN_NOTICE("[O] is completely unresponsive; there's no point."))
 				return
 
 		if(B.brainmob.stat == DEAD)
-			user << SPAN_WARNING("[O] is dead. Sticking it into the frame would sort of defeat the purpose.")
+			to_chat(user, SPAN_WARNING("[O] is dead. Sticking it into the frame would sort of defeat the purpose."))
 			return
 
-		if(jobban_isbanned(B.brainmob, "Cyborg"))
-			user << SPAN_WARNING("\The [O] does not seem to fit.")
+		if(jobban_isbanned(B.brainmob, "Robot"))
+			to_chat(user, SPAN_WARNING("\The [O] does not seem to fit."))
 			return
 
-		user << SPAN_NOTICE("You install \the [O] in \the [src]!")
+		to_chat(user, SPAN_NOTICE("You install \the [O] in \the [src]!"))
 
 		if(istype(O, /obj/item/device/mmi/digital))
 			positronic = 1
@@ -90,23 +92,21 @@
 		src.update_icon()
 		return 1
 
-	if (istype(O, /obj/item/weapon/weldingtool))
-		var/obj/item/weapon/weldingtool/WT = O
-		if (WT.remove_fuel(0))
-			if(health < maxHealth)
+	if(QUALITY_WELDING in O.tool_qualities)
+		if(health < maxHealth)
+			if(O.use_tool(user, src, WORKTIME_FAST, QUALITY_WELDING, FAILCHANCE_VERY_EASY, required_stat = STAT_MEC))
 				health += pick(1,1,1,2,2,3)
 				if(health > maxHealth)
 					health = maxHealth
 				add_fingerprint(user)
 				src.visible_message(SPAN_NOTICE("\The [user] has spot-welded some of the damage to \the [src]!"))
-			else
-				user << SPAN_WARNING("\The [src] is undamaged!")
 		else
-			user << SPAN_DANGER("You need more welding fuel for this task!")
-			return
-	else if(istype(O, /obj/item/weapon/card/id)||istype(O, /obj/item/device/pda))
+			to_chat(user, SPAN_WARNING("\The [src] is undamaged!"))
+		return
+
+	else if(istype(O, /obj/item/weapon/card/id)||istype(O, /obj/item/modular_computer/pda))
 		if (!mmi)
-			user << SPAN_DANGER("There's no reason to swipe your ID - \the [src] has no brain to remove.")
+			to_chat(user, SPAN_DANGER("There's no reason to swipe your ID - \the [src] has no brain to remove."))
 			return 0
 
 		var/obj/item/weapon/card/id/id_card
@@ -114,18 +114,17 @@
 		if(istype(O, /obj/item/weapon/card/id))
 			id_card = O
 		else
-			var/obj/item/device/pda/pda = O
-			id_card = pda.id
+			id_card = O.GetIdCard()
 
 		if(access_robotics in id_card.access)
-			user << SPAN_NOTICE("You swipe your access card and pop the brain out of \the [src].")
+			to_chat(user, SPAN_NOTICE("You swipe your access card and pop the brain out of \the [src]."))
 			eject_brain()
 			if(held_item)
 				held_item.loc = src.loc
 				held_item = null
 			return 1
 		else
-			user << SPAN_DANGER("You swipe your card with no effect.")
+			to_chat(user, SPAN_DANGER("You swipe your card with no effect."))
 			return 0
 
 	else
@@ -133,12 +132,12 @@
 
 /mob/living/simple_animal/spiderbot/emag_act(var/remaining_charges, var/mob/user)
 	if (emagged)
-		user << SPAN_WARNING("[src] is already overloaded - better run.")
+		to_chat(user, SPAN_WARNING("[src] is already overloaded - better run."))
 		return 0
 	else
-		user << SPAN_NOTICE("You short out the security protocols and overload [src]'s cell, priming it to explode in a short time.")
-		spawn(100)	src << SPAN_DANGER("Your cell seems to be outputting a lot of power...")
-		spawn(200)	src << SPAN_DANGER("Internal heat sensors are spiking! Something is badly wrong with your cell!")
+		to_chat(user, SPAN_NOTICE("You short out the security protocols and overload [src]'s cell, priming it to explode in a short time."))
+		spawn(100)	to_chat(src, SPAN_DANGER("Your cell seems to be outputting a lot of power..."))
+		spawn(200)	to_chat(src, SPAN_DANGER("Internal heat sensors are spiking! Something is badly wrong with your cell!"))
 		spawn(300)	src.explode()
 
 /mob/living/simple_animal/spiderbot/proc/transfer_personality(var/obj/item/device/mmi/M as obj)
@@ -181,7 +180,7 @@
 
 /mob/living/simple_animal/spiderbot/Destroy()
 	eject_brain()
-	..()
+	. = ..()
 
 /mob/living/simple_animal/spiderbot/New()
 
@@ -194,8 +193,8 @@
 
 /mob/living/simple_animal/spiderbot/death()
 
-	living_mob_list -= src
-	dead_mob_list += src
+	GLOB.living_mob_list -= src
+	GLOB.dead_mob_list += src
 
 	if(camera)
 		camera.status = 0
@@ -217,7 +216,7 @@
 		return
 
 	if(!held_item)
-		usr << "\red You have nothing to drop!"
+		to_chat(usr, "\red You have nothing to drop!")
 		return 0
 
 	if(istype(held_item, /obj/item/weapon/grenade))
@@ -249,7 +248,7 @@
 		return -1
 
 	if(held_item)
-		src << SPAN_WARNING("You are already holding \the [held_item]")
+		to_chat(src, SPAN_WARNING("You are already holding \the [held_item]"))
 		return 1
 
 	var/list/items = list()
@@ -268,16 +267,16 @@
 					SPAN_NOTICE("You grab \the [held_item]."), \
 					"You hear a skittering noise and a clink.")
 				return held_item
-		src << SPAN_WARNING("\The [selection] is too far away.")
+		to_chat(src, SPAN_WARNING("\The [selection] is too far away."))
 		return 0
 
-	src << SPAN_WARNING("There is nothing of interest to take.")
+	to_chat(src, SPAN_WARNING("There is nothing of interest to take."))
 	return 0
 
 /mob/living/simple_animal/spiderbot/examine(mob/user)
 	..(user)
 	if(src.held_item)
-		user << "It is carrying \icon[src.held_item] \a [src.held_item]."
+		to_chat(user, "It is carrying \icon[src.held_item] \a [src.held_item].")
 
 /mob/living/simple_animal/spiderbot/cannot_use_vents()
 	return

@@ -10,8 +10,8 @@ var/global/list/navbeacons			// no I don't like putting this in, but it will do 
 	icon_state = "navbeacon0-f"
 	name = "navigation beacon"
 	desc = "A radio beacon used for bot navigation."
-	level = 1		// underfloor
-	layer = 2.5
+	level = BELOW_PLATING_LEVEL		// underfloor
+	layer = LOW_OBJ_LAYER
 	anchored = 1
 
 	var/open = 0		// true if cover is open
@@ -39,8 +39,7 @@ var/global/list/navbeacons			// no I don't like putting this in, but it will do 
 
 
 		spawn(5)	// must wait for map loading to finish
-			if(radio_controller)
-				radio_controller.add_object(src, freq, RADIO_NAVBEACONS)
+			SSradio.add_object(src, freq, RADIO_NAVBEACONS)
 
 	// set the transponder codes assoc list from codes_txt
 	proc/set_codes()
@@ -94,7 +93,7 @@ var/global/list/navbeacons			// no I don't like putting this in, but it will do 
 
 	proc/post_signal()
 
-		var/datum/radio_frequency/frequency = radio_controller.return_frequency(freq)
+		var/datum/radio_frequency/frequency = SSradio.return_frequency(freq)
 
 		if(!frequency) return
 
@@ -114,23 +113,24 @@ var/global/list/navbeacons			// no I don't like putting this in, but it will do 
 		if(!T.is_plating())
 			return		// prevent intraction when T-scanner revealed
 
-		if(istype(I, /obj/item/weapon/screwdriver))
-			open = !open
+		if(QUALITY_SCREW_DRIVING in I.tool_qualities)
+			if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_SCREW_DRIVING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+				open = !open
 
-			user.visible_message("[user] [open ? "opens" : "closes"] the beacon's cover.", "You [open ? "open" : "close"] the beacon's cover.")
+				user.visible_message("[user] [open ? "opens" : "closes"] the beacon's cover.", "You [open ? "open" : "close"] the beacon's cover.")
 
-			updateicon()
+				updateicon()
 
-		else if(I.GetID())
+		else if(I.GetIdCard())
 			if(open)
 				if (src.allowed(user))
 					src.locked = !src.locked
-					user << "Controls are now [src.locked ? "locked." : "unlocked."]"
+					to_chat(user, "Controls are now [src.locked ? "locked." : "unlocked."]")
 				else
-					user << SPAN_WARNING("Access denied.")
+					to_chat(user, SPAN_WARNING("Access denied."))
 				updateDialog()
 			else
-				user << "You must open the cover first!"
+				to_chat(user, "You must open the cover first!")
 		return
 
 	attack_ai(var/mob/user)
@@ -149,7 +149,7 @@ var/global/list/navbeacons			// no I don't like putting this in, but it will do 
 			return		// prevent intraction when T-scanner revealed
 
 		if(!open && !ai)	// can't alter controls if not open, unless you're an AI
-			user << "The beacon's control cover is closed."
+			to_chat(user, "The beacon's control cover is closed.")
 			return
 
 
@@ -252,6 +252,5 @@ Transponder Codes:<UL>"}
 
 /obj/machinery/navbeacon/Destroy()
 	navbeacons.Remove(src)
-	if(radio_controller)
-		radio_controller.remove_object(src, freq)
-	..()
+	SSradio.remove_object(src, freq)
+	. = ..()

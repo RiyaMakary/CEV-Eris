@@ -1,7 +1,7 @@
 /*
 	Datum-based species. Should make for much cleaner and easier to maintain race code.
 */
-
+#define SPECIES_BLOOD_DEFAULT 560
 /datum/species
 
 	// Descriptors and strings.
@@ -63,6 +63,9 @@
 	var/flash_mod =     1                    // Stun from blindness modifier.
 	var/vision_flags = SEE_SELF              // Same flags as glasses.
 
+	var/list/hair_styles
+	var/list/facial_hair_styles
+
 	// Death vars.
 	var/meat_type = /obj/item/weapon/reagent_containers/food/snacks/meat/human
 	var/gibber_type = /obj/effect/gibspawner/human
@@ -123,7 +126,6 @@
 	var/appearance_flags = 0      // Appearance/display related features.
 	var/spawn_flags = 0           // Flags that specify who can spawn as this species
 	var/slowdown = 0              // Passive movement speed malus (or boost, if negative)
-	var/silent_steps = 0          // Stops step noises
 	var/primitive_form            // Lesser form, if any (ie. monkey for humans)
 	var/greater_form              // Greater form, if any, ie. human for monkeys.
 	var/holder_type
@@ -131,13 +133,13 @@
 	var/rarity_value = 1          // Relative rarity/collector value for this species.
 	                              // Determines the organs that the species spawns with and
 	var/list/has_organ = list(    // which required-organ checks are conducted.
-		O_HEART =    /obj/item/organ/internal/heart,
-		O_LUNGS =    /obj/item/organ/internal/lungs,
-		O_LIVER =    /obj/item/organ/internal/liver,
-		O_KIDNEYS =  /obj/item/organ/internal/kidneys,
-		O_BRAIN =    /obj/item/organ/internal/brain,
-		O_APPENDIX = /obj/item/organ/internal/appendix,
-		O_EYES =     /obj/item/organ/internal/eyes
+		BP_HEART =    /obj/item/organ/internal/heart,
+		BP_LUNGS =    /obj/item/organ/internal/lungs,
+		BP_LIVER =    /obj/item/organ/internal/liver,
+		BP_KIDNEYS =  /obj/item/organ/internal/kidneys,
+		BP_BRAIN =    /obj/item/organ/internal/brain,
+		BP_APPENDIX = /obj/item/organ/internal/appendix,
+		BP_EYES =     /obj/item/organ/internal/eyes
 		)
 	var/vision_organ              // If set, this organ is required for vision. Defaults to "eyes" if the species has them.
 
@@ -148,11 +150,7 @@
 		BP_L_ARM =  new /datum/organ_description/arm/left,
 		BP_R_ARM =  new /datum/organ_description/arm/right,
 		BP_L_LEG =  new /datum/organ_description/leg/left,
-		BP_R_LEG =  new /datum/organ_description/leg/right,
-		BP_L_HAND = new /datum/organ_description/hand/left,
-		BP_R_HAND = new /datum/organ_description/hand/right,
-		BP_L_FOOT = new /datum/organ_description/foot/left,
-		BP_R_FOOT = new /datum/organ_description/foot/right
+		BP_R_LEG =  new /datum/organ_description/leg/right
 		)
 
 	// Misc
@@ -175,8 +173,8 @@
 		hud = new()
 
 	//If the species has eyes, they are the default vision organ
-	if(!vision_organ && has_organ[O_EYES])
-		vision_organ = O_EYES
+	if(!vision_organ && has_organ[BP_EYES])
+		vision_organ = BP_EYES
 
 	unarmed_attacks = list()
 	for(var/u_type in unarmed_types)
@@ -187,12 +185,6 @@
 
 /datum/species/proc/get_bodytype()
 	return name
-
-/datum/species/proc/get_body_build(var/gender, var/prefered)
-	for(var/BBT in typesof(/datum/body_build))
-		var/datum/body_build/BB = new BBT
-		if((!prefered || BB.name == prefered) && (gender in genders))
-			return BB
 
 
 /datum/species/proc/get_environment_discomfort(var/mob/living/carbon/human/H, var/msg_type)
@@ -211,10 +203,10 @@
 	switch(msg_type)
 		if("cold")
 			if(!covered)
-				H << SPAN_DANGER("[pick(cold_discomfort_strings)]")
+				to_chat(H, SPAN_DANGER("[pick(cold_discomfort_strings)]"))
 		if("heat")
 			if(covered)
-				H << SPAN_DANGER("[pick(heat_discomfort_strings)]")
+				to_chat(H, SPAN_DANGER("[pick(heat_discomfort_strings)]"))
 
 /datum/species/proc/sanitize_name(var/name)
 	return sanitizeName(name)
@@ -222,9 +214,9 @@
 /datum/species/proc/get_random_name(var/gender)
 	if(!name_language)
 		if(gender == FEMALE)
-			return capitalize(pick(first_names_female)) + " " + capitalize(pick(last_names))
+			return capitalize(pick(GLOB.first_names_female)) + " " + capitalize(pick(GLOB.last_names))
 		else
-			return capitalize(pick(first_names_male)) + " " + capitalize(pick(last_names))
+			return capitalize(pick(GLOB.first_names_male)) + " " + capitalize(pick(GLOB.last_names))
 
 	var/datum/language/species_language = all_languages[name_language]
 	if(!species_language)
@@ -323,6 +315,9 @@
 	if(!H.druggy)
 		H.see_in_dark = (H.sight == SEE_TURFS|SEE_MOBS|SEE_OBJS) ? 8 : min(darksight + H.equipment_darkness_modifier, 8)
 
+	if(H.equipment_see_invis)
+		H.see_invisible = H.equipment_see_invis
+
 	if(H.equipment_tint_total >= TINT_BLIND)
 		H.eye_blind = max(H.eye_blind, 1)
 
@@ -333,7 +328,9 @@
 		return 1
 
 	if(config.welder_vision)
-		if((!H.equipment_prescription && (H.disabilities & NEARSIGHTED)) || H.equipment_tint_total == TINT_MODERATE)
+		if(H.equipment_tint_total == TINT_HEAVY)
+			H.client.screen += global_hud.darkMask
+		else if((!H.equipment_prescription && (H.disabilities & NEARSIGHTED)) || H.equipment_tint_total == TINT_MODERATE)
 			H.client.screen += global_hud.vimpaired
 //	if(H.eye_blurry)	H.client.screen += global_hud.blurry
 //	if(H.druggy)		H.client.screen += global_hud.druggy
@@ -342,3 +339,57 @@
 		H.client.screen |= overlay
 
 	return 1
+
+/datum/species/proc/get_facial_hair_styles(var/gender)
+	var/list/facial_hair_styles_by_species = LAZYACCESS(facial_hair_styles, type)
+	if(!facial_hair_styles_by_species)
+		facial_hair_styles_by_species = list()
+		LAZYSET(facial_hair_styles, type, facial_hair_styles_by_species)
+
+	var/list/facial_hair_style_by_gender = facial_hair_styles_by_species[gender]
+	if(!facial_hair_style_by_gender)
+		facial_hair_style_by_gender = list()
+		LAZYSET(facial_hair_styles_by_species, gender, facial_hair_style_by_gender)
+
+		for(var/facialhairstyle in GLOB.facial_hair_styles_list)
+			var/datum/sprite_accessory/S = GLOB.facial_hair_styles_list[facialhairstyle]
+			if(gender == MALE && S.gender == FEMALE)
+				continue
+			if(gender == FEMALE && S.gender == MALE)
+				continue
+			if(!(get_bodytype() in S.species_allowed))
+				continue
+			ADD_SORTED(facial_hair_style_by_gender, facialhairstyle, /proc/cmp_text_asc)
+			facial_hair_style_by_gender[facialhairstyle] = S
+
+	return facial_hair_style_by_gender
+
+/datum/species/proc/get_hair_styles()
+	var/list/L = LAZYACCESS(hair_styles, type)
+	if(!L)
+		L = list()
+		LAZYSET(hair_styles, type, L)
+		for(var/hairstyle in GLOB.hair_styles_list)
+			var/datum/sprite_accessory/S = GLOB.hair_styles_list[hairstyle]
+			if(!(get_bodytype() in S.species_allowed))
+				continue
+			ADD_SORTED(L, hairstyle, /proc/cmp_text_asc)
+			L[hairstyle] = S
+	return L
+
+/datum/species/proc/equip_survival_gear(mob/living/carbon/human/H, extendedtank = TRUE)
+	var/box_type = /obj/item/weapon/storage/box/survival
+
+	if(extendedtank)
+		box_type = /obj/item/weapon/storage/box/survival/extended
+
+	if(istype(H.get_equipped_item(slot_back), /obj/item/weapon/storage))
+		H.equip_to_storage(new box_type(H.back))
+	else
+		H.equip_to_slot_or_del(new box_type(H), slot_r_hand)
+
+/datum/species/proc/has_equip_slot(slot)
+	if(hud && hud.equip_slots)
+		if(!(slot in hud.equip_slots))
+			return FALSE
+	return TRUE

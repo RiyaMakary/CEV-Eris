@@ -1,7 +1,7 @@
 /turf/simulated/wall/r_wall
 	icon_state = "rgeneric"
 /turf/simulated/wall/r_wall/New(var/newloc)
-	..(newloc, "plasteel","plasteel") //3strong
+	..(newloc, MATERIAL_PLASTEEL, MATERIAL_PLASTEEL) //3strong
 
 /turf/simulated/wall/cult
 	icon_state = "cult"
@@ -17,7 +17,7 @@
 	name = "wall"
 	icon_state = "wall1"
 	opacity = 1
-	density = 1
+	density = TRUE
 	blocks_air = 1
 
 /turf/simulated/shuttle/wall/cargo
@@ -44,7 +44,7 @@
 	name = "shuttle"
 	icon = 'icons/turf/shuttle.dmi'
 	anchored = 1
-	density = 1
+	density = TRUE
 
 /obj/structure/shuttle_part/cargo
 	name = "Cargo Transport Shuttle (A5)"
@@ -70,27 +70,27 @@
     return 0
 
 /turf/simulated/wall/iron/New(var/newloc)
-	..(newloc,"iron")
+	..(newloc,MATERIAL_IRON)
 /turf/simulated/wall/uranium/New(var/newloc)
-	..(newloc,"uranium")
+	..(newloc,MATERIAL_URANIUM)
 /turf/simulated/wall/diamond/New(var/newloc)
-	..(newloc,"diamond")
+	..(newloc,MATERIAL_DIAMOND)
 /turf/simulated/wall/gold/New(var/newloc)
-	..(newloc,"gold")
+	..(newloc,MATERIAL_GOLD)
 /turf/simulated/wall/silver/New(var/newloc)
-	..(newloc,"silver")
+	..(newloc,MATERIAL_SILVER)
 /turf/simulated/wall/plasma/New(var/newloc)
-	..(newloc,"plasma")
+	..(newloc,MATERIAL_PLASMA)
 /turf/simulated/wall/sandstone/New(var/newloc)
-	..(newloc,"sandstone")
+	..(newloc,MATERIAL_SANDSTONE)
 /turf/simulated/wall/ironplasma/New(var/newloc)
-	..(newloc,"iron","plasma")
+	..(newloc,MATERIAL_IRON,MATERIAL_PLASMA)
 /turf/simulated/wall/golddiamond/New(var/newloc)
-	..(newloc,"gold","diamond")
+	..(newloc,MATERIAL_GOLD,MATERIAL_DIAMOND)
 /turf/simulated/wall/silvergold/New(var/newloc)
-	..(newloc,"silver","gold")
+	..(newloc,MATERIAL_SILVER,MATERIAL_GOLD)
 /turf/simulated/wall/sandstonediamond/New(var/newloc)
-	..(newloc,"sandstone","diamond")
+	..(newloc,MATERIAL_SANDSTONE,MATERIAL_DIAMOND)
 
 // Kind of wondering if this is going to bite me in the butt.
 /turf/simulated/wall/voxshuttle/New(var/newloc)
@@ -99,3 +99,29 @@
 	return
 /turf/simulated/wall/titanium/New(var/newloc)
 	..(newloc,"titanium")
+
+
+//Untinted walls have white color, all their coloring is built into their sprite and they should really not be given a tint, it'd look awful
+/turf/simulated/wall/untinted
+	base_color_override = "#FFFFFF"
+	reinf_color_override = "#FFFFFF"
+
+/*
+	One Star/Alliance walls, for use on derelict stuff
+*/
+/turf/simulated/wall/untinted/onestar
+	icon_state = "onestar_standard"
+	icon_base_override = "onestar_standard"
+
+
+/turf/simulated/wall/untinted/onestar/New(var/newloc)
+	..(newloc, MATERIAL_STEEL)
+
+
+/turf/simulated/wall/untinted/onestar_reinforced
+	icon_state = "onestar_reinforced"
+	icon_base_override = "onestar_standard"
+	icon_base_reinf_override = "onestar_reinforced"
+
+/turf/simulated/wall/untinted/onestar_reinforced/New(var/newloc)
+	..(newloc, MATERIAL_STEEL,MATERIAL_STEEL)

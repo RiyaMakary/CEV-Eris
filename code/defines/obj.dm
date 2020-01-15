@@ -12,19 +12,18 @@
 			if("Yes")
 				if(!Adjacent(user))
 					return
-				user.forceMove(pickSpawnLocation())
+				user.forceMove(pick_spawn_location())
 			if("No")
 				return
-
+/* LETHALGHOSDT: WTF is this? Layer was set to 99
 /obj/effect/mark
 	var/mark = ""
 	icon = 'icons/misc/mark.dmi'
 	icon_state = "blank"
 	anchored = 1
-	layer = 99
 	mouse_opacity = 0
 	unacidable = 1//Just to be sure.
-
+*/
 /obj/effect/beam
 	name = "beam"
 	density = 0
@@ -87,7 +86,7 @@
 	item_state = "beachball"
 	density = 0
 	anchored = 0
-	w_class = ITEM_SIZE_LARGE
+	w_class = ITEM_SIZE_BULKY
 	force = 0.0
 	throwforce = 0.0
 	throw_speed = 1

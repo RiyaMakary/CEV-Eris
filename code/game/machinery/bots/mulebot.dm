@@ -60,14 +60,11 @@
 	wires = new(src)
 	botcard = new(src)
 	botcard.access = list(access_maint_tunnels, access_mailsorting, access_cargo, access_cargo_bot, access_merchant, access_mining, access_mining_station)
-	cell = new(src)
-	cell.charge = 2000
-	cell.maxcharge = 2000
+	cell = new /obj/item/weapon/cell/large/high(src)
 
 	spawn(5)	// must wait for map loading to finish
-		if(radio_controller)
-			radio_controller.add_object(src, control_freq, filter = RADIO_MULEBOT)
-			radio_controller.add_object(src, beacon_freq, filter = RADIO_NAVBEACONS)
+		SSradio.add_object(src, control_freq, filter = RADIO_MULEBOT)
+		SSradio.add_object(src, beacon_freq, filter = RADIO_NAVBEACONS)
 
 		var/count = 0
 		for(var/obj/machinery/bot/mulebot/other in world)
@@ -80,10 +77,18 @@
 	unload(0)
 	qdel(wires)
 	wires = null
-	if(radio_controller)
-		radio_controller.remove_object(src,beacon_freq)
-		radio_controller.remove_object(src,control_freq)
+	SSradio.remove_object(src,beacon_freq)
+	SSradio.remove_object(src,control_freq)
 	return ..()
+
+/obj/machinery/bot/mulebot/get_cell()
+	return cell
+
+/obj/machinery/bot/mulebot/handle_atom_del(atom/A)
+	..()
+	if(A == cell)
+		cell = null
+		update_icon()
 
 // attack by item
 // emag : lock/unlock,
@@ -97,9 +102,9 @@
 		C.loc = src
 		src.cell = C
 		updateDialog()
-	else if(istype(I,/obj/item/weapon/screwdriver))
+	else if(istype(I,/obj/item/weapon/tool/screwdriver))
 		if(locked)
-			user << SPAN_NOTICE("The maintenance hatch cannot be opened or closed while the controls are locked.")
+			to_chat(user, SPAN_NOTICE("The maintenance hatch cannot be opened or closed while the controls are locked."))
 			return
 
 		open = !open
@@ -112,7 +117,7 @@
 			icon_state = "mulebot0"
 
 		updateDialog()
-	else if (istype(I, /obj/item/weapon/wrench))
+	else if (istype(I, /obj/item/weapon/tool/wrench))
 		if (src.health < maxhealth)
 			src.health = min(maxhealth, src.health+25)
 			user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
@@ -121,13 +126,13 @@
 				SPAN_NOTICE("You repair \the [src]!")
 			)
 		else
-			user << SPAN_NOTICE("[src] does not need a repair!")
+			to_chat(user, SPAN_NOTICE("[src] does not need a repair!"))
 	else if(load && ismob(load))  // chance to knock off rider
 		if(prob(1+I.force * 2))
 			unload(0)
 			user.visible_message(SPAN_WARNING("[user] knocks [load] off [src] with \the [I]!"), SPAN_WARNING("You knock [load] off [src] with \the [I]!"))
 		else
-			user << "You hit [src] with \the [I] but to no effect."
+			to_chat(user, "You hit [src] with \the [I] but to no effect.")
 		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 	else
 		..()
@@ -135,7 +140,7 @@
 
 /obj/machinery/bot/mulebot/emag_act(var/remaining_charges, var/user)
 	locked = !locked
-	user << "<span class='notice'>You [locked ? "lock" : "unlock"] the mulebot's controls!</span>"
+	to_chat(user, "<span class='notice'>You [locked ? "lock" : "unlock"] the mulebot's controls!</span>")
 	flick("mulebot-emagged", src)
 	playsound(src.loc, 'sound/effects/sparks1.ogg', 100, 0)
 	return 1
@@ -256,14 +261,14 @@
 					locked = !locked
 					updateDialog()
 				else
-					usr << SPAN_WARNING("Access denied.")
+					to_chat(usr, SPAN_WARNING("Access denied."))
 					return
 			if("power")
 				if (src.on)
 					turn_off()
 				else if (cell && !open)
 					if (!turn_on())
-						usr << SPAN_WARNING("You can't switch on [src].")
+						to_chat(usr, SPAN_WARNING("You can't switch on [src]."))
 						return
 				else
 					return
@@ -483,7 +488,7 @@
 	mode = 0
 
 
-/obj/machinery/bot/mulebot/process()
+/obj/machinery/bot/mulebot/Process()
 	if(!has_power())
 		on = 0
 		return
@@ -724,12 +729,12 @@
 	playsound(src.loc, 'sound/effects/splat.ogg', 50, 1)
 
 	var/damage = rand(5,15)
-	H.apply_damage( 2  * damage, BRUTE, BP_HEAD)
-	H.apply_damage( 2  * damage, BRUTE, BP_CHEST)
-	H.apply_damage(0.5 * damage, BRUTE, BP_L_LEG)
-	H.apply_damage(0.5 * damage, BRUTE, BP_R_LEG)
-	H.apply_damage(0.5 * damage, BRUTE, BP_L_ARM)
-	H.apply_damage(0.5 * damage, BRUTE, BP_R_ARM)
+	H.damage_through_armor( 2  * damage, BRUTE, BP_HEAD, ARMOR_MELEE)
+	H.damage_through_armor( 2  * damage, BRUTE, BP_CHEST, ARMOR_MELEE)
+	H.damage_through_armor(0.5 * damage, BRUTE, BP_L_LEG, ARMOR_MELEE)
+	H.damage_through_armor(0.5 * damage, BRUTE, BP_R_LEG, ARMOR_MELEE)
+	H.damage_through_armor(0.5 * damage, BRUTE, BP_L_ARM, ARMOR_MELEE)
+	H.damage_through_armor(0.5 * damage, BRUTE, BP_R_ARM, ARMOR_MELEE)
 
 	blood_splatter(src,H,1)
 	bloodiness += 4
@@ -823,7 +828,7 @@
 	if(freq == control_freq && !wires.RemoteTX())
 		return
 
-	var/datum/radio_frequency/frequency = radio_controller.return_frequency(freq)
+	var/datum/radio_frequency/frequency = SSradio.return_frequency(freq)
 
 	if(!frequency) return
 
@@ -872,8 +877,8 @@
 	var/turf/Tsec = get_turf(src)
 
 	new /obj/item/device/assembly/prox_sensor(Tsec)
-	PoolOrNew(/obj/item/stack/rods, Tsec)
-	PoolOrNew(/obj/item/stack/rods, Tsec)
+	for (var/i in 1 to 2)
+		new /obj/item/stack/rods(Tsec)
 	new /obj/item/stack/cable_coil/cut(Tsec)
 	if (cell)
 		cell.loc = Tsec

@@ -5,8 +5,15 @@
 	var/active_w_class
 	sharp = 0
 	edge = 0
-	armor_penetration = 50
+	armor_penetration = ARMOR_PEN_HALF
 	flags = NOBLOODY
+	structure_damage_factor = STRUCTURE_DAMAGE_BREACHING
+	heat = 3800
+	embed_mult = 0 //No physical matter to catch onto things
+
+/obj/item/weapon/melee/energy/is_hot()
+	if (active)
+		return heat
 
 /obj/item/weapon/melee/energy/proc/activate(mob/living/user)
 	anchored = 1
@@ -19,6 +26,7 @@
 	edge = 1
 	w_class = active_w_class
 	playsound(user, 'sound/weapons/saberon.ogg', 50, 1)
+	update_wear_icon()
 
 /obj/item/weapon/melee/energy/proc/deactivate(mob/living/user)
 	anchored = 0
@@ -31,6 +39,7 @@
 	sharp = initial(sharp)
 	edge = initial(edge)
 	w_class = initial(w_class)
+	update_wear_icon()
 
 /obj/item/weapon/melee/energy/attack_self(mob/living/user as mob)
 	if (active)
@@ -41,28 +50,18 @@
 		deactivate(user)
 	else
 		activate(user)
-
-	if(ishuman(user))
-		var/mob/living/carbon/human/H = user
-		H.update_inv_l_hand()
-		H.update_inv_r_hand()
-
 	add_fingerprint(user)
-	return
 
 /*
  * Energy Axe
  */
 /obj/item/weapon/melee/energy/axe
 	name = "energy axe"
-	desc = "An energised battle axe."
+	desc = "A battle axe with some kind of red energy crystal. Pretty sharp."
 	icon_state = "axe0"
-	//active_force = 150 //holy...
-	active_force = 60
-	active_throwforce = 35
+	active_force = WEAPON_FORCE_GODLIKE
+	active_throwforce = 50
 	active_w_class = ITEM_SIZE_HUGE
-	//force = 40
-	//throwforce = 25
 	force = 20
 	throwforce = 10
 	throw_speed = 1
@@ -75,14 +74,14 @@
 	edge = 1
 
 /obj/item/weapon/melee/energy/axe/activate(mob/living/user)
-	..()
 	icon_state = "axe1"
-	user << SPAN_NOTICE("\The [src] is now energised.")
+	..()
+	to_chat(user, SPAN_NOTICE("\The [src] is now energized."))
 
 /obj/item/weapon/melee/energy/axe/deactivate(mob/living/user)
-	..()
 	icon_state = initial(icon_state)
-	user << SPAN_NOTICE("\The [src] is de-energised. It's just a regular axe now.")
+	..()
+	to_chat(user, SPAN_NOTICE("\The [src] is de-energized. It's just a regular axe now."))
 
 /*
  * Energy Sword
@@ -90,11 +89,11 @@
 /obj/item/weapon/melee/energy/sword
 	color
 	name = "energy sword"
-	desc = "May the force be within you."
+	desc = "May the Force be with you."
 	icon_state = "sword0"
-	active_force = WEAPON_FORCE_LETHAL
+	active_force = WEAPON_FORCE_LETHAL // Go forth and slay, padawan
 	active_throwforce = WEAPON_FORCE_LETHAL
-	active_w_class = ITEM_SIZE_LARGE
+	active_w_class = ITEM_SIZE_BULKY
 	force = WEAPON_FORCE_HARMLESS
 	throwforce = WEAPON_FORCE_HARMLESS
 	throw_speed = 1
@@ -108,8 +107,7 @@
 
 /obj/item/weapon/melee/energy/sword/dropped(var/mob/user)
 	..()
-	if(!istype(loc,/mob))
-		deactivate(user)
+	deactivate(user)
 
 /obj/item/weapon/melee/energy/sword/New()
 	blade_color = pick("red","blue","green","purple")
@@ -126,19 +124,24 @@
 /obj/item/weapon/melee/energy/sword/purple/New()
 	blade_color = "purple"
 
+/obj/item/weapon/melee/energy/sword/pirate/New()
+	blade_color = "cutlass"
+
 /obj/item/weapon/melee/energy/sword/activate(mob/living/user)
 	if(!active)
-		user << SPAN_NOTICE("\The [src] is now energised.")
+		to_chat(user, SPAN_NOTICE("\The [src] is now energized."))
+	icon_state = "sword[blade_color]"
 	..()
 	attack_verb = list("attacked", "slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
-	icon_state = "sword[blade_color]"
+	tool_qualities = list(QUALITY_CUTTING = 30,  QUALITY_WIRE_CUTTING = 20, QUALITY_LASER_CUTTING = 20, QUALITY_WELDING = 10, QUALITY_CAUTERIZING = 10)
 
 /obj/item/weapon/melee/energy/sword/deactivate(mob/living/user)
 	if(active)
-		user << SPAN_NOTICE("\The [src] deactivates!")
+		to_chat(user, SPAN_NOTICE("\The [src] deactivates!"))
+	icon_state = initial(icon_state)
 	..()
 	attack_verb = list()
-	icon_state = initial(icon_state)
+	tool_qualities = initial(tool_qualities)
 
 /obj/item/weapon/melee/energy/sword/handle_shield(mob/user, var/damage, atom/damage_source = null, mob/attacker = null, var/def_zone = null, var/attack_text = "the attack")
 	if(active && default_parry_check(user, attacker, damage_source) && prob(50))
@@ -156,10 +159,6 @@
 	desc = "Arrrr matey."
 	icon_state = "cutlass0"
 
-/obj/item/weapon/melee/energy/sword/pirate/activate(mob/living/user)
-	..()
-	icon_state = "cutlass1"
-
 /*
  *Energy Blade
  */
@@ -169,7 +168,7 @@
 	name = "energy blade"
 	desc = "A concentrated beam of energy in the shape of a blade. Very stylish... and lethal."
 	icon_state = "blade"
-	force = WEAPON_FORCE_LETHAL //Normal attacks deal very high damage - about the same as wielded fire axe
+	force = WEAPON_FORCE_ROBUST //Normal attacks deal very high damage - about the same as wielded fire axe
 	armor_penetration = 100
 	sharp = 1
 	edge = 1
@@ -177,7 +176,7 @@
 	throwforce = 1  //Throwing or dropping the item deletes it.
 	throw_speed = 1
 	throw_range = 1
-	w_class = ITEM_SIZE_LARGE//So you can't hide it in your pocket or some such.
+	w_class = ITEM_SIZE_BULKY//So you can't hide it in your pocket or some such.
 	flags = NOBLOODY
 	attack_verb = list("attacked", "slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
 	var/mob/living/creator
@@ -189,11 +188,11 @@
 	spark_system.set_up(5, 0, src)
 	spark_system.attach(src)
 
-	processing_objects |= src
+	START_PROCESSING(SSobj, src)
 
 /obj/item/weapon/melee/energy/blade/Destroy()
-	processing_objects -= src
-	..()
+	STOP_PROCESSING(SSobj, src)
+	. = ..()
 
 /obj/item/weapon/melee/energy/blade/attack_self(mob/user as mob)
 	user.drop_from_inventory(src)
@@ -202,7 +201,7 @@
 /obj/item/weapon/melee/energy/blade/dropped()
 	spawn(1) if(src) qdel(src)
 
-/obj/item/weapon/melee/energy/blade/process()
+/obj/item/weapon/melee/energy/blade/Process()
 	if(!creator || loc != creator || (creator.l_hand != src && creator.r_hand != src))
 		// Tidy up a bit.
 		if(isliving(loc))

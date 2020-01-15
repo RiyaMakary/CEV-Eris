@@ -26,9 +26,10 @@
 	anchored = 0
 	base_state = "pflash"
 	density = 1
+	range = 3 //the eris' hallways are wider than other maps
 
-/obj/machinery/flasher/initialize()
-	..()
+/obj/machinery/flasher/Initialize()
+	. = ..()
 	if(_wifi_id)
 		wifi_receiver = new(_wifi_id, src)
 
@@ -48,7 +49,7 @@
 
 //Don't want to render prison breaks impossible
 /obj/machinery/flasher/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if (istype(W, /obj/item/weapon/wirecutters))
+	if (istype(W, /obj/item/weapon/tool/wirecutters))
 		add_fingerprint(user)
 		src.disable = !src.disable
 		if (src.disable)
@@ -85,7 +86,7 @@
 			if(!H.eyecheck() <= 0)
 				continue
 			flash_time *= H.species.flash_mod
-			var/obj/item/organ/internal/eyes/E = H.internal_organs_by_name[O_EYES]
+			var/obj/item/organ/internal/eyes/E = H.internal_organs_by_name[BP_EYES]
 			if(!E)
 				return
 			if(E.is_bruised() && prob(E.damage + 50))
@@ -94,6 +95,8 @@
 				E.damage += rand(1, 5)
 		else
 			if(!O.blinded)
+				if (istype(O,/mob/living/silicon/ai))
+					return
 				if (O.HUDtech.Find("flash"))
 					flick("flash", O.HUDtech["flash"])
 		O.Weaken(flash_time)
@@ -112,11 +115,13 @@
 
 	if(iscarbon(AM))
 		var/mob/living/carbon/M = AM
-		if ((M.m_intent != "walk") && (src.anchored))
+		if ((MOVING_DELIBERATELY(M)) && (src.anchored))
+			return
+		else if (src.anchored)
 			src.flash()
 
 /obj/machinery/flasher/portable/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if (istype(W, /obj/item/weapon/wrench))
+	if (istype(W, /obj/item/weapon/tool/wrench))
 		add_fingerprint(user)
 		src.anchored = !src.anchored
 
@@ -140,16 +145,16 @@
 	use_power(5)
 
 	active = 1
-	icon_state = "launcheract"
+	icon_state = "launcher1"
 
-	for(var/obj/machinery/flasher/M in machines)
+	for(var/obj/machinery/flasher/M in SSmachines.machinery)
 		if(M.id == src.id)
 			spawn()
 				M.flash()
 
 	sleep(50)
 
-	icon_state = "launcherbtt"
+	icon_state = "launcher0"
 	active = 0
 
 	return

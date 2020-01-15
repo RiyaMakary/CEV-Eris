@@ -5,8 +5,8 @@
 	item_state = "boxing"
 
 /obj/item/clothing/gloves/boxing/attackby(obj/item/weapon/W, mob/user)
-	if(istype(W, /obj/item/weapon/wirecutters) || istype(W, /obj/item/weapon/scalpel))
-		user << SPAN_NOTICE("That won't work.")	//Nope
+	if(istype(W, /obj/item/weapon/tool/wirecutters) || istype(W, /obj/item/weapon/tool/scalpel))
+		to_chat(user, SPAN_NOTICE("That won't work."))	//Nope
 		return
 	..()
 

@@ -1,25 +1,30 @@
 /obj/item/weapon/gun/energy/temperature
 	name = "temperature gun"
+	icon = 'icons/obj/guns/energy/freezegun.dmi'
 	icon_state = "freezegun"
+	item_state = "freezegun"
+	item_charge_meter = TRUE
 	fire_sound = 'sound/weapons/pulse3.ogg'
-	desc = "A gun that changes temperatures. It has a small label on the side, 'More extreme temperatures will cost more charge!'"
+	desc = "A gun that changes temperatures. It has a small label on the side, \"More extreme temperatures will cost more charge!\""
 	var/temperature = T20C
 	var/current_temperature = T20C
 	charge_cost = 100
 	origin_tech = list(TECH_COMBAT = 3, TECH_MATERIAL = 4, TECH_POWER = 3, TECH_MAGNET = 2)
 	slot_flags = SLOT_BELT|SLOT_BACK
-
+	matter = list(MATERIAL_STEEL = 20)
+	price_tag = 1500
 	projectile_type = /obj/item/projectile/temp
+	zoom_factor = 2.0
 
 
-/obj/item/weapon/gun/energy/temperature/New()
-	..()
-	processing_objects.Add(src)
+/obj/item/weapon/gun/energy/temperature/Initialize()
+	. = ..()
+	START_PROCESSING(SSobj, src)
 
 
 /obj/item/weapon/gun/energy/temperature/Destroy()
-	processing_objects.Remove(src)
-	..()
+	STOP_PROCESSING(SSobj, src)
+	. = ..()
 
 
 /obj/item/weapon/gun/energy/temperature/attack_self(mob/living/user as mob)
@@ -59,7 +64,7 @@
 	return
 
 
-/obj/item/weapon/gun/energy/temperature/process()
+/obj/item/weapon/gun/energy/temperature/Process()
 	switch(temperature)
 		if(0 to 100) charge_cost = 1000
 		if(100 to 250) charge_cost = 500

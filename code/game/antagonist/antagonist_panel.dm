@@ -19,7 +19,7 @@
 
 	dat += "<br>"
 
-	if(faction_type)
+	if(faction_id)
 		dat += "<b>Faction: </b>"
 		if(faction)
 			dat += "<b>\"[faction.name]\" ([faction.antag])</b>"
@@ -34,7 +34,7 @@
 		dat += "<b>Objectives</b><br>"
 		var/num = 1
 		for(var/datum/objective/O in objectives)
-			dat += "<b>Objective #[num]:</b> [O.explanation_text] "
+			dat += "<b>Objective #[num]:</b>"
 			if(O.completed)
 				dat += "(<font color='green'>complete</font>)"
 			else
@@ -53,13 +53,13 @@
 
 /datum/antagonist/Topic(href, href_list)
 	if(!check_rights(R_ADMIN))
-		return
+		return TRUE
 
 	if(href_list["select_antagonist"])
 		if(!owner)
 			if(!outer)
 				var/list/MN = list()
-				for(var/datum/mind/M in ticker.minds)
+				for(var/datum/mind/M in SSticker.minds)
 					if(can_become_antag(M))
 						MN[M.name] = M
 				MN["CANCEL"] = null
@@ -69,7 +69,7 @@
 					create_antagonist(M)
 			else
 				var/list/CD = list()
-				for(var/mob/observer/M in player_list)
+				for(var/mob/observer/M in GLOB.player_list)
 					if(can_become_antag_ghost(M))
 						CD[M.name] = M
 				CD["CANCEL"] = null
@@ -105,7 +105,7 @@
 		var/datum/objective/objective = locate(href_list["obj_delete"])
 		if(!istype(objective))
 			return
-		objectives -= objective
+		qdel(objective)
 
 	else if(href_list["obj_completed"])
 		var/datum/objective/objective = locate(href_list["obj_completed"])
@@ -119,10 +119,10 @@
 	else if(href_list["edit_faction"] && faction)
 		faction.faction_panel()
 
-	else if(href_list["add_faction"] && faction_type && !faction)
+	else if(href_list["add_faction"] && faction_id && !faction)
 		var/list/L = list()
 		for(var/datum/faction/F in current_factions)
-			L["[F.name] of [F.antag] ([F.id])"] = F
+			L["[F.name], faction of [F.antag] ([F.id])"] = F
 
 		L["CANCEL"] = null
 
@@ -133,8 +133,9 @@
 			F.add_member(src)
 
 
-	else if(href_list["new_faction"] && faction_type && !faction)
-		var/datum/faction/F = new faction_type
+	else if(href_list["new_faction"] && faction_id && !faction)
+		var/t = GLOB.faction_types[faction_id]
+		var/datum/faction/F = new t
 		F.customize()
 		F.add_leader(src)
 
@@ -153,7 +154,7 @@
 /datum/antagonist/proc/get_extra_panel_options()
 	return
 
-/* !TODO: This should be implemented in storyteller_print.dm (storyteller.antagonist_report())
+/* !TODO: This should be implemented in storyteller_print.dm (GLOB.storyteller.antagonist_report())
 /datum/antagonist/proc/get_check_antag_output(var/datum/admins/caller)
 
 	if(!current_antagonists || !current_antagonists.len)

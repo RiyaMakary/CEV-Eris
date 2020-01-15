@@ -7,6 +7,7 @@
 	w_class = ITEM_SIZE_SMALL
 	icon = 'icons/obj/electronic_assemblies.dmi'
 	icon_state = "setup_small"
+	matter = list(MATERIAL_STEEL = 4)
 	var/max_components = IC_COMPONENTS_BASE
 	var/max_complexity = IC_COMPLEXITY_BASE
 	var/opened = 0
@@ -22,7 +23,7 @@
 /obj/item/device/electronic_assembly/large
 	name = "electronic machine"
 	icon_state = "setup_large"
-	w_class = ITEM_SIZE_LARGE
+	w_class = ITEM_SIZE_BULKY
 	max_components = IC_COMPONENTS_BASE * 4
 	max_complexity = IC_COMPLEXITY_BASE * 4
 
@@ -44,16 +45,16 @@
 /obj/item/device/electronic_assembly/New()
 	..()
 	battery = new(src)
-	processing_objects |= src
+	START_PROCESSING(SSobj, src)
 
 /obj/item/device/electronic_assembly/Destroy()
 	battery = null
-	processing_objects -= src
+	STOP_PROCESSING(SSobj, src)
 	for(var/atom/movable/AM in contents)
 		qdel(AM)
-	..()
+	. = ..()
 
-/obj/item/device/electronic_assembly/process()
+/obj/item/device/electronic_assembly/Process()
 	handle_idle_power()
 
 /obj/item/device/electronic_assembly/proc/handle_idle_power()
@@ -82,7 +83,7 @@
 	return implant
 
 /obj/item/device/electronic_assembly/interact(mob/user)
-	if(!CanInteract(user, physical_state))
+	if(!CanInteract(user,GLOB.physical_state))
 		return
 
 	var/total_parts = 0
@@ -123,12 +124,12 @@
 
 	if(href_list["remove_cell"])
 		if(!battery)
-			usr << SPAN_WARNING("There's no power cell to remove from \the [src].")
+			to_chat(usr, SPAN_WARNING("There's no power cell to remove from \the [src]."))
 		else
 			var/turf/T = get_turf(src)
 			battery.forceMove(T)
 			playsound(T, 'sound/items/Crowbar.ogg', 50, 1)
-			usr << SPAN_NOTICE("You pull \the [battery] out of \the [src]'s power supplier.")
+			to_chat(usr, SPAN_NOTICE("You pull \the [battery] out of \the [src]'s power supplier."))
 			battery = null
 
 	interact(usr) // To refresh the UI.
@@ -139,12 +140,12 @@
 	set desc = "Rename your circuit, useful to stay organized."
 
 	var/mob/M = usr
-	if(!CanInteract(M, physical_state))
+	if(!CanInteract(M,GLOB.physical_state))
 		return
 
 	var/input = sanitizeSafe(input("What do you want to name this?", "Rename", src.name) as null|text, MAX_NAME_LEN)
-	if(src && input && CanInteract(M, physical_state))
-		M << SPAN_NOTICE("The machine now has a label reading '[input]'.")
+	if(src && input && CanInteract(M,GLOB.physical_state))
+		to_chat(M, SPAN_NOTICE("The machine now has a label reading '[input]'."))
 		name = input
 
 /obj/item/device/electronic_assembly/proc/can_move()
@@ -164,10 +165,10 @@
 	for(var/obj/item/integrated_circuit/part in contents)
 		. |= part.GetAccess()
 
-/obj/item/device/electronic_assembly/GetID()
+/obj/item/device/electronic_assembly/GetIdCard()
 	. = list()
 	for(var/obj/item/integrated_circuit/part in contents)
-		var/id_card = part.GetID()
+		var/id_card = part.GetIdCard()
 		if(id_card)
 			return id_card
 
@@ -195,21 +196,21 @@
 // Returns true if the circuit made it inside.
 /obj/item/device/electronic_assembly/proc/add_circuit(var/obj/item/integrated_circuit/IC, var/mob/user)
 	if(!opened)
-		user << SPAN_WARNING("\The [src] isn't opened, so you can't put anything inside.  Try using a crowbar.")
+		to_chat(user, SPAN_WARNING("\The [src] isn't opened, so you can't put anything inside.  Try using a crowbar."))
 		return FALSE
 
 	if(IC.w_class > src.w_class)
-		user <<SPAN_WARNING("\The [IC] is way too big to fit into \the [src].")
+		to_chat(user, SPAN_WARNING("\The [IC] is way too big to fit into \the [src]."))
 		return FALSE
 
 	var/total_part_size = get_part_size()
 	var/total_complexity = get_part_complexity()
 
 	if((total_part_size + IC.w_class) > max_components)
-		user << SPAN_WARNING("You can't seem to add the '[IC.name]', as there's insufficient space.")
+		to_chat(user, SPAN_WARNING("You can't seem to add the '[IC.name]', as there's insufficient space."))
 		return FALSE
 	if((total_complexity + IC.complexity) > max_complexity)
-		user << SPAN_WARNING("You can't seem to add the '[IC.name]', since this setup's too complicated for the case.")
+		to_chat(user, SPAN_WARNING("You can't seem to add the '[IC.name]', since this setup's too complicated for the case."))
 		return FALSE
 
 	if(!IC.forceMove(src))
@@ -235,33 +236,33 @@
 		if(!user.unEquip(I))
 			return 0
 		if(add_circuit(I, user))
-			user << SPAN_NOTICE("You slide \the [I] inside \the [src].")
+			to_chat(user, SPAN_NOTICE("You slide \the [I] inside \the [src]."))
 			playsound(get_turf(src), 'sound/items/Deconstruct.ogg', 50, 1)
 			interact(user)
-	else if(istype(I, /obj/item/weapon/crowbar))
-		playsound(get_turf(src), 'sound/items/Crowbar.ogg', 50, 1)
-		opened = !opened
-		user << "<span class='notice'>You [opened ? "opened" : "closed"] \the [src].</span>"
-		update_icon()
-	else if(istype(I, /obj/item/device/integrated_electronics/wirer) || istype(I, /obj/item/device/integrated_electronics/debugger) || istype(I, /obj/item/weapon/screwdriver))
+	if(QUALITY_PRYING in I.tool_qualities)
+		if(I.use_tool(user, src, WORKTIME_NEAR_INSTANT, QUALITY_PRYING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+			opened = !opened
+			to_chat(user, "<span class='notice'>You [opened ? "opened" : "closed"] \the [src].</span>")
+			update_icon()
+	else if(istype(I, /obj/item/device/integrated_electronics/wirer) || istype(I, /obj/item/device/integrated_electronics/debugger) || istype(I, /obj/item/weapon/tool/screwdriver))
 		if(opened)
 			interact(user)
 		else
-			user << SPAN_WARNING("\The [src] isn't opened, so you can't fiddle with the internal components.  \
-			Try using a crowbar.")
+			to_chat(user, SPAN_WARNING("\The [src] isn't opened, so you can't fiddle with the internal components.  \
+			Try using a crowbar."))
 	else if(istype(I, /obj/item/weapon/cell/small))
 		if(!opened)
-			user << SPAN_WARNING("\The [src] isn't opened, so you can't put anything inside.  Try using a crowbar.")
+			to_chat(user, SPAN_WARNING("\The [src] isn't opened, so you can't put anything inside.  Try using a crowbar."))
 			return FALSE
 		if(battery)
-			user << SPAN_WARNING("\The [src] already has \a [battery] inside.  Remove it first if you want to replace it.")
+			to_chat(user, SPAN_WARNING("\The [src] already has \a [battery] inside.  Remove it first if you want to replace it."))
 			return FALSE
 		var/obj/item/weapon/cell/small/cell = I
 		user.drop_item(cell)
 		cell.forceMove(src)
 		battery = cell
 		playsound(get_turf(src), 'sound/items/Deconstruct.ogg', 50, 1)
-		user << SPAN_NOTICE("You slot \the [cell] inside \the [src]'s power supplier.")
+		to_chat(user, SPAN_NOTICE("You slot \the [cell] inside \the [src]'s power supplier."))
 		interact(user)
 
 	else
@@ -276,7 +277,7 @@
 		if(input.can_be_asked_input)
 			available_inputs.Add(input)
 	var/obj/item/integrated_circuit/input/choice = input(user, "What do you want to interact with?", "Interaction") as null|anything in available_inputs
-	if(choice && CanInteract(user, physical_state))
+	if(choice && CanInteract(user,GLOB.physical_state))
 		choice.ask_for_input(user)
 
 /obj/item/device/electronic_assembly/emp_act(severity)

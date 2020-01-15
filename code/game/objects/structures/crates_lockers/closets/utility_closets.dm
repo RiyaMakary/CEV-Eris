@@ -17,10 +17,8 @@
 	desc = "It's a storage unit for emergency breathmasks and o2 tanks."
 	icon_state = "emergency"
 
-/obj/structure/closet/emcloset/New()
-	..()
-
-	switch (pickweight(list("small" = 55, "aid" = 25, "tank" = 10, "both" = 10)))
+/obj/structure/closet/emcloset/populate_contents()
+	switch(pickweight(list("small" = 55, "aid" = 25, "tank" = 10, "both" = 10)))
 		if ("small")
 			new /obj/item/weapon/tank/emergency_oxygen(src)
 			new /obj/item/weapon/tank/emergency_oxygen(src)
@@ -51,7 +49,6 @@
 			new /obj/item/clothing/head/helmet/space/emergency(src)
 
 /obj/structure/closet/emcloset/legacy/populate_contents()
-	..()
 	new /obj/item/weapon/tank/oxygen(src)
 	new /obj/item/clothing/mask/gas(src)
 
@@ -64,22 +61,8 @@
 	icon_state = "fire"
 
 /obj/structure/closet/firecloset/populate_contents()
-	..()
-
-	new /obj/item/clothing/suit/fire/firefighter(src)
+	new /obj/item/clothing/suit/fire(src)
 	new /obj/item/clothing/mask/gas(src)
-	new /obj/item/weapon/tank/oxygen/red(src)
-	new /obj/item/weapon/extinguisher(src)
-	new /obj/item/clothing/head/hardhat/red(src)
-
-/obj/structure/closet/firecloset/full/New()
-	..()
-	sleep(4)
-	contents = list()
-
-	new /obj/item/clothing/suit/fire/firefighter(src)
-	new /obj/item/clothing/mask/gas(src)
-	new /obj/item/device/lighting/toggleable/flashlight(src)
 	new /obj/item/weapon/tank/oxygen/red(src)
 	new /obj/item/weapon/extinguisher(src)
 	new /obj/item/clothing/head/hardhat/red(src)
@@ -94,21 +77,22 @@
 	icon_door = "eng_tool"
 
 /obj/structure/closet/toolcloset/populate_contents()
-	..()
 	if(prob(40))
 		new /obj/item/clothing/suit/storage/hazardvest(src)
 	if(prob(70))
 		new /obj/item/device/lighting/toggleable/flashlight(src)
 	if(prob(70))
-		new /obj/item/weapon/screwdriver(src)
+		new /obj/item/weapon/tool/screwdriver(src)
 	if(prob(70))
-		new /obj/item/weapon/wrench(src)
+		new /obj/item/weapon/tool/wrench(src)
 	if(prob(70))
-		new /obj/item/weapon/weldingtool(src)
+		new /obj/item/weapon/tool/weldingtool(src)
 	if(prob(70))
-		new /obj/item/weapon/crowbar(src)
-	if(prob(70))
-		new /obj/item/weapon/wirecutters(src)
+		new /obj/item/weapon/tool/crowbar(src)
+	if(prob(50))
+		new /obj/item/weapon/tool/wirecutters(src)
+	if(prob(50))
+		new /obj/item/weapon/tool/wirecutters/pliers(src)
 	if(prob(70))
 		new /obj/item/device/t_scanner(src)
 	if(prob(20))
@@ -120,12 +104,18 @@
 	if(prob(30))
 		new /obj/item/stack/cable_coil/random(src)
 	if(prob(20))
-		new /obj/item/device/multitool(src)
+		new /obj/item/weapon/tool/multitool(src)
 	if(prob(5))
 		new /obj/item/clothing/gloves/insulated(src)
+	if(prob(5))
+		new /obj/item/weapon/storage/pouch/engineering_tools(src)
+	if(prob(1))
+		new /obj/item/weapon/storage/pouch/engineering_supply(src)
 	if(prob(40))
 		new /obj/item/clothing/head/hardhat(src)
-
+	new /obj/random/tool_upgrade(src)
+	new /obj/random/tool_upgrade(src)
+	//Every tool closet contains a couple guaranteed toolmods
 
 /*
  * Radiation Closet
@@ -137,7 +127,6 @@
 	icon_door = "eng_rad"
 
 /obj/structure/closet/radiation/populate_contents()
-	..()
 	new /obj/item/clothing/suit/radiation(src)
 	new /obj/item/clothing/head/radiation(src)
 	new /obj/item/clothing/suit/radiation(src)
@@ -148,25 +137,17 @@
  */
 /obj/structure/closet/bombcloset
 	name = "\improper EOD closet"
-	desc = "It's a storage unit for explosion-protective suits."
+	desc = "It's a storage unit for explosion-protective space suits."
 	icon_state = "bomb"
 
 /obj/structure/closet/bombcloset/populate_contents()
-	..()
-	new /obj/item/clothing/suit/bomb_suit( src )
-	new /obj/item/clothing/under/color/black( src )
-	new /obj/item/clothing/shoes/black( src )
-	new /obj/item/clothing/head/bomb_hood( src )
+	new /obj/item/clothing/suit/space/bomb(src)
+	new /obj/item/clothing/under/color/black(src)
+	new /obj/item/clothing/shoes/black(src)
+	new /obj/item/clothing/head/helmet/space/bomb(src)
 
-
-/obj/structure/closet/bombclosetsecurity
-	name = "\improper EOD closet"
-	desc = "It's a storage unit for explosion-protective suits."
-	icon_state = "bomb"
-
-/obj/structure/closet/bombclosetsecurity/populate_contents()
-	..()
-	new /obj/item/clothing/suit/bomb_suit/security( src )
-	new /obj/item/clothing/under/rank/security( src )
-	new /obj/item/clothing/shoes/color/brown( src )
-	new /obj/item/clothing/head/bomb_hood/security( src )
+/obj/structure/closet/bombcloset/security/populate_contents()
+	new /obj/item/clothing/suit/space/bomb/security(src)
+	new /obj/item/clothing/under/rank/security(src)
+	new /obj/item/clothing/shoes/color/brown(src)
+	new /obj/item/clothing/head/helmet/space/bomb/security(src)

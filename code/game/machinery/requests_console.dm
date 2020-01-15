@@ -79,7 +79,7 @@ var/list/obj/machinery/requests_console/allConsoles = list()
 		req_console_supplies |= department
 	if (departmentType & RC_INFO)
 		req_console_information |= department
-	
+
 	set_light(1)
 
 /obj/machinery/requests_console/Destroy()
@@ -96,14 +96,14 @@ var/list/obj/machinery/requests_console/allConsoles = list()
 			req_console_supplies -= department
 		if (departmentType & RC_INFO)
 			req_console_information -= department
-	..()
+	. = ..()
 
 /obj/machinery/requests_console/attack_hand(user as mob)
 	if(..(user))
 		return
 	ui_interact(user)
 
-/obj/machinery/requests_console/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/requests_console/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	var/data[0]
 
 	data["department"] = department
@@ -124,7 +124,7 @@ var/list/obj/machinery/requests_console/allConsoles = list()
 	data["msgVerified"] = msgVerified
 	data["announceAuth"] = announceAuth
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "request_console.tmpl", "[department] Request Console", 520, 410)
 		ui.set_initial_data(data)
@@ -200,27 +200,6 @@ var/list/obj/machinery/requests_console/allConsoles = list()
 
 					//err... hacking code, which has no reason for existing... but anyway... it was once supposed to unlock priority 3 messanging on that console (EXTREME priority...), but the code for that was removed.
 /obj/machinery/requests_console/attackby(var/obj/item/weapon/O as obj, var/mob/user as mob)
-	/*
-	if (istype(O, /obj/item/weapon/crowbar))
-		if(open)
-			open = 0
-			icon_state="req_comp0"
-		else
-			open = 1
-			if(hackState == 0)
-				icon_state="req_comp_open"
-			else if(hackState == 1)
-				icon_state="req_comp_rewired"
-	if (istype(O, /obj/item/weapon/screwdriver))
-		if(open)
-			if(hackState == 0)
-				hackState = 1
-				icon_state="req_comp_rewired"
-			else if(hackState == 1)
-				hackState = 0
-				icon_state="req_comp_open"
-		else
-			user << "You can't do much with that."*/
 
 	if (istype(O, /obj/item/weapon/card/id))
 		if(inoperable(MAINT)) return
@@ -235,7 +214,7 @@ var/list/obj/machinery/requests_console/allConsoles = list()
 				announcement.announcer = ID.assignment ? "[ID.assignment] [ID.registered_name]" : ID.registered_name
 			else
 				reset_message()
-				user << SPAN_WARNING("You are not authorized to send announcements.")
+				to_chat(user, SPAN_WARNING("You are not authorized to send announcements."))
 			updateUsrDialog()
 	if (istype(O, /obj/item/weapon/stamp))
 		if(inoperable(MAINT)) return

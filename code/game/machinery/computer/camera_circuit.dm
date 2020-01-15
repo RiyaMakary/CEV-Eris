@@ -38,7 +38,7 @@
 
 	attackby(var/obj/item/I, var/mob/user)//if(health > 50)
 		..()
-		else if(istype(I,/obj/item/weapon/screwdriver))
+		else if(istype(I,/obj/item/weapon/tool/screwdriver))
 			secured = !secured
 			user.visible_message("<span class='notice'>The [src] can [secured ? "no longer" : "now"] be modified.</span>")
 			updateBuildPath()
@@ -87,9 +87,8 @@
 		else if( href_list["auth"] )
 			var/mob/M = usr
 			var/obj/item/weapon/card/id/I = M.equipped()
-			if (istype(I, /obj/item/device/pda))
-				var/obj/item/device/pda/pda = I
-				I = pda.id
+			if (istype(I, /obj/item/modular_computer))
+				I = I.GetIdCard()
 			if (I && istype(I))
 				if(access_captain in I.access)
 					authorised = 1

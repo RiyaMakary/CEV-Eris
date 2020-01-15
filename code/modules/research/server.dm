@@ -15,13 +15,9 @@
 	req_access = list(access_rd) //Only the R&D can change server settings.
 	circuit = /obj/item/weapon/circuitboard/rdserver
 
-/obj/machinery/r_n_d/server/New()
-	..()
-	initialize()
-
 /obj/machinery/r_n_d/server/Destroy()
 	griefProtection()
-	..()
+	. = ..()
 
 /obj/machinery/r_n_d/server/RefreshParts()
 	var/tot_rating = 0
@@ -29,9 +25,9 @@
 		tot_rating += SP.rating
 	idle_power_usage /= max(1, tot_rating)
 
-/obj/machinery/r_n_d/server/initialize()
-	if(!files)
-		files = new /datum/research(src)
+/obj/machinery/r_n_d/server/Initialize()
+	. = ..()
+	files = new /datum/research(src)
 	var/list/temp_list
 	if(!id_with_upload.len)
 		temp_list = list()
@@ -44,7 +40,7 @@
 		for(var/N in temp_list)
 			id_with_download += text2num(N)
 
-/obj/machinery/r_n_d/server/process()
+/obj/machinery/r_n_d/server/Process()
 	var/datum/gas_mixture/environment = loc.return_air()
 	switch(environment.temperature)
 		if(0 to T0C)
@@ -55,11 +51,7 @@
 			health = max(0, health - 1)
 	if(health <= 0)
 		griefProtection() //I dont like putting this in process() but it's the best I can do without re-writing a chunk of rd servers.
-		files.known_designs = list()
-		for(var/datum/tech/T in files.known_tech)
-			if(prob(1))
-				T.level--
-		files.RefreshResearch()
+		files.forget_random_technology()
 	if(delay)
 		delay--
 	else
@@ -76,12 +68,8 @@
 
 //Backup files to centcomm to help admins recover data after greifer attacks
 /obj/machinery/r_n_d/server/proc/griefProtection()
-	for(var/obj/machinery/r_n_d/server/centcom/C in machines)
-		for(var/datum/tech/T in files.known_tech)
-			C.files.AddTech2Known(T)
-		for(var/datum/design/D in files.known_designs)
-			C.files.AddDesign2Known(D)
-		C.files.RefreshResearch()
+	for(var/obj/machinery/r_n_d/server/centcom/C in SSmachines.machinery)
+		C.files.download_from(files)
 
 /obj/machinery/r_n_d/server/proc/produce_heat()
 	if(!produces_heat)
@@ -106,23 +94,44 @@
 
 			env.merge(removed)
 
-/obj/machinery/r_n_d/server/attackby(var/obj/item/O as obj, var/mob/user as mob)
-	if(default_deconstruction_screwdriver(user, O))
-		return
-	if(default_deconstruction_crowbar(user, O))
-		return
-	if(default_part_replacement(user, O))
+/obj/machinery/r_n_d/server/attackby(var/obj/item/I, var/mob/user as mob)
+
+	var/tool_type = I.get_tool_type(user, list(QUALITY_PRYING, QUALITY_SCREW_DRIVING), src)
+	switch(tool_type)
+
+		if(QUALITY_PRYING)
+			if(!panel_open)
+				to_chat(user, SPAN_NOTICE("You can't get to the components of \the [src], remove the cover."))
+				return
+			if(I.use_tool(user, src, WORKTIME_NORMAL, tool_type, FAILCHANCE_NORMAL, required_stat = STAT_MEC))
+				to_chat(user, SPAN_NOTICE("You remove the components of \the [src] with [I]."))
+				griefProtection()
+				dismantle()
+				return
+
+		if(QUALITY_SCREW_DRIVING)
+			var/used_sound = panel_open ? 'sound/machines/Custom_screwdriveropen.ogg' :  'sound/machines/Custom_screwdriverclose.ogg'
+			if(I.use_tool(user, src, WORKTIME_NEAR_INSTANT, tool_type, FAILCHANCE_NORMAL, required_stat = STAT_MEC, instant_finish_tier = 30, forced_sound = used_sound))
+				panel_open = !panel_open
+				to_chat(user, SPAN_NOTICE("You [panel_open ? "open" : "close"] the maintenance hatch of \the [src] with [I]."))
+				update_icon()
+				return
+
+		if(ABORT_CHECK)
+			return
+
+	if(default_part_replacement(I, user))
 		return
 
 /obj/machinery/r_n_d/server/centcom
 	name = "Central R&D Database"
 	server_id = -1
 
-/obj/machinery/r_n_d/server/centcom/initialize()
-	..()
+/obj/machinery/r_n_d/server/centcom/Initialize()
+	. = ..()
 	var/list/no_id_servers = list()
 	var/list/server_ids = list()
-	for(var/obj/machinery/r_n_d/server/S in machines)
+	for(var/obj/machinery/r_n_d/server/S in SSmachines.machinery)
 		switch(S.server_id)
 			if(-1)
 				continue
@@ -141,14 +150,14 @@
 				server_ids += num
 		no_id_servers -= S
 
-/obj/machinery/r_n_d/server/centcom/process()
+/obj/machinery/r_n_d/server/centcom/Process()
 	return PROCESS_KILL //don't need process()
 
 /obj/machinery/computer/rdservercontrol
 	name = "R&D Server Controller"
 	icon_keyboard = "rd_key"
 	icon_screen = "rdcomp"
-	light_color = "#a97faa"
+	light_color = COLOR_LIGHTING_PURPLE_MACHINERY
 	circuit = /obj/item/weapon/circuitboard/rdservercontrol
 	var/screen = 0
 	var/obj/machinery/r_n_d/server/temp_server
@@ -160,10 +169,9 @@
 	if(..())
 		return 1
 
-	add_fingerprint(usr)
 	usr.set_machine(src)
 	if(!allowed(usr) && !emagged)
-		usr << SPAN_WARNING("You do not have the required access level")
+		to_chat(usr, SPAN_WARNING("You do not have the required access level"))
 		return
 
 	if(href_list["main"])
@@ -173,20 +181,20 @@
 		temp_server = null
 		consoles = list()
 		servers = list()
-		for(var/obj/machinery/r_n_d/server/S in machines)
+		for(var/obj/machinery/r_n_d/server/S in SSmachines.machinery)
 			if(S.server_id == text2num(href_list["access"]) || S.server_id == text2num(href_list["data"]) || S.server_id == text2num(href_list["transfer"]))
 				temp_server = S
 				break
 		if(href_list["access"])
 			screen = 1
-			for(var/obj/machinery/computer/rdconsole/C in machines)
+			for(var/obj/machinery/computer/rdconsole/C in SSmachines.machinery)
 				if(C.sync)
 					consoles += C
 		else if(href_list["data"])
 			screen = 2
 		else if(href_list["transfer"])
 			screen = 3
-			for(var/obj/machinery/r_n_d/server/S in machines)
+			for(var/obj/machinery/r_n_d/server/S in SSmachines.machinery)
 				if(S == src)
 					continue
 				servers += S
@@ -206,22 +214,14 @@
 			temp_server.id_with_download += num
 
 	else if(href_list["reset_tech"])
-		var/choice = alert("Technology Data Rest", "Are you sure you want to reset this technology to its default data? Data lost cannot be recovered.", "Continue", "Cancel")
+		var/choice = alert("Technology Data Reset", "Are you sure you want to reset this technology to its default data? Data lost cannot be recovered.", "Continue", "Cancel")
 		if(choice == "Continue")
-			for(var/datum/tech/T in temp_server.files.known_tech)
-				if(T.id == href_list["reset_tech"])
-					T.level = 1
-					break
-		temp_server.files.RefreshResearch()
+			temp_server.files.forget_all((locate(href_list["reset_tech"]) in temp_server.files.researched_tech))
 
-	else if(href_list["reset_design"])
-		var/choice = alert("Design Data Deletion", "Are you sure you want to delete this design? If you still have the prerequisites for the design, it'll reset to its base reliability. Data lost cannot be recovered.", "Continue", "Cancel")
+	else if(href_list["reset_techology"])
+		var/choice = alert("Techology Deletion", "Are you sure you want to delete this techology? Data lost cannot be recovered.", "Continue", "Cancel")
 		if(choice == "Continue")
-			for(var/datum/design/D in temp_server.files.known_designs)
-				if(D.id == href_list["reset_design"])
-					temp_server.files.known_designs -= D
-					break
-		temp_server.files.RefreshResearch()
+			temp_server.files.forget_techology((locate(href_list["reset_technology"]) in temp_server.files.researched_nodes))
 
 	updateUsrDialog()
 	return
@@ -236,7 +236,7 @@
 		if(0) //Main Menu
 			dat += "Connected Servers:<BR><BR>"
 
-			for(var/obj/machinery/r_n_d/server/S in machines)
+			for(var/obj/machinery/r_n_d/server/S in SSmachines.machinery)
 				if(istype(S, /obj/machinery/r_n_d/server/centcom) && !badmin)
 					continue
 				dat += "[S.name] || "
@@ -266,15 +266,16 @@
 			dat += "<HR><A href='?src=\ref[src];main=1'>Main Menu</A>"
 
 		if(2) //Data Management menu
-			dat += "[temp_server.name] Data ManagementP<BR><BR>"
-			dat += "Known Technologies<BR>"
-			for(var/datum/tech/T in temp_server.files.known_tech)
+			dat += "[temp_server.name] Data Management<BR><BR>"
+			dat += "Known Tech Trees<BR>"
+			for(var/datum/tech/T in temp_server.files.researched_tech)
 				dat += "* [T.name] "
-				dat += "<A href='?src=\ref[src];reset_tech=[T.id]'>(Reset)</A><BR>" //FYI, these are all strings.
-			dat += "Known Designs<BR>"
-			for(var/datum/design/D in temp_server.files.known_designs)
-				dat += "* [D.name] "
-				dat += "<A href='?src=\ref[src];reset_design=[D.id]'>(Delete)</A><BR>"
+				dat += "<A href='?src=\ref[src];reset_tech=\ref[T]'>(Reset)</A><BR>"
+			dat += "Known Technologies<BR>"
+			for(var/t in temp_server.files.researched_nodes)
+				var/datum/technology/T = t
+				dat += "* [T.name] "
+				dat += "<A href='?src=\ref[src];reset_techology=\ref[T]'>(Delete)</A><BR>"
 			dat += "<HR><A href='?src=\ref[src];main=1'>Main Menu</A>"
 
 		if(3) //Server Data Transfer
@@ -291,7 +292,7 @@
 	if(!emagged)
 		playsound(src.loc, 'sound/effects/sparks4.ogg', 75, 1)
 		emagged = 1
-		user << SPAN_NOTICE("You you disable the security protocols.")
+		to_chat(user, SPAN_NOTICE("You you disable the security protocols."))
 		src.updateUsrDialog()
 		return 1
 

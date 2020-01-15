@@ -6,7 +6,7 @@
 	anchored = 0
 
 /obj/item/remains/human
-	desc = "They look like human remains. They have a strange aura about them."
+	desc = "They look like human remains. Some poor soul expired here, a million miles from home."
 
 /obj/item/remains/xeno
 	desc = "They look like the remains of something... alien. They have a strange aura about them."
@@ -18,15 +18,16 @@
 	icon_state = "remainsrobot"
 
 /obj/item/remains/mouse
-	desc = "They look like the remains of a small rodent."
-	icon_state = "mouse"
+	desc = "Looks like the remains of a small rodent. It doesn't squeak anymore."
+	icon = 'icons/mob/mouse.dmi'
+	icon_state = "skeleton"
 
 /obj/item/remains/lizard
-	desc = "They look like the remains of a small rodent."
+	desc = "They look like the remains of a small reptile."
 	icon_state = "lizard"
 
 /obj/item/remains/attack_hand(mob/user as mob)
-	user << SPAN_NOTICE("[src] sinks together into a pile of ash.")
+	to_chat(user, SPAN_NOTICE("[src] sinks together into a pile of ash."))
 	var/turf/simulated/floor/F = get_turf(src)
 	if (istype(F))
 		new /obj/effect/decal/cleanable/ash(F)

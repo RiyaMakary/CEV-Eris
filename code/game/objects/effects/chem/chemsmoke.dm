@@ -3,7 +3,8 @@
 /////////////////////////////////////////////
 /obj/effect/effect/smoke/chem
 	icon = 'icons/effects/chemsmoke.dmi'
-	opacity = 0
+	opacity = 0 // NOTE currently lighting broken for smokes (actually for any similar feature - its okay with a single cloud, but not when "millions" of them created at once) -
+	// - with opacity and until someone comes with proper fix, setting this to TRUE must be avoided.
 	layer = 6
 	time_to_live = 300
 	pass_flags = PASSTABLE | PASSGRILLE | PASSGLASS //PASSGLASS is fine here, it's just so the visual effect can "flow" around glass
@@ -24,21 +25,20 @@
 	pixel_x = -32 + rand(-8, 8)
 	pixel_y = -32 + rand(-8, 8)
 
-	//switching opacity on after the smoke has spawned, and then turning it off before it is deleted results in cleaner
-	//lighting and view range updates (Is this still true with the new lighting system?)
-	opacity = 1
-
 	//float over to our destination, if we have one
 	destination = dest_turf
 	if(destination)
 		walk_to(src, destination)
 
-/obj/effect/effect/smoke/chem/Destroy()
-	opacity = 0
-	fadeOut()
-	..()
 
-/obj/effect/effect/smoke/chem/Move()
+/obj/effect/effect/smoke/chem/Destroy()
+	if (reagents)
+		reagents.my_atom = null
+		QDEL_NULL(reagents)
+	walk(src, 0)
+	return ..()
+
+/obj/effect/effect/smoke/chem/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	var/list/oldlocs = view(1, src)
 	. = ..()
 	if(.)
@@ -52,7 +52,7 @@
 
 /obj/effect/effect/smoke/chem/Crossed(atom/movable/AM)
 	..()
-	if(!istype(AM, /obj/effect/effect/smoke/chem))
+	if(!istype(AM, /obj/effect/effect/smoke))
 		reagents.splash(AM, splash_amount, copy = 1)
 
 /obj/effect/effect/smoke/chem/proc/initial_splash()
@@ -61,15 +61,7 @@
 			if(!istype(AM, /obj/effect/effect/smoke/chem))
 				reagents.splash(AM, splash_amount, copy = 1)
 
-// Fades out the smoke smoothly using it's alpha variable.
-/obj/effect/effect/smoke/chem/proc/fadeOut(var/frames = 16)
-	if(!alpha) return //already transparent
 
-	frames = max(frames, 1) //We will just assume that by 0 frames, the coder meant "during one frame".
-	var/alpha_step = round(alpha / frames)
-	while(alpha > 0)
-		alpha = max(0, alpha - alpha_step)
-		sleep(world.tick_lag)
 
 /////////////////////////////////////////////
 // Chem Smoke Effect System
@@ -131,7 +123,7 @@
 	density = max(1, targetTurfs.len / 4) //clamp the cloud density minimum to 1 so it cant multiply the reagents
 
 	//Admin messaging
-	var/contained = carry.get_reagents()
+	var/contained = carry.log_list()
 	var/area/A = get_area(location)
 
 	var/where = "[A.name] | [location.x], [location.y]"
@@ -146,6 +138,8 @@
 			message_admins("A chemical smoke reaction has taken place in ([whereLink])[contained]. Last associated key is [carry.my_atom.fingerprintslast][more].", 0, 1)
 			log_game("A chemical smoke reaction has taken place in ([where])[contained]. Last associated key is [carry.my_atom.fingerprintslast].")
 		else
+			if(ismob(carry.my_atom)) // less admin log spam from smoke created by mobs (for now this is against roaches gas log spam or something similar).
+				return
 			message_admins("A chemical smoke reaction has taken place in ([whereLink]). No associated key.", 0, 1)
 			log_game("A chemical smoke reaction has taken place in ([where])[contained]. No associated key.")
 
@@ -164,8 +158,10 @@
 		for(var/turf/T in targetTurfs)
 			chemholder.reagents.touch_turf(T)
 			for(var/atom/A in T.contents)
-				if(istype(A, /obj/effect/effect/smoke/chem) || ismob(A))
+				if(istype(A, /obj/effect/effect/smoke/chem))
 					continue
+				else if (ismob(A))
+					chemholder.reagents.touch_mob(A)
 				else if(isobj(A) && !A.simulated)
 					chemholder.reagents.touch_obj(A)
 
@@ -196,9 +192,9 @@
 
 		var/offset = 0
 		var/points = round((radius * 2 * M_PI) / arcLength)
-		var/angle = round(ToDegrees(arcLength / radius), 1)
+		var/angle = round(TODEGREES(arcLength / radius), 1)
 
-		if(!IsInteger(radius))
+		if(!ISINTEGER(radius))
 			offset = 45		//degrees
 
 		for(var/j = 0, j < points, j++)
@@ -222,7 +218,7 @@
 	if(passed_smoke)
 		smoke = passed_smoke
 	else
-		smoke = PoolOrNew(/obj/effect/effect/smoke/chem, list(location, smoke_duration + rand(0, 20), T, I))
+		smoke = new(location, smoke_duration + rand(0, 20), T, I)
 
 	if(chemholder.reagents.reagent_list.len)
 		chemholder.reagents.trans_to_obj(smoke, chemholder.reagents.total_volume / dist, copy = 1) //copy reagents to the smoke so mob/breathe() can handle inhaling the reagents
@@ -233,7 +229,7 @@
 
 
 /datum/effect/effect/system/smoke_spread/chem/spores/spawnSmoke(var/turf/T, var/smoke_duration, var/icon/I, var/dist = 1)
-	var/obj/effect/effect/smoke/chem/spores = PoolOrNew(/obj/effect/effect/smoke/chem, location)
+	var/obj/effect/effect/smoke/chem/spores = new(location)
 	spores.name = "cloud of [seed.seed_name] [seed.seed_noun]"
 	..(T, I, smoke_duration, dist, spores)
 

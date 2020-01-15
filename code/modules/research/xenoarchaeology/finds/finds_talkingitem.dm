@@ -20,11 +20,11 @@
 
 /datum/talking_atom/proc/init()
 	if(holder_atom)
-		processing_objects.Add(src)
+		START_PROCESSING(SSobj, src)
 
-/datum/talking_atom/proc/process()
+/datum/talking_atom/Process()
 	if(!holder_atom)
-		processing_objects.Remove(src)
+		STOP_PROCESSING(SSobj, src)
 
 	else if(heard_words.len >= 1 && world.time > last_talk_time + talk_interval && prob(talk_chance))
 		SaySomething()
@@ -41,7 +41,7 @@
 	else if(findtext(msg," ")==0)
 		return
 	else
-		/*var/l = lentext(msg)
+		/*var/l = length(msg)
 		if(findtext(msg," ",l,l+1)==0)
 			msg+=" "*/
 		seperate = splittext(msg, " ")
@@ -70,10 +70,10 @@
 /*/obj/item/weapon/talkingcrystal/proc/debug()
 	//set src in view()
 	for(var/v in heard_words)
-		world << "[uppertext(v)]"
+		to_chat(world, "[uppertext(v)]")
 		var/list/d = heard_words["[v]"]
 		for(var/X in d)
-			world << "[X]"*/
+			to_chat(world, "[X]")*/
 
 /datum/talking_atom/proc/SaySomething(var/word = null)
 	if(!holder_atom)
@@ -86,12 +86,12 @@
 		text = "[pick(heard_words)]"
 	else
 		text = pick(splittext(word, " "))
-	if(lentext(text)==1)
+	if(length(text)==1)
 		text=uppertext(text)
 	else
 		var/cap = copytext(text,1,2)
 		cap = uppertext(cap)
-		cap += copytext(text,2,lentext(text)+1)
+		cap += copytext(text,2,length(text)+1)
 		text=cap
 	var/q = 0
 	msg+=text
@@ -116,14 +116,14 @@
 			msg+="!"
 
 	var/list/listening = viewers(holder_atom)
-	for(var/mob/M in mob_list)
+	for(var/mob/M in SSmobs.mob_list)
 		if (!M.client)
 			continue //skip monkeys and leavers
 		if (isnewplayer(M))
 			continue
-		if(M.stat == DEAD && M.is_preference_enabled(/datum/client_preference/ghost_ears))
+		if(M.stat == DEAD && M.get_preference_value(/datum/client_preference/ghost_ears) == GLOB.PREF_ALL_SPEECH)
 			listening|=M
 
 	for(var/mob/M in listening)
-		M << "\icon[holder_atom] <b>[holder_atom]</b> reverberates, \blue\"[msg]\""
+		to_chat(M, "\icon[holder_atom] <b>[holder_atom]</b> reverberates, \blue\"[msg]\"")
 	last_talk_time = world.time

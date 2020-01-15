@@ -21,20 +21,15 @@
 
 /turf/simulated/floor/holofloor/tiled
 	name = "floor"
-	icon = 'icons/turf/flooring/tiles.dmi'
-	icon_state = "steel"
-	initial_flooring = /decl/flooring/tiling
+	icon = 'icons/turf/flooring/tiles_steel.dmi'
+	icon_state = "tiles"
+	initial_flooring = /decl/flooring/tiling/steel
 
 /turf/simulated/floor/holofloor/tiled/dark
-	name = "dark floor"
-	icon_state = "dark"
+	name = "floor"
+	icon = 'icons/turf/flooring/tiles_dark.dmi'
+	icon_state = "tiles"
 	initial_flooring = /decl/flooring/tiling/dark
-
-/turf/simulated/floor/holofloor/lino
-	name = "lino"
-	icon = 'icons/turf/flooring/linoleum.dmi'
-	icon_state = "lino"
-	initial_flooring = /decl/flooring/linoleum
 
 /turf/simulated/floor/holofloor/wood
 	name = "wooden floor"
@@ -50,11 +45,8 @@
 
 /turf/simulated/floor/holofloor/snow
 	name = "snow"
-	base_name = "snow"
 	icon = 'icons/turf/floors.dmi'
-	base_icon = 'icons/turf/floors.dmi'
 	icon_state = "snow"
-	base_icon_state = "snow"
 
 /turf/simulated/floor/holofloor/space
 	icon = 'icons/turf/space.dmi'
@@ -72,36 +64,27 @@
 
 /turf/simulated/floor/holofloor/beach
 	desc = "Uncomfortably gritty for a hologram."
-	base_desc = "Uncomfortably gritty for a hologram."
 	icon = 'icons/misc/beach.dmi'
-	base_icon = 'icons/misc/beach.dmi'
 	initial_flooring = null
 
 /turf/simulated/floor/holofloor/beach/sand
 	name = "sand"
 	icon_state = "desert"
-	base_icon_state = "desert"
 
 /turf/simulated/floor/holofloor/beach/coastline
 	name = "coastline"
 	icon = 'icons/misc/beach2.dmi'
 	icon_state = "sandwater"
-	base_icon_state = "sandwater"
 
 /turf/simulated/floor/holofloor/beach/water
 	name = "water"
 	icon_state = "seashallow"
-	base_icon_state = "seashallow"
 
 /turf/simulated/floor/holofloor/desert
 	name = "desert sand"
-	base_name = "desert sand"
 	desc = "Uncomfortably gritty for a hologram."
-	base_desc = "Uncomfortably gritty for a hologram."
 	icon_state = "asteroid"
-	base_icon_state = "asteroid"
 	icon = 'icons/turf/flooring/asteroid.dmi'
-	base_icon = 'icons/turf/flooring/asteroid.dmi'
 	initial_flooring = null
 
 /turf/simulated/floor/holofloor/desert/New()
@@ -123,18 +106,18 @@
 	item_state = "boxing"
 
 /obj/structure/window/reinforced/holowindow/Destroy()
-	..()
+	. = ..()
 
 /obj/structure/window/reinforced/holowindow/attackby(obj/item/W as obj, mob/user as mob)
 	if(!istype(W) || W.flags & NOBLUDGEON)
 		return
 
-	if(istype(W, /obj/item/weapon/screwdriver))
-		user << (SPAN_NOTICE("It's a holowindow, you can't unfasten it!"))
-	else if(istype(W, /obj/item/weapon/crowbar) && reinf && state <= 1)
-		user << (SPAN_NOTICE("It's a holowindow, you can't pry it!"))
-	else if(istype(W, /obj/item/weapon/wrench) && !anchored && (!state || !reinf))
-		user << (SPAN_NOTICE("It's a holowindow, you can't dismantle it!"))
+	if(istype(W, /obj/item/weapon/tool/screwdriver))
+		to_chat(user, (SPAN_NOTICE("It's a holowindow, you can't unfasten it!")))
+	else if(istype(W, /obj/item/weapon/tool/crowbar) && reinf && state <= 1)
+		to_chat(user, (SPAN_NOTICE("It's a holowindow, you can't pry it!")))
+	else if(istype(W, /obj/item/weapon/tool/wrench) && !anchored && (!state || !reinf))
+		to_chat(user, (SPAN_NOTICE("It's a holowindow, you can't dismantle it!")))
 	else
 		if(W.damtype == BRUTE || W.damtype == BURN)
 			hit(W.force)
@@ -155,10 +138,10 @@
 	return
 
 /obj/structure/window/reinforced/holowindow/disappearing/Destroy()
-	..()
+	. = ..()
 
 /obj/machinery/door/window/holowindoor/Destroy()
-	..()
+	. = ..()
 
 /obj/machinery/door/window/holowindoor/attackby(obj/item/weapon/I as obj, mob/user as mob)
 
@@ -196,11 +179,11 @@
 	qdel(src)
 
 /obj/structure/bed/chair/holochair/Destroy()
-	..()
+	. = ..()
 
 /obj/structure/bed/chair/holochair/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if(istype(W, /obj/item/weapon/wrench))
-		user << (SPAN_NOTICE("It's a holochair, you can't dismantle it!"))
+	if(istype(W, /obj/item/weapon/tool/wrench))
+		to_chat(user, (SPAN_NOTICE("It's a holochair, you can't dismantle it!")))
 	return
 
 /obj/item/weapon/holo
@@ -246,23 +229,19 @@
 	if (active)
 		force = 30
 		icon_state = "sword[item_color]"
-		w_class = ITEM_SIZE_LARGE
+		w_class = ITEM_SIZE_BULKY
 		playsound(user, 'sound/weapons/saberon.ogg', 50, 1)
-		user << SPAN_NOTICE("[src] is now active.")
+		to_chat(user, SPAN_NOTICE("[src] is now active."))
 	else
 		force = 3
 		icon_state = "sword0"
 		w_class = ITEM_SIZE_SMALL
 		playsound(user, 'sound/weapons/saberoff.ogg', 50, 1)
-		user << SPAN_NOTICE("[src] can now be concealed.")
+		to_chat(user, SPAN_NOTICE("[src] can now be concealed."))
 
-	if(ishuman(user))
-		var/mob/living/carbon/human/H = user
-		H.update_inv_l_hand()
-		H.update_inv_r_hand()
+	update_wear_icon()
 
 	add_fingerprint(user)
-	return
 
 //BASKETBALL OBJECTS
 
@@ -272,7 +251,7 @@
 	name = "basketball"
 	item_state = "basketball"
 	desc = "Here's your chance, do your dance at the Space Jam."
-	w_class = ITEM_SIZE_LARGE //Stops people from hiding it in their bags/pockets
+	w_class = ITEM_SIZE_BULKY //Stops people from hiding it in their bags/pockets
 
 /obj/structure/holohoop
 	name = "basketball hoop"
@@ -285,7 +264,7 @@
 
 /obj/structure/holohoop/affect_grab(var/mob/living/user, var/mob/living/target, var/state)
 	if(state == GRAB_PASSIVE)
-		user << SPAN_WARNING("You need a better grip to do that!")
+		to_chat(user, SPAN_WARNING("You need a better grip to do that!"))
 		return FALSE
 	target.forceMove(src.loc)
 	target.Weaken(5)
@@ -329,7 +308,7 @@
 	power_channel = ENVIRON
 
 /obj/machinery/readybutton/attack_ai(mob/user as mob)
-	user << "The station AI is not to interact with these devices!"
+	to_chat(user, "The station AI is not to interact with these devices!")
 	return
 
 /obj/machinery/readybutton/New()
@@ -337,12 +316,12 @@
 
 
 /obj/machinery/readybutton/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	user << "The device is a solid button, there's nothing you can do with it!"
+	to_chat(user, "The device is a solid button, there's nothing you can do with it!")
 
 /obj/machinery/readybutton/attack_hand(mob/user as mob)
 
 	if(user.stat || stat & (NOPOWER|BROKEN))
-		user << "This device is not powered."
+		to_chat(user, "This device is not powered.")
 		return
 
 	if(!user.IsAdvancedToolUser())
@@ -353,7 +332,7 @@
 		qdel(src)
 
 	if(eventstarted)
-		usr << "The event has already begun!"
+		to_chat(usr, "The event has already begun!")
 		return
 
 	ready = !ready
@@ -384,7 +363,7 @@
 		qdel(W)
 
 	for(var/mob/M in currentarea)
-		M << "FIGHT!"
+		to_chat(M, "FIGHT!")
 
 //Holocarp
 

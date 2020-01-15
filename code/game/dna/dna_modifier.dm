@@ -89,13 +89,13 @@
 	if (usr.stat)
 		return
 	if (!ishuman(usr) && !issmall(usr)) //Make sure they're a mob that has dna
-		usr << SPAN_NOTICE("Try as you might, you can not climb up into the scanner.")
+		to_chat(usr, SPAN_NOTICE("Try as you might, you can not climb up into the scanner."))
 		return
 	if (src.occupant)
-		usr << SPAN_WARNING("The scanner is already occupied!")
+		to_chat(usr, SPAN_WARNING("The scanner is already occupied!"))
 		return
 	if (usr.abiotic())
-		usr << SPAN_WARNING("The subject cannot have abiotic items on.")
+		to_chat(usr, SPAN_WARNING("The subject cannot have abiotic items on."))
 		return
 	usr.stop_pulling()
 	put_in(usr)
@@ -104,10 +104,10 @@
 
 /obj/machinery/dna_scannernew/affect_grab(var/mob/user, var/mob/target)
 	if (src.occupant)
-		user << SPAN_WARNING("The scanner is already occupied!")
+		to_chat(user, SPAN_WARNING("The scanner is already occupied!"))
 		return
 	if (target.abiotic())
-		user << SPAN_WARNING("The subject cannot have abiotic items on.")
+		to_chat(user, SPAN_WARNING("The subject cannot have abiotic items on."))
 		return
 	put_in(target)
 	src.add_fingerprint(user)
@@ -117,7 +117,7 @@
 /obj/machinery/dna_scannernew/attackby(var/obj/item/weapon/item as obj, var/mob/user as mob)
 	if(istype(item, /obj/item/weapon/reagent_containers/glass))
 		if(beaker)
-			user << SPAN_WARNING("A beaker is already loaded into the machine.")
+			to_chat(user, SPAN_WARNING("A beaker is already loaded into the machine."))
 			return
 		beaker = item
 		user.drop_from_inventory(item)
@@ -134,15 +134,15 @@
 	// search for ghosts, if the corpse is empty and the scanner is connected to a cloner
 	if(locate(/obj/machinery/computer/cloning) in range(1))
 		if(!M.client && M.mind)
-			for(var/mob/observer/ghost/ghost in player_list)
+			for(var/mob/observer/ghost/ghost in GLOB.player_list)
 				if(ghost.mind == M.mind)
-					ghost << {"
+					to_chat(ghost, {"
 						<font color = #330033 size = 3>
 						<b>Your corpse has been placed into a cloning scanner.
 						Return to your body if you want to be resurrected/cloned!</b>
 						(Verbs -> Ghost -> Re-enter corpse)
 						</font>
-					"}
+					"})
 					break
 	return
 
@@ -222,8 +222,8 @@
 			user.drop_from_inventory(I)
 			I.forceMove(src)
 			src.disk = I
-			user << "You insert [I]."
-			nanomanager.update_uis(src) // update all UIs attached to src
+			to_chat(user, "You insert [I].")
+			SSnano.update_uis(src) // update all UIs attached to src
 			return
 	else
 		..()
@@ -274,7 +274,7 @@
 	return 1
 
 /*
-/obj/machinery/computer/scan_consolenew/process() //not really used right now
+/obj/machinery/computer/scan_consolenew/Process() //not really used right now
 	if(stat & (NOPOWER|BROKEN))
 		return
 	if (!( src.status )) //remove this
@@ -301,7 +301,7 @@
   *
   * @return nothing
   */
-/obj/machinery/computer/scan_consolenew/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/computer/scan_consolenew/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 
 	if(user == connected.occupant || user.stat)
 		return
@@ -364,7 +364,7 @@
 			occupantData["isViableSubject"] = 0
 		occupantData["health"] = connected.occupant.health
 		occupantData["maxHealth"] = connected.occupant.maxHealth
-		occupantData["minHealth"] = config.health_threshold_dead
+		occupantData["minHealth"] = HEALTH_THRESHOLD_DEAD
 		occupantData["uniqueEnzymes"] = connected.occupant.dna.unique_enzymes
 		occupantData["uniqueIdentity"] = connected.occupant.dna.uni_identity
 		occupantData["structuralEnzymes"] = connected.occupant.dna.struc_enzymes
@@ -381,7 +381,7 @@
 				data["beakerVolume"] += R.volume
 
 	// update the ui if it exists, returns null if no ui is passed/found
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		// the ui does not exist, so we'll create a new() one
         // for a list of parameters and their descriptions see the code docs in \code\modules\nano\nanoui.dm
@@ -418,7 +418,7 @@
 		irradiating = src.radiation_duration
 		var/lock_state = src.connected.locked
 		src.connected.locked = 1//lock it
-		nanomanager.update_uis(src) // update all UIs attached to src
+		SSnano.update_uis(src) // update all UIs attached to src
 
 		sleep(10*src.radiation_duration) // sleep for radiation_duration seconds
 
@@ -519,7 +519,7 @@
 		irradiating = src.radiation_duration
 		var/lock_state = src.connected.locked
 		src.connected.locked = 1//lock it
-		nanomanager.update_uis(src) // update all UIs attached to src
+		SSnano.update_uis(src) // update all UIs attached to src
 
 		sleep(10*src.radiation_duration) // sleep for radiation_duration seconds
 
@@ -577,7 +577,7 @@
 		irradiating = src.radiation_duration
 		var/lock_state = src.connected.locked
 		src.connected.locked = 1 //lock it
-		nanomanager.update_uis(src) // update all UIs attached to src
+		SSnano.update_uis(src) // update all UIs attached to src
 
 		sleep(10*src.radiation_duration) // sleep for radiation_duration seconds
 
@@ -704,7 +704,7 @@
 			irradiating = 2
 			var/lock_state = src.connected.locked
 			src.connected.locked = 1//lock it
-			nanomanager.update_uis(src) // update all UIs attached to src
+			SSnano.update_uis(src) // update all UIs attached to src
 
 			sleep(10*2) // sleep for 2 seconds
 

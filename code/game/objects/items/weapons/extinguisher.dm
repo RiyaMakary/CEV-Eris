@@ -6,20 +6,22 @@
 	item_state = "fire_extinguisher"
 	hitsound = 'sound/weapons/smash.ogg'
 	flags = CONDUCT
+	reagent_flags = AMOUNT_VISIBLE
 	throwforce = WEAPON_FORCE_DANGEROUS
 	w_class = ITEM_SIZE_NORMAL
 	throw_speed = 2
 	throw_range = 10
 	force = WEAPON_FORCE_DANGEROUS
-	matter = list(DEFAULT_WALL_MATERIAL = 90)
+	matter = list(MATERIAL_STEEL = 3)
 	attack_verb = list("slammed", "whacked", "bashed", "thunked", "battered", "bludgeoned", "thrashed")
 
 	var/spray_particles = 3
-	var/spray_amount = 10	//units of liquid per particle
+	var/spray_amount = 9	//units of liquid per particle
 	var/max_water = 300
 	var/last_use = 1.0
 	var/safety = 1
 	var/sprite_name = "fire_extinguisher"
+	structure_damage_factor = STRUCTURE_DAMAGE_HEAVY
 
 /obj/item/weapon/extinguisher/mini
 	name = "fire extinguisher"
@@ -39,16 +41,11 @@
 	reagents.add_reagent("water", max_water)
 	..()
 
-/obj/item/weapon/extinguisher/examine(mob/user)
-	if(..(user, 0))
-		user << text("\icon[] [] contains [] units of water left!", src, src.name, src.reagents.total_volume)
-	return
-
 /obj/item/weapon/extinguisher/attack_self(mob/user as mob)
 	safety = !safety
 	src.icon_state = "[sprite_name][!safety]"
 	src.desc = "The safety is [safety ? "on" : "off"]."
-	user << "The safety is [safety ? "on" : "off"]."
+	to_chat(user, "The safety is [safety ? "on" : "off"].")
 	return
 
 /obj/item/weapon/extinguisher/proc/propel_object(var/obj/O, mob/user, movementdirection)
@@ -75,13 +72,13 @@
 	if( istype(target, /obj/structure/reagent_dispensers/watertank) && flag)
 		var/obj/o = target
 		var/amount = o.reagents.trans_to_obj(src, 50)
-		user << SPAN_NOTICE("You fill [src] with [amount] units of the contents of [target].")
+		to_chat(user, SPAN_NOTICE("You fill [src] with [amount] units of the contents of [target]."))
 		playsound(src.loc, 'sound/effects/refill.ogg', 50, 1, -6)
 		return
 
 	if (!safety)
 		if (src.reagents.total_volume < 1)
-			usr << SPAN_NOTICE("\The [src] is empty.")
+			to_chat(usr, SPAN_NOTICE("\The [src] is empty."))
 			return
 
 		if (world.time < src.last_use + 20)
@@ -107,7 +104,7 @@
 			spawn(0)
 				if(!src || !reagents.total_volume) return
 
-				var/obj/effect/effect/water/W = PoolOrNew(/obj/effect/effect/water, get_turf(src))
+				var/obj/effect/effect/water/W = new(get_turf(src))
 				var/turf/my_target
 				if(a <= the_targets.len)
 					my_target = the_targets[a]

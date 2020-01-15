@@ -53,15 +53,17 @@
 	desc = "A shield adept at blocking blunt objects from connecting with the torso of the shield wielder."
 	icon = 'icons/obj/weapons.dmi'
 	icon_state = "riot"
+	item_state = "riot"
 	flags = CONDUCT
 	slot_flags = SLOT_BACK
-	force = WEAPON_FORCE_PAINFULL
-	throwforce = WEAPON_FORCE_PAINFULL
+	force = WEAPON_FORCE_PAINFUL
+	throwforce = WEAPON_FORCE_PAINFUL
 	throw_speed = 1
 	throw_range = 4
-	w_class = ITEM_SIZE_LARGE
+	w_class = ITEM_SIZE_BULKY
 	origin_tech = list(TECH_MATERIAL = 2)
-	matter = list("glass" = 7500, DEFAULT_WALL_MATERIAL = 1000)
+	matter = list(MATERIAL_GLASS = 3, MATERIAL_STEEL = 10)
+	price_tag = 500
 	attack_verb = list("shoved", "bashed")
 	var/cooldown = 0 //shield bash cooldown. based on world.time
 
@@ -79,12 +81,58 @@
 
 /obj/item/weapon/shield/riot/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(istype(W, /obj/item/weapon/melee/baton))
-		if(cooldown < world.time - 25)
-			user.visible_message(SPAN_WARNING("[user] bashes [src] with [W]!"))
-			playsound(user.loc, 'sound/effects/shieldbash.ogg', 50, 1)
-			cooldown = world.time
+		on_bash(W, user)
 	else
 		..()
+
+/obj/item/weapon/shield/riot/proc/on_bash(var/obj/item/weapon/W, var/mob/user)
+	if(cooldown < world.time - 25)
+		user.visible_message(SPAN_WARNING("[user] bashes [src] with [W]!"))
+		playsound(user.loc, 'sound/effects/shieldbash.ogg', 50, 1)
+		cooldown = world.time
+
+/*
+ * Handmade shield
+ */
+
+/obj/item/weapon/shield/riot/handmade
+	name = "round handmade shield"
+	desc = "A handmade stout shield, but with a small size."
+	icon_state = "buckler"
+	flags = null
+	throw_speed = 2
+	throw_range = 6
+	matter = list(MATERIAL_STEEL = 6)
+	base_block_chance = 35
+
+
+/obj/item/weapon/shield/riot/handmade/get_block_chance(mob/user, var/damage, atom/damage_source = null, mob/attacker = null)
+	return base_block_chance
+
+
+/obj/item/weapon/shield/riot/handmade/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/weapon/extinguisher) || istype(W, /obj/item/weapon/storage/toolbox) || istype(W, /obj/item/weapon/melee))
+		on_bash(W, user)
+	else
+		..()
+
+/obj/item/weapon/shield/riot/handmade/tray
+	name = "tray shield"
+	desc = "This one is thin, but compensate it with a good size."
+	icon_state = "tray_shield"
+	flags = CONDUCT
+	throw_speed = 2
+	throw_range = 4
+	matter = list(MATERIAL_STEEL = 4)
+	base_block_chance = 35
+
+
+/obj/item/weapon/shield/riot/handmade/tray/get_block_chance(mob/user, var/damage, atom/damage_source = null, mob/attacker = null)
+	if(istype(damage_source, /obj/item))
+		var/obj/item/I = damage_source
+		if((is_sharp(I) && damage > 10) || istype(damage_source, /obj/item/projectile/beam))
+			return 20
+	return base_block_chance
 
 /*
  * Energy Shield
@@ -111,7 +159,7 @@
 	. = ..()
 
 	if(.)
-		var/datum/effect/effect/system/spark_spread/spark_system = PoolOrNew(/datum/effect/effect/system/spark_spread)
+		var/datum/effect/effect/system/spark_spread/spark_system = new
 		spark_system.set_up(5, 0, user.loc)
 		spark_system.start()
 		playsound(user.loc, 'sound/weapons/blade1.ogg', 50, 1)
@@ -125,35 +173,31 @@
 
 /obj/item/weapon/shield/energy/attack_self(mob/living/user as mob)
 	if ((CLUMSY in user.mutations) && prob(50))
-		user << SPAN_WARNING("You beat yourself in the head with [src].")
+		to_chat(user, SPAN_WARNING("You beat yourself in the head with [src]."))
 		user.take_organ_damage(5)
 	active = !active
 	if (active)
-		force = WEAPON_FORCE_PAINFULL
+		force = WEAPON_FORCE_PAINFUL
 		update_icon()
-		w_class = ITEM_SIZE_LARGE
+		w_class = ITEM_SIZE_BULKY
 		playsound(user, 'sound/weapons/saberon.ogg', 50, 1)
-		user << SPAN_NOTICE("\The [src] is now active.")
+		to_chat(user, SPAN_NOTICE("\The [src] is now active."))
 
 	else
 		force = 3
 		update_icon()
 		w_class = ITEM_SIZE_TINY
 		playsound(user, 'sound/weapons/saberoff.ogg', 50, 1)
-		user << SPAN_NOTICE("\The [src] can now be concealed.")
-
-	if(ishuman(user))
-		var/mob/living/carbon/human/H = user
-		H.update_inv_l_hand()
-		H.update_inv_r_hand()
+		to_chat(user, SPAN_NOTICE("\The [src] can now be concealed."))
 
 	add_fingerprint(user)
 	return
 
 /obj/item/weapon/shield/energy/update_icon()
 	icon_state = "eshield[active]"
+	update_wear_icon()
 	if(active)
-		set_light(1.5, 1.5, "#006AFF")
+		set_light(1.5, 1.5, COLOR_LIGHTING_BLUE_BRIGHT)
 	else
 		set_light(0)
 

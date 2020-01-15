@@ -11,7 +11,7 @@
 	limit_y = 3
 	preserve_map = 0
 
-	wall_type = /turf/simulated/wall/titanium
+	wall_type = /turf/simulated/wall/untinted/onestar_reinforced
 	floor_type = /turf/simulated/floor/reinforced
 	var/list/supplied_drop_types = list()
 	var/door_type = /obj/structure/droppod_door
@@ -20,8 +20,11 @@
 
 	var/placement_explosion_dev =   1
 	var/placement_explosion_heavy = 2
-	var/placement_explosion_light = 6
-	var/placement_explosion_flash = 4
+	var/placement_explosion_light = 3
+	var/placement_explosion_flash = 3
+
+	var/list/floor_tiles = list()
+	var/turf/origin = null
 
 /datum/random_map/droppod/New(var/seed, var/tx, var/ty, var/tz, var/tlx, var/tly, var/do_not_apply, var/do_not_announce, var/supplied_drop, var/list/supplied_drops, var/automated)
 
@@ -33,10 +36,15 @@
 	if(automated)
 		auto_open_doors = 1
 
+	origin = locate(tx,ty,tz)
+
 	//Make sure there is a clear midpoint.
 	if(limit_x % 2 == 0) limit_x++
 	if(limit_y % 2 == 0) limit_y++
 	..()
+
+	//Clean up this datum once we're done
+	qdel(src)
 
 /datum/random_map/droppod/generate_map()
 
@@ -113,11 +121,11 @@
 	if(value != SD_EMPTY_TILE && T.contents.len)
 		for(var/atom/movable/AM in T)
 			if(AM.simulated && !isobserver(AM))
-				qdel(AM)
+				AM.ex_act(1)
 
 	// Also spawn doors and loot.
 	if(value == SD_DOOR_TILE)
-		var/obj/structure/S = new door_type(T, auto_open_doors)
+		var/obj/structure/S = new door_type(T, auto_open_doors, origin)
 		S.set_dir(spawn_dir)
 
 	else if(value == SD_SUPPLY_TILE)
@@ -179,7 +187,7 @@ ADMIN_VERB_ADD(/datum/admins/proc/call_drop_pod, R_FUN, FALSE)
 				candidates |= player
 
 		if(!candidates.len)
-			usr << "There are no candidates for a drop pod launch."
+			to_chat(usr, "There are no candidates for a drop pod launch.")
 			return
 
 		// Get a player and a mob type.

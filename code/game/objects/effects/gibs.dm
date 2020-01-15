@@ -19,11 +19,11 @@
 
 	proc/Gib(atom/location, var/datum/dna/MobDNA = null)
 		if(gibtypes.len != gibamounts.len || gibamounts.len != gibdirections.len)
-			world << SPAN_WARNING("Gib list length mismatch!")
+			to_chat(world, SPAN_WARNING("Gib list length mismatch!"))
 			return
 
 		if(sparks)
-			var/datum/effect/effect/system/spark_spread/s = PoolOrNew(/datum/effect/effect/system/spark_spread)
+			var/datum/effect/effect/system/spark_spread/s = new
 			s.set_up(2, 1, get_turf(location)) // Not sure if it's safe to pass an arbitrary object to set_up, todo
 			s.start()
 

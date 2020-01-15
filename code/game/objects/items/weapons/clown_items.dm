@@ -25,14 +25,16 @@
 	throwforce = 0
 	throw_speed = 4
 	throw_range = 20
+	matter = list(MATERIAL_BIOMATTER = 12)
 
 /obj/item/weapon/soap/New()
 	..()
-	create_reagents(5)
+	create_reagents(20)
 	wet()
 
 /obj/item/weapon/soap/proc/wet()
-	reagents.add_reagent("cleaner", 5)
+	playsound(loc, 'sound/effects/slosh.ogg', 25, 1)
+	reagents.add_reagent("cleaner", 20)
 
 /obj/item/weapon/soap/Crossed(AM as mob|obj)
 	if (isliving(AM))
@@ -41,28 +43,48 @@
 
 /obj/item/weapon/soap/afterattack(atom/target, mob/user as mob, proximity)
 	if(!proximity) return
+
+	else if(istype(target,/obj/effect/decal/cleanable))
+		to_chat(user, "<span class='notice'>You scrub \the [target.name] out.</span>")
+		qdel(target)
+		return
+	else if(istype(target,/turf))
+		to_chat(user, "You start scrubbing the [target.name]")
+		if(do_after(user, 50, target)) //Soap should be slower and worse than mop
+			to_chat(user, "<span class='notice'>You scrub \the [target.name] clean.</span>")
+			var/turf/T = target
+			T.clean(src, user)
+			return
+		else
+			to_chat(user, "<span class='notice'>You need to stand still to clean \the [target.name]!</span>")
+			return
+	else if(istype(target,/obj/structure/sink) || istype(target,/obj/structure/sink))
+		to_chat(user, "<span class='notice'>You wet \the [src] in the sink.</span>")
+		wet()
+		return
+	else if (istype(target, /obj/structure/mopbucket) || istype(target, /obj/item/weapon/reagent_containers/glass) || istype(target, /obj/structure/reagent_dispensers/watertank))
+		if (target.reagents && target.reagents.total_volume)
+			to_chat(user, "<span class='notice'>You wet \the [src] in the [target].</span>")
+			wet()
+			return
+		else
+			to_chat(user, "\The [target] is empty!")
+
 	//I couldn't feasibly  fix the overlay bugs caused by cleaning items we are wearing.
 	//So this is a workaround. This also makes more sense from an IC standpoint. ~Carn
 	if(user.client && (target in user.client.screen))
-		user << SPAN_NOTICE("You need to take that [target.name] off before cleaning it.")
-	else if(istype(target,/obj/effect/decal/cleanable))
-		user << SPAN_NOTICE("You scrub \the [target.name] out.")
-		qdel(target)
-	else if(istype(target,/turf))
-		user << SPAN_NOTICE("You scrub \the [target.name] clean.")
-		var/turf/T = target
-		T.clean(src, user)
-	else if(istype(target,/obj/structure/sink))
-		user << SPAN_NOTICE("You wet \the [src] in the sink.")
-		wet()
+		to_chat(user, "<span class='notice'>You need to take that [target.name] off before cleaning it.</span>")
+		return
 	else
-		user << SPAN_NOTICE("You clean \the [target.name].")
+		to_chat(user, "<span class='notice'>You clean \the [target.name].</span>")
 		target.clean_blood()
-	return
+		return
+
+
 
 //attack_as_weapon
 /obj/item/weapon/soap/attack(mob/living/target, mob/living/user, var/target_zone)
-	if(ishuman(target) && ishuman(user) && !target.stat && user.targeted_organ == "mouth")
+	if(ishuman(target) && ishuman(user) && !target.stat && user.targeted_organ == BP_MOUTH)
 		user.visible_message(
 			SPAN_DANGER("\The [user] washes \the [target]'s mouth out with soap!")
 		)
@@ -71,7 +93,7 @@
 	..()
 
 /obj/item/weapon/soap/nanotrasen
-	desc = "A NanoTrasen-brand bar of soap. Smells of plasma."
+	desc = "A NeoTheology-brand bar of soap. Smells of biomatter."
 	icon_state = "soapnt"
 
 /obj/item/weapon/soap/deluxe

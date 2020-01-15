@@ -1,46 +1,58 @@
+/mob/living/carbon/human/var/list/personal_ritual_cooldowns = list()
+
+
 /datum/ritual/
 	var/name = "ritual"
 	var/desc = "Basic ritual that does nothing."
 	var/phrase = ""
 	var/power = 0
 	var/chance = 100
-	var/success_message = "Ritual successed."
+	var/success_message = "Ritual successful."
 	var/fail_message = "Ritual failed."
-	var/implant_type = /obj/item/weapon/implant/external/core_implant
+	var/implant_type = /obj/item/weapon/implant/core_implant
+	var/category = "???"
+
+	var/cooldown = FALSE
+	var/cooldown_time = 0
+	var/cooldown_category = ""
+	var/effect_time = 0
 
 //code of ritual, returns true on success, can be interrupted with fail(H, C, targets) and return FALSE
-/datum/ritual/proc/perform(mob/living/carbon/human/H, obj/item/weapon/implant/external/core_implant/C, targets)
+/datum/ritual/proc/perform(mob/living/carbon/human/H, obj/item/weapon/implant/core_implant/C, targets)
 	return TRUE
 
 //ritual will be proceed only if this returns true
-/datum/ritual/proc/pre_check(obj/living/carbon/human/H, obj/item/weapon/implant/external/core_implant/C, targets)
+/datum/ritual/proc/pre_check(mob/living/carbon/human/H, obj/item/weapon/implant/core_implant/C, targets)
+	if(cooldown && is_on_cooldown(H))
+		fail("Litanies of this type can't be spoken too often.", H, C)
+		return FALSE
 	return TRUE
 
 //code of ritual fail, called by fail(H,C,targets)		'on_chance' will be true, if ritual failed on chance check
-/datum/ritual/proc/failed(mob/living/carbon/human/H, obj/item/weapon/implant/external/core_implant/C, targets, on_chance = FALSE)
+/datum/ritual/proc/failed(mob/living/carbon/human/H, obj/item/weapon/implant/core_implant/C, targets, on_chance = FALSE)
 	return
 
-/datum/ritual/proc/activate(mob/living/carbon/human/H, obj/item/weapon/implant/external/core_implant/C, var/list/targets, var/force = FALSE)
+/datum/ritual/proc/activate(mob/living/carbon/human/H, obj/item/weapon/implant/core_implant/C, var/list/targets, var/force = FALSE)
 	if(!pre_check(H,C,targets))
 		return
 	if(!force && !check_success(C))
-		H << SPAN_DANGER("[fail_message]")
+		to_chat(H, SPAN_DANGER("[fail_message]"))
 		failed(H, C, targets, TRUE)
 	else
 		if(perform(H, C, targets))
 			C.use_power(src.power)
-			H << SPAN_NOTICE("[success_message]")
+			to_chat(H, SPAN_NOTICE("[success_message]"))
 
-/datum/ritual/proc/fail(var/message, mob/living/carbon/human/H, obj/item/weapon/implant/external/core_implant/C, targets)
+/datum/ritual/proc/fail(var/message, mob/living/carbon/human/H, obj/item/weapon/implant/core_implant/C, targets)
 	if(!message)
 		message = fail_message
-	H << SPAN_DANGER("[message]")
+	to_chat(H, SPAN_DANGER("[message]"))
 	failed(H, C, targets)
 
-/datum/ritual/proc/check_success(obj/item/weapon/implant/external/core_implant/C)
+/datum/ritual/proc/check_success(obj/item/weapon/implant/core_implant/C)
 	return prob(chance * C.success_modifier)
 
-/datum/ritual/proc/is_allowed(obj/item/weapon/implant/external/core_implant/C)
+/datum/ritual/proc/is_allowed(obj/item/weapon/implant/core_implant/C)
 	return TRUE
 
 //returns phrase to say, may require to specify target
@@ -60,22 +72,88 @@
 	return list()
 
 
+//COOLDOWN STUFF
+//sets global cooldown for ritual's cooldown category
+/datum/ritual/proc/set_global_cooldown()
+	if(src.cooldown)
+		GLOB.global_ritual_cooldowns[src.cooldown_category] = TRUE
+		addtimer(CALLBACK(src, .proc/reset_global_cooldown), src.cooldown_time)
+//resets personal cooldown for user if he's not nil or resets global cooldown, internal proc
+/datum/ritual/proc/reset_global_cooldown()
+	GLOB.global_ritual_cooldowns[src.cooldown_category] = FALSE
+
+//sets personal cooldown for user of ritual's cooldown category
+/datum/ritual/proc/set_personal_cooldown(mob/living/carbon/human/user)
+	if(src.cooldown)
+		user.personal_ritual_cooldowns[src.cooldown_category] = world.time + src.cooldown_time
+
+//check's if ritual at personal or global cooldown
+/datum/ritual/proc/is_on_cooldown(mob/living/carbon/human/user)
+	if(GLOB.global_ritual_cooldowns[src.cooldown_category])
+		return TRUE
+	if(user.personal_ritual_cooldowns[src.cooldown_category] > world.time)
+		return TRUE
+	return FALSE
+
 //HELPERS
 
-/datum/ritual/proc/get_coreimplant(var/ctype, var/mob/living/carbon/human/H)
-	var/obj/item/weapon/implant/external/core_implant/CI = locate(ctype) in H
-	return CI
 
 
-/datum/ritual/proc/get_grabbed(var/mob/living/carbon/human/user)
+//Getting mobs
+/proc/get_grabbed_mob(var/mob/living/carbon/human/user)
 	var/obj/item/weapon/grab/G = locate(/obj/item/weapon/grab) in user
-	var/obj/item/weapon/implant/external/core_implant/CI
 
-	if(G)
-		CI = locate(implant_type) in G.affecting
+	if (G && G.affecting && istype(G.affecting, /mob/living))
+		return G.affecting
+	return null
 
-	return CI
+/proc/get_front_mob(var/mob/living/carbon/human/user)
+	var/turf/T = get_step(user,user.dir)
+	return (locate(/mob/living) in T)
 
-/datum/ritual/proc/get_front(var/mob/living/carbon/human/user)
+/proc/get_victim(var/mob/living/carbon/human/user)
+	var/mob/living/L = get_grabbed_mob(user)
+	if (!L)
+		L = get_front_mob(user)
+	return L
+
+
+//Getting implants
+/mob/living/proc/get_core_implant(ctype = null, req_activated = TRUE)
+	for(var/obj/item/weapon/implant/core_implant/I in src)
+		if(ctype && !istype(I, ctype))
+			continue
+
+		if(I.wearer != src)
+			continue
+
+		if(req_activated && !I.active)
+			continue
+
+		return I
+
+	return null
+
+/proc/get_implant_from_victim(mob/living/carbon/human/user, ctype = null, req_activated = TRUE)
+	var/mob/living/L = get_victim(user)
+	if(L)
+		return L.get_core_implant(ctype, req_activated)
+
+
+//Getting other objects
+/proc/get_front(var/mob/living/carbon/human/user)
 	var/turf/T = get_step(user,user.dir)
 	return T.contents
+
+
+/proc/pick_disciple_global(var/mob/user, var/allow_dead = TRUE)
+	var/list/candidates = list()
+	for (var/mob/living/L in disciples)
+		if (QDELETED(L))
+			continue
+		if (!allow_dead && L.stat == DEAD)
+			continue
+
+		candidates += L
+
+	return input(user, "Who do you wish to target?", "Select a disciple") as (null|mob) in candidates

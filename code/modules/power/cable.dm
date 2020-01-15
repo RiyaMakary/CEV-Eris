@@ -33,6 +33,7 @@ var/list/possible_cable_coil_colours = list(
 	)
 
 /obj/structure/cable
+	layer = WIRE_LAYER //Above hidden pipes, GAS_PIPE_HIDDEN_LAYER
 	level = 1
 	anchored =1
 	var/datum/powernet/powernet
@@ -42,7 +43,6 @@ var/list/possible_cable_coil_colours = list(
 	icon_state = "0-1"
 	var/d1 = 0
 	var/d2 = 1
-	layer = 2.44 //Just below unary stuff, which is at 2.45 and above pipes, which are at 2.4
 	color = COLOR_RED_LIGHT
 	var/obj/machinery/power/breakerbox/breaker_box
 
@@ -57,7 +57,7 @@ var/list/possible_cable_coil_colours = list(
 	return PN.draw_power(amount)
 
 /obj/structure/cable/yellow
-	color = COLOR_AMBER
+	color = COLOR_YELLOW
 
 /obj/structure/cable/green
 	color = COLOR_GREEN
@@ -97,7 +97,7 @@ var/list/possible_cable_coil_colours = list(
 	if(powernet)
 		cut_cable_from_powernet()				// update the powernets
 	cable_list -= src							//remove it from global cable list
-	..()										// then go ahead and delete the cable
+	. = ..()										// then go ahead and delete the cable
 
 ///////////////////////////////////
 // General procedures
@@ -129,67 +129,120 @@ var/list/possible_cable_coil_colours = list(
 //   - Cable coil : merge cables
 //   - Multitool : get the power currently passing through the cable
 //
-/obj/structure/cable/attackby(obj/item/W, mob/user)
+/obj/structure/cable/attackby(obj/item/I, mob/user)
+
+	src.add_fingerprint(user)
 
 	var/turf/T = src.loc
 	if(!T.is_plating())
 		return
 
-	if(istype(W, /obj/item/weapon/wirecutters))
-		if(d1 == 12 || d2 == 12)
-			user << SPAN_WARNING("You must cut this cable from above.")
-			return
-
-		if(breaker_box)
-			user << "\red This cable is connected to nearby breaker box. Use breaker box to interact with it."
-			return
-
-		if (shock(user, 50))
-			return
-
-		if(src.d1)	// 0-X cables are 1 unit, X-X cables are 2 units long
-			new/obj/item/stack/cable_coil(T, 2, color)
-		else
-			new/obj/item/stack/cable_coil(T, 1, color)
-
-		for(var/mob/O in viewers(src, null))
-			O.show_message(SPAN_WARNING("[user] cuts the cable."), 1)
-
-		if(d1 == 11 || d2 == 11)
-			var/turf/turf = GetBelow(src)
-			if(turf)
-				for(var/obj/structure/cable/c in turf)
-					if(c.d1 == 12 || c.d2 == 12)
-						qdel(c)
-
-		investigate_log("was cut by [key_name(usr, usr.client)] in [user.loc.loc]","wires")
-
-		qdel(src)
+	if(QUALITY_WIRE_CUTTING in I.tool_qualities)
+		if(I.use_tool(user, src, WORKTIME_INSTANT, QUALITY_WIRE_CUTTING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+			if(!shock(user, 50))
+				cutting(user)
+				return
+		var/fail_chance = FAILCHANCE_NORMAL - user.stats.getStat(STAT_MEC)
+		if(prob(fail_chance))
+			to_chat(user, SPAN_NOTICE("Oh God, what a mess!"))
+			spawnSplicing()
 		return
 
+	if(QUALITY_CUTTING in I.tool_qualities)
+		if(I.use_tool(user, src, WORKTIME_INSTANT, QUALITY_CUTTING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+			if(!shock(user, 50))
+				cutting(user)
+				return
+		var/fail_chance = FAILCHANCE_NORMAL - user.stats.getStat(STAT_MEC)
+		if(prob(fail_chance))
+			to_chat(user, SPAN_NOTICE("Oh God, what a mess!"))
+			spawnSplicing()
+		return
 
-	else if(istype(W, /obj/item/stack/cable_coil))
-		var/obj/item/stack/cable_coil/coil = W
+	else if(istype(I, /obj/item/stack/cable_coil))
+		var/obj/item/stack/cable_coil/coil = I
 		if (coil.get_amount() < 1)
-			user << "Not enough cable"
+			to_chat(user, "Not enough cable")
 			return
-		coil.cable_join(src, user)
+		if(user.a_intent == I_HURT)
+			if(locate(/obj/structure/wire_splicing) in T)
+				to_chat(user, SPAN_WARNING("There is splicing already!"))
+				return
+			to_chat(user, SPAN_NOTICE("You started messsing with wires..."))
+			if(shock(user, 100)) //check if he got his insulation gloves
+				return 		//he didn't
+			if(do_after(user, 20))
+				var/fail_chance = FAILCHANCE_HARD - user.stats.getStat(STAT_MEC) // 72 for assistant
+				if(prob(fail_chance))
+					if(!shock(user, 100)) //why not
+						to_chat(user, SPAN_WARNING("You failed to finish your task with [src.name]! There was a [fail_chance]% chance to screw this up."))
+					return
 
-	else if(istype(W, /obj/item/device/multitool))
+				//all clear, update things
+				coil.use(1)
+				spawnSplicing()
+				to_chat(user, SPAN_NOTICE("You have created such a mess. Shame."))
+		else
+			coil.cable_join(src, user)
+
+	else if(istype(I, /obj/item/weapon/tool/multitool))
 
 		if(powernet && (powernet.avail > 0))		// is it powered?
-			user << SPAN_WARNING("[powernet.avail]W in power network.")
+			to_chat(user, SPAN_WARNING("[power_to_text(powernet.avail)] in power network."))
 
 		else
-			user << SPAN_WARNING("The cable is not powered.")
+			to_chat(user, SPAN_WARNING("The cable is not powered."))
 
 		shock(user, 5, 0.2)
 
 	else
-		if (W.flags & CONDUCT)
+		if (I.flags & CONDUCT)
 			shock(user, 50, 0.7)
 
-	src.add_fingerprint(user)
+/obj/structure/cable/proc/spawnSplicing(var/messiness = 1)
+	var/obj/structure/wire_splicing/splicing = new (src.loc)
+	splicing.messiness = messiness
+	splicing.icon_state = "wire_splicing[messiness]"
+
+	//sparks!
+	var/datum/effect/effect/system/spark_spread/spark_system = new ()
+	spark_system.set_up(5, 0, src)
+	spark_system.attach(src)
+	spark_system.start()
+	spawn(10)
+		qdel(spark_system)
+
+/obj/structure/cable/proc/cutting(mob/user)
+
+	var/turf/T = src.loc
+
+	if(d1 == UP || d2 == UP)
+		to_chat(user, SPAN_WARNING("You must cut this cable from above."))
+		return
+
+	if(breaker_box)
+		to_chat(user, SPAN_WARNING("This cable is connected to nearby breaker box. Use breaker box to interact with it."))
+		return
+
+	if(src.d1)	// 0-X cables are 1 unit, X-X cables are 2 units long
+		new/obj/item/stack/cable_coil(T, 2, color)
+	else
+		new/obj/item/stack/cable_coil(T, 1, color)
+
+	for(var/mob/O in viewers(src, null))
+		O.show_message(SPAN_WARNING("[user] cuts the cable."), 1)
+
+	if(d1 == DOWN || d2 == DOWN)
+		var/turf/turf = GetBelow(src)
+		if(turf)
+			for(var/obj/structure/cable/c in turf)
+				if(c.d1 == UP || c.d2 == UP)
+					qdel(c)
+
+	investigate_log("was cut by [key_name(usr, usr.client)] in [user.loc.loc]","wires")
+
+	qdel(src)
+	return
 
 // shock the user with probability prb
 /obj/structure/cable/proc/shock(mob/user, prb, var/siemens_coeff = 1.0)
@@ -277,7 +330,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 // merge with the powernets of power objects in the given direction
 /obj/structure/cable/proc/mergeConnectedNetworks(var/direction)
 
-	var/fdir = (!direction)? 0 : turn(direction, 180) //flip the direction, to match with the source position on its turf
+	var/fdir = direction ? reverse_dir[direction] : 0 //flip the direction, to match with the source position on its turf
 
 	if(!(d1 == direction || d2 == direction)) //if the cable is not pointed in this direction, do nothing
 		return
@@ -353,26 +406,15 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	. = list()	// this will be a list of all connected power objects
 	var/turf/T
 
-	// Handle up/down cables
-	if(d1 == 11 || d2 == 11)
-		T = GetBelow(src)
-		if(T)
-			. += power_list(T, src, 12, 1)
-
-	if(d1 == 12 || d2 == 12)
-		T = GetAbove(src)
-		if(T)
-			. += power_list(T, src, 11, 1)
-
 	// Handle standard cables in adjacent turfs
 	for(var/cable_dir in list(d1, d2))
-		if(cable_dir == 11 || cable_dir == 12 || cable_dir == 0)
+		if(cable_dir == 0)
 			continue
 		var/reverse = reverse_dir[cable_dir]
-		T = get_step(src, cable_dir)
+		T = get_zstep(src, cable_dir)
 		if(T)
 			for(var/obj/structure/cable/C in T)
-				if((C.d1 && C.d1 == reverse) || (C.d2 && C.d2 == reverse))
+				if(C.d1 == reverse || C.d2 == reverse)
 					. += C
 		if(cable_dir & (cable_dir - 1)) // Diagonal, check for /\/\/\ style cables along cardinal directions
 			for(var/pair in list(NORTH|SOUTH, EAST|WEST))
@@ -380,7 +422,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 				if(T)
 					var/req_dir = cable_dir ^ pair
 					for(var/obj/structure/cable/C in T)
-						if((C.d1 && C.d1 == req_dir) || (C.d2 && C.d2 == req_dir))
+						if(C.d1 == req_dir || C.d2 == req_dir)
 							. += C
 
 	// Handle cables on the same turf as us
@@ -447,6 +489,8 @@ obj/structure/cable/proc/cableColor(var/colorC)
 			if(!P.connect_to_network()) //can't find a node cable on a the turf to connect to
 				P.disconnect_from_network() //remove from current network
 
+	powernet = null // And finally null the powernet var.
+
 ///////////////////////////////////////////////
 // The cable coil object, used for laying cable
 ///////////////////////////////////////////////
@@ -469,12 +513,13 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	w_class = ITEM_SIZE_SMALL
 	throw_speed = 2
 	throw_range = 5
-	matter = list(DEFAULT_WALL_MATERIAL = 50, "glass" = 20)
+	matter = list(MATERIAL_STEEL = 1, MATERIAL_PLASTIC = 1)
 	flags = CONDUCT
 	slot_flags = SLOT_BELT
 	item_state = "coil"
 	attack_verb = list("whipped", "lashed", "disciplined", "flogged")
 	stacktype = /obj/item/stack/cable_coil
+	preloaded_reagents = list("copper" = 8, "plasticide" = 2)
 
 /obj/item/stack/cable_coil/cyborg
 	name = "cable coil synthesizer"
@@ -506,7 +551,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		var/obj/item/organ/external/S = H.organs_by_name[user.targeted_organ]
 
 		if (!S) return
-		if(S.robotic < ORGAN_ROBOT || user.a_intent != I_HELP)
+		if(!BP_IS_ROBOTIC(S) || user.a_intent != I_HELP)
 			return ..()
 
 		if(S.burn_dam)
@@ -515,10 +560,10 @@ obj/structure/cable/proc/cableColor(var/colorC)
 				user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 				user.visible_message(SPAN_DANGER("\The [user] patches some damaged wiring on \the [M]'s [S.name] with \the [src]."))
 			else if(S.open != 2)
-				user << SPAN_DANGER("The damage is far too severe to patch over externally.")
+				to_chat(user, SPAN_DANGER("The damage is far too severe to patch over externally."))
 			return 1
 		else if(S.open != 2)
-			user << SPAN_NOTICE("Nothing to fix!")
+			to_chat(user, SPAN_NOTICE("Nothing to fix!"))
 
 	else
 		return ..()
@@ -546,7 +591,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		final_color = possible_cable_coil_colours["Red"]
 		selected_color = "red"
 	color = final_color
-	user << SPAN_NOTICE("You change \the [src]'s color to [lowertext(selected_color)].")
+	to_chat(user, SPAN_NOTICE("You change \the [src]'s color to [lowertext(selected_color)]."))
 
 /obj/item/stack/cable_coil/proc/update_wclass()
 	if(amount == 1)
@@ -559,11 +604,11 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		return
 
 	if(get_amount() == 1)
-		user << "A short piece of power cable."
+		to_chat(user, "A short piece of power cable.")
 	else if(get_amount() == 2)
-		user << "A piece of power cable."
+		to_chat(user, "A piece of power cable.")
 	else
-		user << "A coil of power cable. There are [get_amount()] lengths of cable in the coil."
+		to_chat(user, "A coil of power cable. There are [get_amount()] lengths of cable in the coil.")
 
 
 /obj/item/stack/cable_coil/verb/make_restraint()
@@ -574,14 +619,14 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	if(ishuman(M) && !M.restrained() && !M.stat && !M.paralysis && ! M.stunned)
 		if(!istype(usr.loc,/turf)) return
 		if(src.amount <= 14)
-			usr << "\red You need at least 15 lengths to make restraints!"
+			to_chat(usr, "\red You need at least 15 lengths to make restraints!")
 			return
 		var/obj/item/weapon/handcuffs/cable/B = new /obj/item/weapon/handcuffs/cable(usr.loc)
 		B.color = color
-		usr << SPAN_NOTICE("You wind some cable together to make some restraints.")
+		to_chat(usr, SPAN_NOTICE("You wind some cable together to make some restraints."))
 		src.use(15)
 	else
-		usr << "\blue You cannot do that."
+		to_chat(usr, "\blue You cannot do that.")
 	..()
 
 /obj/item/stack/cable_coil/cyborg/verb/set_colour()
@@ -628,97 +673,73 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		return
 
 	if(get_amount() < 1) // Out of cable
-		user << "There is no cable left."
+		to_chat(user, "There is no cable left.")
 		return
 
 	if(get_dist(F,user) > 1) // Too far
-		user << "You can't lay cable at a place that far away."
+		to_chat(user, "You can't lay cable at a place that far away.")
 		return
 
 	if(!F.is_plating())		// Ff floor is intact, complain
-		user << "You can't lay cable there unless the floor tiles are removed."
+		to_chat(user, "You can't lay cable there unless the floor tiles are removed.")
 		return
 
+	var/dirn
+
+	if(user.loc == F)
+		dirn = user.dir			// if laying on the tile we're on, lay in the direction we're facing
 	else
-		var/dirn
+		dirn = get_dir(F, user)
 
-		if(user.loc == F)
-			dirn = user.dir			// if laying on the tile we're on, lay in the direction we're facing
-		else
-			dirn = get_dir(F, user)
+	var/end_dir = 0
+	if(istype(F, /turf/simulated/open))
+		if(!can_use(2))
+			to_chat(user, SPAN_WARNING("You don't have enough cable to do this!"))
+			return
+		end_dir = DOWN
 
-		for(var/obj/structure/cable/LC in F)
-			if((LC.d1 == dirn && LC.d2 == 0 ) || ( LC.d2 == dirn && LC.d1 == 0))
-				user << SPAN_WARNING("There's already a cable at that position.")
-				return
-///// Z-Level Stuff
-		// check if the target is open space
-		if(istype(F, /turf/simulated/open))
-			for(var/obj/structure/cable/LC in F)
-				if((LC.d1 == dirn && LC.d2 == 11 ) || ( LC.d2 == dirn && LC.d1 == 11))
-					user << SPAN_WARNING("There's already a cable at that position.")
-					return
+	for(var/obj/structure/cable/LC in F)
+		if((LC.d1 == dirn && LC.d2 == end_dir ) || ( LC.d2 == dirn && LC.d1 == end_dir))
+			to_chat(user, SPAN_WARNING("There's already a cable at that position."))
+			return
 
-			var/obj/structure/cable/C = new(F)
-			var/obj/structure/cable/D = new(GetBelow(F))
-
-			C.cableColor(color)
-
-			C.d1 = 11
-			C.d2 = dirn
-			C.add_fingerprint(user)
-			C.updateicon()
-
-			var/datum/powernet/PN = new()
-			PN.add_cable(C)
-
-			C.mergeConnectedNetworks(C.d2)
-			C.mergeConnectedNetworksOnTurf()
-
-			D.cableColor(color)
-
-			D.d1 = 12
-			D.d2 = 0
-			D.add_fingerprint(user)
-			D.updateicon()
-
-			PN.add_cable(D)
-			D.mergeConnectedNetworksOnTurf()
-
-		// do the normal stuff
-		else
-///// Z-Level Stuff
-			for(var/obj/structure/cable/LC in F)
-				if((LC.d1 == dirn && LC.d2 == 0 ) || ( LC.d2 == dirn && LC.d1 == 0))
-					user << "There's already a cable at that position."
-					return
-
-			var/obj/structure/cable/C = new(F)
-
-			C.cableColor(color)
-
-			//set up the new cable
-			C.d1 = 0 //it's a O-X node cable
-			C.d2 = dirn
-			C.add_fingerprint(user)
-			C.updateicon()
-
-			//create a new powernet with the cable, if needed it will be merged later
-			var/datum/powernet/PN = new()
-			PN.add_cable(C)
-
-			C.mergeConnectedNetworks(C.d2) //merge the powernet with adjacents powernets
-			C.mergeConnectedNetworksOnTurf() //merge the powernet with on turf powernets
-
-			if(C.d2 & (C.d2 - 1))// if the cable is layed diagonally, check the others 2 possible directions
-				C.mergeDiagonalsNetworks(C.d2)
+	put_cable(F, user, end_dir, dirn)
+	if(end_dir == DOWN)
+		put_cable(GetBelow(F), user, UP, 0)
+		to_chat(user, "You slide some cable downward.")
 
 
-			use(1)
-			if (C.shock(user, 50))
-				if (prob(50)) //fail
-					new/obj/item/stack/cable_coil(C.loc, 1, C.color)
-					qdel(C)
+/obj/item/stack/cable_coil/proc/put_cable(turf/simulated/F, mob/user, d1, d2)
+	if(!istype(F))
+		return
+
+	var/obj/structure/cable/C = new(F)
+	C.cableColor(color)
+	C.d1 = d1
+	C.d2 = d2
+	C.add_fingerprint(user)
+	C.updateicon()
+
+	//create a new powernet with the cable, if needed it will be merged later
+	var/datum/powernet/PN = new()
+	PN.add_cable(C)
+
+	C.mergeConnectedNetworks(C.d1) //merge the powernets...
+	C.mergeConnectedNetworks(C.d2) //...in the two new cable directions
+	C.mergeConnectedNetworksOnTurf()
+
+	if(C.d1 & (C.d1 - 1))// if the cable is layed diagonally, check the others 2 possible directions
+		C.mergeDiagonalsNetworks(C.d1)
+
+	if(C.d2 & (C.d2 - 1))// if the cable is layed diagonally, check the others 2 possible directions
+		C.mergeDiagonalsNetworks(C.d2)
+
+	use(1)
+	if (C.shock(user, 50))
+		if (prob(50)) //fail
+			new/obj/item/stack/cable_coil(C.loc, 1, C.color)
+			qdel(C)
+
 
 // called when cable_coil is click on an installed obj/cable
 // or click on a turf that already contains a "node" cable
@@ -733,7 +754,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		return
 
 	if(get_dist(C, user) > 1)		// make sure it's close enough
-		user << "You can't lay cable at a place that far away."
+		to_chat(user, "You can't lay cable at a place that far away.")
 		return
 
 	if(U == T) //if clicked on the turf we're standing on, try to put a cable in the direction we're facing
@@ -745,7 +766,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	// one end of the clicked cable is pointing towards us
 	if(C.d1 == dirn || C.d2 == dirn)
 		if(!U.is_plating())						// can't place a cable if the floor is complete
-			user << "You can't lay cable there unless the floor tiles are removed."
+			to_chat(user, "You can't lay cable there unless the floor tiles are removed.")
 			return
 		else
 			// cable is pointing at us, we're standing on an open tile
@@ -755,34 +776,9 @@ obj/structure/cable/proc/cableColor(var/colorC)
 
 			for(var/obj/structure/cable/LC in U)		// check to make sure there's not a cable there already
 				if(LC.d1 == fdirn || LC.d2 == fdirn)
-					user << "There's already a cable at that position."
+					to_chat(user, "There's already a cable at that position.")
 					return
-
-			var/obj/structure/cable/NC = new(U)
-			NC.cableColor(color)
-
-			NC.d1 = 0
-			NC.d2 = fdirn
-			NC.add_fingerprint()
-			NC.updateicon()
-
-			//create a new powernet with the cable, if needed it will be merged later
-			var/datum/powernet/newPN = new()
-			newPN.add_cable(NC)
-
-			NC.mergeConnectedNetworks(NC.d2) //merge the powernet with adjacents powernets
-			NC.mergeConnectedNetworksOnTurf() //merge the powernet with on turf powernets
-
-			if(NC.d2 & (NC.d2 - 1))// if the cable is layed diagonally, check the others 2 possible directions
-				NC.mergeDiagonalsNetworks(NC.d2)
-
-			use(1)
-
-			if (NC.shock(user, 50))
-				if (prob(50)) //fail
-					new/obj/item/stack/cable_coil(NC.loc, 1, NC.color)
-					qdel(NC)
-
+			put_cable(U,user,0,fdirn)
 			return
 
 	// exisiting cable doesn't point at our position, so see if it's a stub
@@ -801,7 +797,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 			if(LC == C)			// skip the cable we're interacting with
 				continue
 			if((LC.d1 == nd1 && LC.d2 == nd2) || (LC.d1 == nd2 && LC.d2 == nd1) )	// make sure no cable matches either direction
-				user << "There's already a cable at that position."
+				to_chat(user, "There's already a cable at that position.")
 				return
 
 

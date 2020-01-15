@@ -9,9 +9,8 @@
 		"a jetpack" = /obj/item/weapon/tank/jetpack,
 		"a captain's jumpsuit" = /obj/item/clothing/under/rank/captain,
 		"a functional AI" = /obj/item/device/aicard,
-		"a pair of magboots" = /obj/item/clothing/shoes/magboots,
+		"the Technomancer Exultant's advanced voidsuit control module" = /obj/item/weapon/rig/ce,
 		"the station blueprints" = /obj/item/blueprints,
-		"a nasa voidsuit" = /obj/item/clothing/suit/space/void,
 		"28 moles of plasma (full tank)" = /obj/item/weapon/tank,
 		"a sample of slime extract" = /obj/item/slime_extract,
 		"a piece of corgi meat" = /obj/item/weapon/reagent_containers/food/snacks/meat/corgi,
@@ -23,11 +22,12 @@
 		"the hypospray" = /obj/item/weapon/reagent_containers/hypospray,
 		"the captain's pinpointer" = /obj/item/weapon/pinpointer,
 		"an ablative armor vest" = /obj/item/clothing/suit/armor/laserproof,
+		"an Ironhammer hardsuit control module" = /obj/item/weapon/rig/combat/ironhammer
 	)
 
 	var/global/possible_items_special[] = list(
 		"nuclear gun" = /obj/item/weapon/gun/energy/gun/nuclear,
-		"diamond drill" = /obj/item/weapon/pickaxe/diamonddrill,
+		"diamond drill" = /obj/item/weapon/tool/pickaxe/diamonddrill,
 		"bag of holding" = /obj/item/weapon/storage/backpack/holding,
 		"hyper-capacity cell" = /obj/item/weapon/cell/large/hyper,
 		"10 diamonds" = /obj/item/stack/material/diamond,
@@ -36,22 +36,22 @@
 	)
 
 
-/datum/objective/steal/proc/steal_target(var/item_name)
+/datum/objective/steal/set_target(var/item_name)
 	target_name = item_name
 	steal_target = possible_items[target_name]
 	if(!steal_target)
 		steal_target = possible_items_special[target_name]
-	explanation_text = "Steal [target_name]."
+	update_explanation()
 	return steal_target
 
-
 /datum/objective/steal/find_target()
-	return steal_target(pick(possible_items))
+	var/list/valid_items = possible_items - get_owner_targets()
+	return set_target(pick(valid_items))
 
 
 /datum/objective/steal/proc/select_target(var/mob/user)
 	var/list/possible_items_all = possible_items + possible_items_special
-	var/new_target = input(user, "Select target:", "Objective target", steal_target) as null|anything in possible_items_all
+	var/new_target = input(user, "Select target:", "Objective target", target_name) as null|anything in possible_items_all
 	if(!new_target)
 		return
 
@@ -59,11 +59,13 @@
 	return steal_target
 
 /datum/objective/steal/check_completion()
-	if(!steal_target || !owner.current)
+	if (failed)
 		return FALSE
-	if(!isliving(owner.current))
+	if(!steal_target)
 		return FALSE
-	var/list/all_items = owner.current.get_contents()
+	if(owner && !isliving(owner.current))
+		return FALSE
+	var/list/all_items = get_owner_inventory()
 	switch(target_name)
 		if("28 moles of plasma (full tank)", "10 diamonds", "50 gold bars", "25 refined uranium bars")
 			var/target_amount = text2num(target_name)//Non-numbers are ignored.
@@ -109,8 +111,15 @@
 /datum/objective/steal/get_panel_entry()
 	return "Steal <a href='?src=\ref[src];switch_item=1'>[target_name]</a>."
 
+/datum/objective/steal/update_explanation()
+	explanation_text = "Steal [target_name]."
+
 /datum/objective/steal/Topic(href, href_list)
 	if(..())
 		return TRUE
 	if(href_list["switch_item"])
 		select_target(usr)
+		antag.antagonist_panel()
+
+/datum/objective/steal/get_target()
+	return target_name

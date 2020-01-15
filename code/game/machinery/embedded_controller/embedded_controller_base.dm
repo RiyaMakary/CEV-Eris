@@ -10,9 +10,8 @@
 	var/on = 1
 
 obj/machinery/embedded_controller/radio/Destroy()
-	if(radio_controller)
-		radio_controller.remove_object(src,frequency)
-	..()
+	SSradio.remove_object(src,frequency)
+	. = ..()
 
 /obj/machinery/embedded_controller/proc/post_signal(datum/signal/signal, comm_line)
 	return 0
@@ -22,18 +21,15 @@ obj/machinery/embedded_controller/radio/Destroy()
 
 	if(program)
 		program.receive_signal(signal, receive_method, receive_param)
-			//spawn(5) program.process() //no, program.process sends some signals and machines respond and we here again and we lag -rastaf0
+			//spawn(5) program.Process() //no, program.process sends some signals and machines respond and we here again and we lag -rastaf0
 
-/obj/machinery/embedded_controller/process()
+/obj/machinery/embedded_controller/Process()
 	if(program)
-		program.process()
+		program.Process()
 
 	update_icon()
 
-/obj/machinery/embedded_controller/attack_ai(mob/user as mob)
-	src.ui_interact(user)
-
-/obj/machinery/embedded_controller/attack_hand(mob/user as mob)
+/obj/machinery/embedded_controller/attack_hand(mob/user)
 
 	if(!user.IsAdvancedToolUser())
 		return 0
@@ -57,7 +53,8 @@ obj/machinery/embedded_controller/radio/Destroy()
 	var/datum/radio_frequency/radio_connection
 	unacidable = 1
 
-/obj/machinery/embedded_controller/radio/initialize()
+/obj/machinery/embedded_controller/radio/Initialize()
+	. = ..()
 	set_frequency(frequency)
 
 /obj/machinery/embedded_controller/radio/update_icon()
@@ -78,6 +75,6 @@ obj/machinery/embedded_controller/radio/Destroy()
 		qdel(signal)
 
 /obj/machinery/embedded_controller/radio/proc/set_frequency(new_frequency)
-	radio_controller.remove_object(src, frequency)
+	SSradio.remove_object(src, frequency)
 	frequency = new_frequency
-	radio_connection = radio_controller.add_object(src, frequency, radio_filter)
+	radio_connection = SSradio.add_object(src, frequency, radio_filter)

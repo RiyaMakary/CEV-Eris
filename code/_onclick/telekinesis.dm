@@ -67,8 +67,9 @@ var/const/tk_maxrange = 15
 	icon_state = "2"
 	flags = NOBLUDGEON
 	//item_state = null
-	w_class = ITEM_SIZE_NO_CONTAINER
-	layer = 20
+	w_class = ITEM_SIZE_COLOSSAL
+	layer = ABOVE_HUD_LAYER
+	plane = ABOVE_HUD_PLANE
 
 	var/last_throw = 0
 	var/atom/movable/focus = null
@@ -107,20 +108,13 @@ var/const/tk_maxrange = 15
 		return
 
 	var/d = get_dist(user, target)
-	if(focus) d = max(d, get_dist(user, focus)) // whichever is further
-	switch(d)
-		if(0)
-			;
-		if(1 to 5) // not adjacent may mean blocked by window
-			if(!proximity)
-				user.setMoveCooldown(2)
-		if(5 to 7)
-			user.setMoveCooldown(5)
-		if(8 to tk_maxrange)
-			user.setMoveCooldown(10)
-		else
-			user << SPAN_NOTICE("Your mind won't reach that far.")
-			return
+	if(focus)
+		d = max(d, get_dist(user, focus)) // whichever is further
+	if (d == 0)
+		return
+	if (d > tk_maxrange)
+		to_chat(user, SPAN_NOTICE("Your mind won't reach that far."))
+		return
 
 	if(!focus)
 		focus_object(target, user)
@@ -160,10 +154,15 @@ var/const/tk_maxrange = 15
 /obj/item/tk_grab/proc/apply_focus_overlay()
 	if(!focus)
 		return
-	PoolOrNew(/obj/effect/overlay/pulse, list(get_turf(focus), 5))
+	new /obj/effect/overlay/pulse(get_turf(focus), 5)
 
 /obj/item/tk_grab/update_icon()
 	overlays.Cut()
-	if(focus && focus.icon && focus.icon_state)
-		overlays += icon(focus.icon, focus.icon_state)
-	return
+	if(focus)
+		var/old_layer = focus.layer
+		var/old_plane = focus.plane
+		focus.layer = layer+0.01
+		focus.set_plane(ABOVE_HUD_PLANE)
+		overlays += focus //this is kind of ick, but it's better than using icon()
+		focus.layer = old_layer
+		focus.set_plane(old_plane)

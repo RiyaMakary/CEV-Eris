@@ -1,12 +1,12 @@
 /mob/living/carbon/human/proc/monkeyize()
-	if (transforming)
+	if (HAS_TRANSFORMATION_MOVEMENT_HANDLER(src))
 		return
 	for(var/obj/item/W in src)
 		if (W==w_uniform) // will be torn
 			continue
 		drop_from_inventory(W)
 	regenerate_icons()
-	transforming = 1
+	ADD_TRANSFORMATION_MOVEMENT_HANDLER(src)
 	canmove = 0
 	stunned = 1
 	icon = null
@@ -14,6 +14,8 @@
 	for(var/t in organs)
 		qdel(t)
 	var/atom/movable/overlay/animation = new /atom/movable/overlay( loc )
+	animation.plane = plane
+	animation.layer = ABOVE_MOB_LAYER
 	animation.icon_state = "blank"
 	animation.icon = 'icons/mob/mob.dmi'
 	animation.master = src
@@ -21,9 +23,10 @@
 	sleep(48)
 	//animation = null
 
-	transforming = 0
+	DEL_TRANSFORMATION_MOVEMENT_HANDLER(src)
 	stunned = 0
-	update_canmove()
+
+	update_lying_buckled_and_verb_status()
 	invisibility = initial(invisibility)
 
 	if(!species.primitive_form) //If the creature in question has no primitive set, this is going to be messy.
@@ -32,13 +35,13 @@
 
 	for(var/obj/item/W in src)
 		drop_from_inventory(W)
+
 	set_species(species.primitive_form)
 	dna.SetSEState(MONKEYBLOCK,1)
 	dna.SetSEValueRange(MONKEYBLOCK,0xDAC, 0xFFF)
 
-	src << "<B>You are now [species.name]. </B>"
+	to_chat(src, "<B>You are now [species.name]. </B>")
 	qdel(animation)
-
 	return src
 
 /mob/new_player/AIize()
@@ -46,7 +49,7 @@
 	return ..()
 
 /mob/living/carbon/human/AIize(move=1) // 'move' argument needs defining here too because BYOND is dumb
-	if (transforming)
+	if (HAS_TRANSFORMATION_MOVEMENT_HANDLER(src))
 		return
 	for(var/t in organs)
 		qdel(t)
@@ -54,19 +57,20 @@
 	return ..(move)
 
 /mob/living/carbon/AIize()
-	if (transforming)
+	if (HAS_TRANSFORMATION_MOVEMENT_HANDLER(src))
 		return
 	for(var/obj/item/W in src)
 		drop_from_inventory(W)
-	transforming = 1
+	ADD_TRANSFORMATION_MOVEMENT_HANDLER(src)
 	canmove = 0
 	icon = null
 	invisibility = 101
 	return ..()
 
 /mob/proc/AIize(move=1)
+
 	if(client)
-		src << sound(null, repeat = 0, wait = 0, volume = 85, channel = 1) // stop the jams for AIs
+		sound_to(src, sound(null, repeat = 0, wait = 0, volume = 85, channel = GLOB.lobby_sound_channel))
 	var/mob/living/silicon/ai/O = new (loc, base_law_type,,1)//No MMI but safety is in effect.
 	O.invisibility = 0
 	O.aiRestorePowerRoutine = 0
@@ -79,18 +83,18 @@
 
 	if(move)
 		var/obj/new_location = null
-		for(var/turf/sloc in getSpawnLocations("AI"))
+		for(var/turf/sloc in get_datum_spawn_locations("AI"))
 			if(locate(/obj/structure/AIcore) in sloc)
 				continue
 			new_location = sloc
 		if (!new_location)
-			for(var/turf/sloc in getSpawnLocations("triai"))
+			for(var/turf/sloc in get_datum_spawn_locations("triai"))
 				if(locate(/obj/structure/AIcore) in sloc)
 					continue
 				new_location = sloc
 		if (!new_location)
-			O << "Oh god sorry we can't find an unoccupied AI spawn location, so we're spawning you on top of someone."
-			new_location = pickSpawnLocation("AI", FALSE)
+			to_chat(O, "Oh god sorry we can't find an unoccupied AI spawn location, so we're spawning you on top of someone.")
+			new_location = pick_spawn_location("AI")
 
 		O.forceMove(new_location)
 
@@ -105,17 +109,19 @@
 
 //human -> robot
 /mob/living/carbon/human/proc/Robotize()
-	if (transforming)
+	if (HAS_TRANSFORMATION_MOVEMENT_HANDLER(src))
 		return
+	for(var/t in organs)
+		qdel(t)
 	for(var/obj/item/W in src)
 		drop_from_inventory(W)
+		qdel(W)
 	regenerate_icons()
-	transforming = 1
+	ADD_TRANSFORMATION_MOVEMENT_HANDLER(src)
 	canmove = 0
 	icon = null
 	invisibility = 101
-	for(var/t in organs)
-		qdel(t)
+
 
 	var/mob/living/silicon/robot/O = new /mob/living/silicon/robot( loc )
 
@@ -130,7 +136,7 @@
 
 	if(mind)		//TODO
 		mind.transfer_to(O)
-		if(O.mind.assigned_role == "Cyborg")
+		if(O.mind.assigned_role == "Robot")
 			O.mind.original = O
 		else if(mind && mind.antagonist.len)
 			O.mind.store_memory("In case you look at this after being borged, the objectives are only here until I find a way to make them not show up for you, as I can't simply delete them without screwing up round-end reporting. --NeoFite")
@@ -138,8 +144,8 @@
 		O.key = key
 
 	O.loc = loc
-	O.job = "Cyborg"
-	if(O.mind.assigned_role == "Cyborg")
+	O.job = "Robot"
+	if(O.mind.assigned_role == "Robot")
 		O.mmi = new /obj/item/device/mmi(O)
 		O.mmi.transfer_identity(src)
 
@@ -151,12 +157,12 @@
 	return O
 
 /mob/living/carbon/human/proc/slimeize(adult as num, reproduce as num)
-	if (transforming)
+	if (HAS_TRANSFORMATION_MOVEMENT_HANDLER(src))
 		return
 	for(var/obj/item/W in src)
 		drop_from_inventory(W)
 	regenerate_icons()
-	transforming = 1
+	ADD_TRANSFORMATION_MOVEMENT_HANDLER(src)
 	canmove = 0
 	icon = null
 	invisibility = 101
@@ -180,17 +186,17 @@
 		else
 	new_slime.key = key
 
-	new_slime << "<B>You are now a slime. Skreee!</B>"
+	to_chat(new_slime, "<B>You are now a slime. Skreee!</B>")
 	qdel(src)
 	return
 
 /mob/living/carbon/human/proc/corgize()
-	if (transforming)
+	if (HAS_TRANSFORMATION_MOVEMENT_HANDLER(src))
 		return
 	for(var/obj/item/W in src)
 		drop_from_inventory(W)
 	regenerate_icons()
-	transforming = 1
+	ADD_TRANSFORMATION_MOVEMENT_HANDLER(src)
 	canmove = 0
 	icon = null
 	invisibility = 101
@@ -201,7 +207,7 @@
 	new_corgi.a_intent = I_HURT
 	new_corgi.key = key
 
-	new_corgi << "<B>You are now a Corgi. Yap Yap!</B>"
+	to_chat(new_corgi, "<B>You are now a Corgi. Yap Yap!</B>")
 	qdel(src)
 	return
 
@@ -211,7 +217,7 @@
 	var/mobpath = input("Which type of mob should [src] turn into?", "Choose a type") in mobtypes
 
 	if(!safe_animal(mobpath))
-		usr << "\red Sorry but this mob type is currently unavailable."
+		to_chat(usr, "\red Sorry but this mob type is currently unavailable.")
 		return
 
 	if(transforming)
@@ -220,7 +226,7 @@
 		drop_from_inventory(W)
 
 	regenerate_icons()
-	transforming = 1
+	ADD_TRANSFORMATION_MOVEMENT_HANDLER(src)
 	canmove = 0
 	icon = null
 	invisibility = 101
@@ -234,7 +240,7 @@
 	new_mob.a_intent = I_HURT
 
 
-	new_mob << "You suddenly feel more... animalistic."
+	to_chat(new_mob, "You suddenly feel more... animalistic.")
 	spawn()
 		qdel(src)
 	return
@@ -245,14 +251,14 @@
 	var/mobpath = input("Which type of mob should [src] turn into?", "Choose a type") in mobtypes
 
 	if(!safe_animal(mobpath))
-		usr << "\red Sorry but this mob type is currently unavailable."
+		to_chat(usr, "\red Sorry but this mob type is currently unavailable.")
 		return
 
 	var/mob/new_mob = new mobpath(src.loc)
 
 	new_mob.key = key
 	new_mob.a_intent = I_HURT
-	new_mob << "You feel more... animalistic"
+	to_chat(new_mob, "You feel more... animalistic")
 
 	qdel(src)
 
@@ -292,6 +298,3 @@
 
 	//Not in here? Must be untested!
 	return 0
-
-
-

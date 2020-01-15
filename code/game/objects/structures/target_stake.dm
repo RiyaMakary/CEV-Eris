@@ -9,11 +9,11 @@
 	flags = CONDUCT
 	var/obj/item/target/pinned_target // the current pinned target
 
-	Move()
+	Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 		..()
 		// Move the pinned target along with the stake
 		if(pinned_target in view(3, src))
-			pinned_target.loc = loc
+			pinned_target.forceMove(loc, glide_size_override=glide_size_override)
 
 		else // Sanity check: if the pinned target can't be found in immediate view
 			pinned_target = null
@@ -31,7 +31,7 @@
 			W.loc = loc
 			W.layer = 3.1
 			pinned_target = W
-			user << "You slide the target into the stake."
+			to_chat(user, "You slide the target into the stake.")
 		return
 
 	attack_hand(mob/user as mob)
@@ -45,9 +45,9 @@
 			if(ishuman(user))
 				if(!user.get_active_hand())
 					user.put_in_hands(pinned_target)
-					user << "You take the target out of the stake."
+					to_chat(user, "You take the target out of the stake.")
 			else
 				pinned_target.loc = get_turf(user)
-				user << "You take the target out of the stake."
+				to_chat(user, "You take the target out of the stake.")
 
 			pinned_target = null

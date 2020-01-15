@@ -14,37 +14,32 @@
 /datum/export/screwdriver
 	cost = 2
 	unit_name = "screwdriver"
-	export_types = list(/obj/item/weapon/screwdriver)
+	export_types = list(/obj/item/weapon/tool/screwdriver)
 	include_subtypes = FALSE
 
 /datum/export/wrench
 	cost = 2
 	unit_name = "wrench"
-	export_types = list(/obj/item/weapon/wrench)
+	export_types = list(/obj/item/weapon/tool/wrench)
 
 /datum/export/crowbar
 	cost = 2
 	unit_name = "crowbar"
-	export_types = list(/obj/item/weapon/crowbar)
+	export_types = list(/obj/item/weapon/tool/crowbar)
 
 /datum/export/wirecutters
 	cost = 2
 	unit_name = "pair"
 	message = "of wirecutters"
-	export_types = list(/obj/item/weapon/wirecutters)
+	export_types = list(/obj/item/weapon/tool/wirecutters)
 
 
 // Welding tools
 /datum/export/weldingtool
 	cost = 5
 	unit_name = "welding tool"
-	export_types = list(/obj/item/weapon/weldingtool)
+	export_types = list(/obj/item/weapon/tool/weldingtool)
 	include_subtypes = FALSE
-
-/datum/export/weldingtool/industrial
-	cost = 10
-	unit_name = "industrial welding tool"
-	export_types = list(/obj/item/weapon/weldingtool/largetank, /obj/item/weapon/weldingtool/hugetank)
 
 
 // Fire extinguishers
@@ -70,7 +65,7 @@
 /datum/export/analyzer
 	cost = 5
 	unit_name = "analyzer"
-	export_types = list(/obj/item/device/analyzer)
+	export_types = list(/obj/item/device/scanner/gas)
 
 /datum/export/analyzer/t_scanner
 	cost = 10
@@ -86,11 +81,11 @@
 
 // High-tech tools.
 /datum/export/rcd
-	cost = 100 // 15 metal -> 75 credits, +25 credits for production
+	cost = 2000
 	unit_name = "rapid construction device"
 	export_types = list(/obj/item/weapon/rcd)
 
 /datum/export/rcd_ammo
-	cost = 15 // 1.5 metal, 1 glass -> 12.5 credits, +2.5 credits
+	cost = 300
 	unit_name = "compressed matter cardridge"
 	export_types = list(/obj/item/weapon/rcd_ammo)

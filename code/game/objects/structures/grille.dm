@@ -1,12 +1,12 @@
 /obj/structure/grille
-	name = "grille"
 	desc = "A flimsy lattice of metal rods, with screws to secure it to the floor."
+	name = "grille"
 	icon = 'icons/obj/structures.dmi'
 	icon_state = "grille"
 	density = 1
 	anchored = 1
 	flags = CONDUCT
-	layer = 2.9
+	layer = BELOW_OBJ_LAYER
 	explosion_resistance = 1
 	var/health = 50
 	var/destroyed = 0
@@ -92,23 +92,38 @@
 	src.health -= damage*0.2
 	spawn(0) healthcheck() //spawn to make sure we return properly if the grille is deleted
 
-/obj/structure/grille/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if(iswirecutter(W))
-		if(!shock(user, 100))
-			playsound(loc, 'sound/items/Wirecutter.ogg', 100, 1)
-			PoolOrNew(/obj/item/stack/rods, list(get_turf(src), destroyed ? 1 : 2))
-			qdel(src)
-	else if((isscrewdriver(W)) && (istype(loc, /turf/simulated) || anchored))
-		if(!shock(user, 90))
-			playsound(loc, 'sound/items/Screwdriver.ogg', 100, 1)
-			anchored = !anchored
-			user.visible_message("<span class='notice'>[user] [anchored ? "fastens" : "unfastens"] the grille.</span>", \
-								 "<span class='notice'>You have [anchored ? "fastened the grille to" : "unfastened the grill from"] the floor.</span>")
+/obj/structure/grille/attackby(obj/item/weapon/I, mob/user)
+
+	var/list/usable_qualities = list(QUALITY_WIRE_CUTTING)
+	if(anchored)
+		usable_qualities.Add(QUALITY_SCREW_DRIVING)
+
+	var/tool_type = I.get_tool_type(user, usable_qualities, src)
+	switch(tool_type)
+
+		if(QUALITY_WIRE_CUTTING)
+			if(!shock(user, 100))
+				if(I.use_tool(user, src, WORKTIME_NEAR_INSTANT, tool_type, FAILCHANCE_VERY_EASY, required_stat = STAT_MEC))
+					new /obj/item/stack/rods(get_turf(src), destroyed ? 1 : 2)
+					qdel(src)
+					return
+			return
+
+		if(QUALITY_SCREW_DRIVING)
+			if(anchored)
+				if(I.use_tool(user, src, WORKTIME_FAST, tool_type, FAILCHANCE_VERY_EASY, required_stat = STAT_MEC))
+					anchored = !anchored
+					user.visible_message("<span class='notice'>[user] [anchored ? "fastens" : "unfastens"] the grille.</span>", \
+										 "<span class='notice'>You have [anchored ? "fastened the grille to" : "unfastened the grill from"] the floor.</span>")
+					return
+			return
+
+		if(ABORT_CHECK)
 			return
 
 //window placing begin //TODO CONVERT PROPERLY TO MATERIAL DATUM
-	else if(istype(W,/obj/item/stack/material))
-		var/obj/item/stack/material/ST = W
+	if(istype(I,/obj/item/stack/material))
+		var/obj/item/stack/material/ST = I
 		if(!ST.material.created_window)
 			return 0
 
@@ -128,36 +143,36 @@
 					else
 						dir_to_set = 4
 			else
-				user << SPAN_NOTICE("You can't reach.")
+				to_chat(user, SPAN_NOTICE("You can't reach."))
 				return //Only works for cardinal direcitons, diagonals aren't supposed to work like this.
 		for(var/obj/structure/window/WINDOW in loc)
 			if(WINDOW.dir == dir_to_set)
-				user << SPAN_NOTICE("There is already a window facing this way there.")
+				to_chat(user, SPAN_NOTICE("There is already a window facing this way there."))
 				return
-		user << SPAN_NOTICE("You start placing the window.")
+		to_chat(user, SPAN_NOTICE("You start placing the window."))
 		if(do_after(user,20,src))
 			for(var/obj/structure/window/WINDOW in loc)
 				if(WINDOW.dir == dir_to_set)//checking this for a 2nd time to check if a window was made while we were waiting.
-					user << SPAN_NOTICE("There is already a window facing this way there.")
+					to_chat(user, SPAN_NOTICE("There is already a window facing this way there."))
 					return
 
 			var/wtype = ST.material.created_window
 			if (ST.use(1))
 				var/obj/structure/window/WD = new wtype(loc, dir_to_set, 1)
-				user << SPAN_NOTICE("You place the [WD] on [src].")
+				to_chat(user, SPAN_NOTICE("You place the [WD] on [src]."))
 				WD.update_icon()
 		return
 //window placing end
 
-	else if(!(W.flags & CONDUCT) || !shock(user, 70))
+	else if(!(I.flags & CONDUCT) || !shock(user, 70))
 		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 		user.do_attack_animation(src)
 		playsound(loc, 'sound/effects/grillehit.ogg', 80, 1)
-		switch(W.damtype)
+		switch(I.damtype)
 			if("fire")
-				health -= W.force
+				health -= I.force
 			if("brute")
-				health -= W.force * 0.1
+				health -= I.force * 0.1
 	healthcheck()
 	..()
 	return
@@ -169,11 +184,11 @@
 			density = 0
 			destroyed = 1
 			update_icon()
-			PoolOrNew(/obj/item/stack/rods, get_turf(src))
+			new /obj/item/stack/rods(get_turf(src))
 
 		else
 			if(health <= -6)
-				PoolOrNew(/obj/item/stack/rods, get_turf(src))
+				new /obj/item/stack/rods(get_turf(src))
 				qdel(src)
 				return
 	return
@@ -231,7 +246,7 @@
 	health = max(0, health - tforce)
 	if(health <= 0)
 		destroyed=1
-		PoolOrNew(/obj/item/stack/rods, get_turf(src))
+		new /obj/item/stack/rods(get_turf(src))
 		density=0
 		update_icon()
 
@@ -255,3 +270,11 @@
 	if(air_group)
 		return 0 //Make sure air doesn't drain
 	..()
+
+/obj/structure/grille/get_fall_damage(var/turf/from, var/turf/dest)
+	var/damage = health * 0.4
+
+	if (from && dest)
+		damage *= abs(from.z - dest.z)
+
+	return damage

@@ -36,13 +36,16 @@
 	var/mob/living/original	//TODO: remove.not used in any meaningful way ~Carn. First I'll need to tweak the way silicon-mobs handle minds.
 	var/active = FALSE
 
+
+
 	var/memory
 
 	var/assigned_role
-//	var/special_role
+	var/role_alt_title
 	var/list/antagonist = list()
 
 	var/datum/job/assigned_job
+
 
 	var/has_been_rev = FALSE	//Tracks if this mind has been a rev or not
 
@@ -59,22 +62,41 @@
 	var/list/known_connections //list of known (RNG) relations between people
 	var/gen_relations_info
 
+	var/list/initial_email_login = list("login" = "", "password" = "")
+
+	var/datum/stat_holder/stats = null
+
+	var/last_activity = 0
+
+	var/list/knownCraftRecipes = list()
+	/*
+		The world time when this mind was last in a mob, controlled by a client which did something.
+		Only updated once per minute, set by the inactivity subsystem
+		If this is 0, the mind has never had a cliented mob
+	*/
+
+	var/creation_time = 0 //World time when this datum was New'd. Useful to tell how long since a character spawned
+
 /datum/mind/New(var/key)
 	src.key = key
+	creation_time = world.time
 	..()
 
 /datum/mind/proc/transfer_to(mob/living/new_character)
 	if(!istype(new_character))
-		world.log << "## DEBUG: transfer_to(): Some idiot has tried to transfer_to() a non mob/living mob. Please inform Carn"
+		log_world("## DEBUG: transfer_to(): Some idiot has tried to transfer_to() a non mob/living mob. Please inform Carn")
 	if(current)					//remove ourself from our old body's mind variable
 		if(changeling)
 			current.remove_changeling_powers()
 			current.verbs -= /datum/changeling/proc/EvolutionMenu
 		current.mind = null
 
-		nanomanager.user_transferred(current, new_character) // transfer active NanoUI instances to new user
+		SSnano.user_transferred(current, new_character) // transfer active NanoUI instances to new user
 	if(new_character.mind)		//remove any mind currently in our new body's mind variable
 		new_character.mind.current = null
+
+	if(current.client)
+		current.client.destroy_UI()
 
 	current = new_character		//link ourself to our new body
 	new_character.mind = src	//and link our new body to ourself
@@ -84,6 +106,9 @@
 
 	if(active)
 		new_character.key = key		//now transfer the key to link the client to our new body
+		last_activity = world.time
+	if(new_character.client)
+		new_character.client.create_UI(new_character.type)
 
 /datum/mind/proc/store_memory(new_text)
 	memory += "[new_text]<BR>"
@@ -101,10 +126,10 @@
 			output += "<br><b>Your [A.role_text] objectives:</b>"
 		output += "[A.print_objectives(FALSE)]"
 
-	recipient << browse(output, "window=memory")
+	recipient << browse(russian_to_utf8(output), "window=memory")
 
 /datum/mind/proc/edit_memory()
-	if(!ticker || ticker.current_state != GAME_STATE_PLAYING)
+	if(SSticker.current_state != GAME_STATE_PLAYING)
 		alert("Not before round-start!", "Alert")
 		return
 
@@ -114,15 +139,18 @@
 	out += "<hr>"
 	out += "Special roles:<br><table>"
 
-	out += "<b>Make_antagonist: </b>"
-	for(var/antag in antag_types)
-		var/antag_name = selectable_antag_types[antag] ? selectable_antag_types[antag] : "<font color='red'>[antag]</font>"
-		out += "<a href='?src=\ref[src];add_antagonist=[antag]'>[antag_name]</a>  "
+	out += "<b>Make_antagonist: </b><br>"
+	for(var/A in GLOB.all_antag_selectable_types)
+		var/datum/antagonist/antag = GLOB.all_antag_selectable_types[A]
+		var/antag_name = (antag.bantype in GLOB.all_antag_selectable_types) ? antag.bantype : "<font color='red'>[antag.bantype]</font>"
+		out += "<a href='?src=\ref[src];add_antagonist=[antag.bantype]'>[antag_name]</a><br>"
 	out += "<br>"
 
 	for(var/datum/antagonist/antag in antagonist)
 		out += "<br><b>[antag.role_text]</b> <a href='?src=\ref[antag]'>\[EDIT\]</a> <a href='?src=\ref[antag];remove_antagonist=1'>\[DEL\]</a>"
 	out += "</table><hr>"
+	out += "<br>[memory]"
+	out += "<br><a href='?src=\ref[src];edit_memory=1'>"
 	usr << browse(out, "window=edit_memory[src]")
 
 /datum/mind/Topic(href, href_list)
@@ -130,32 +158,39 @@
 		return
 
 	if(href_list["add_antagonist"])
-		var/t = antag_types[href_list["add_antagonist"]]
-		var/datum/antagonist/antag = new t
+		var/datum/antagonist/antag = GLOB.all_antag_types[href_list["add_antagonist"]]
 		if(antag)
 			var/ok = FALSE
 			if(antag.outer && active)
 				var/answer = alert("[antag.role_text] is outer antagonist. [name] will be taken from the current mob and spawned as antagonist. Continue?","No","Yes")
-				ok = answer == "Yes"
+				ok = (answer == "Yes")
 			else
-				var/answer = alert("Are you sure you want to make [name] the [antag.role_text]","No","Yes")
-				ok = answer == "Yes"
+				var/answer = alert("Are you sure you want to make [name] the [antag.role_text]","Confirmation","No","Yes")
+				ok = (answer == "Yes")
 
 			if(!ok)
 				return
 
 			if(antag.outer)
+				//Outer antags are created from ghosts, we must make a ghost first
+				var/mob/observer/ghost/ghost = current.ghostize(FALSE)
+				antag.create_from_ghost(ghost, announce = FALSE)
+				qdel(current) //Delete our old body
+				antag.greet()
 
 			else
 				if(antag.create_antagonist(src))
 					log_admin("[key_name_admin(usr)] made [key_name(src)] into a [antag.role_text].")
 				else
-					usr << SPAN_WARNING("[src] could not be made into a [antag.role_text]!")
+					to_chat(usr, SPAN_WARNING("[src] could not be made into a [antag.role_text]!"))
 
 	else if(href_list["role_edit"])
 		var/new_role = input("Select new role", "Assigned role", assigned_role) as null|anything in joblist
 		if (!new_role) return
-		assigned_role = new_role
+		var/datum/job/job = SSjob.GetJob(new_role)
+		if(job)
+			assigned_role = job.title
+			role_alt_title = new_role
 
 	else if(href_list["memory_edit"])
 		var/new_memo = sanitize(input("Write new memory", "Memory", memory) as null|message)
@@ -244,15 +279,10 @@
 		brigged_since = -1
 		return 0
 	var/is_currently_brigged = 0
-	if(istype(T.loc,/area/security/brig))
+	if(istype(T.loc,/area/eris/security/brig))
 		is_currently_brigged = 1
-		for(var/obj/item/weapon/card/id/card in current)
+		if(current.GetIdCard())
 			is_currently_brigged = 0
-			break // if they still have ID they're not brigged
-		for(var/obj/item/device/pda/P in current)
-			if(P.id)
-				is_currently_brigged = 0
-				break // if they still have ID they're not brigged
 
 	if(!is_currently_brigged)
 		brigged_since = -1
@@ -265,11 +295,11 @@
 
 /datum/mind/proc/reset()
 	assigned_role =   null
-	//special_role =    null
 	//role_alt_title =  null
 	assigned_job =    null
 	//faction =       null //Uncommenting this causes a compile error due to 'undefined type', fucked if I know.
 	changeling =      null
+	role_alt_title =  null
 	initial_account = null
 	has_been_rev =    0
 	rev_cooldown =    0
@@ -277,9 +307,7 @@
 
 //Antagonist role check
 /mob/living/proc/check_special_role(role)
-	if(mind)
-		return player_is_antag_id(mind,role)
-	return FALSE
+	return role && mind && player_is_antag_id(mind, role)
 
 //Initialisation procs
 /mob/living/proc/mind_initialize()
@@ -288,17 +316,15 @@
 	else
 		mind = new /datum/mind(key)
 		mind.original = src
-		if(ticker)
-			ticker.minds += mind
-		else
-			world.log << "## DEBUG: mind_initialize(): No ticker ready yet! Please inform Carn"
+		SSticker.minds += mind
 	if(!mind.name)	mind.name = real_name
 	mind.current = src
+	mind.stats = src.stats
 
 //HUMAN
 /mob/living/carbon/human/mind_initialize()
 	..()
-	if(!mind.assigned_role)	mind.assigned_role = "Assistant"	//defualt
+	if(!mind.assigned_role)	mind.assigned_role = ASSISTANT_TITLE	//defualt
 
 //slime
 /mob/living/carbon/slime/mind_initialize()
@@ -313,7 +339,7 @@
 //BORG
 /mob/living/silicon/robot/mind_initialize()
 	..()
-	mind.assigned_role = "Cyborg"
+	mind.assigned_role = "Robot"
 
 //PAI
 /mob/living/silicon/pai/mind_initialize()
@@ -329,3 +355,25 @@
 	..()
 	mind.assigned_role = "Corgi"
 
+
+
+/datum/mind/proc/manifest_status(var/datum/computer_file/report/crew_record/CR)
+	var/inactive_time = world.time - last_activity
+	if (inactive_time >= 60 MINUTES)
+		return null //The server hasn't seen us alive in an hour.
+		//We will not show on the manifest at all
+
+	//Ok we're definitely going to show on the manifest, lets see if any status is set for us in the records
+	var/status = CR.get_status()
+	.=status //We'll return the status as a fallback
+
+	//If the records have a specific status set, we'll return that
+	//Active is the default state, it means nothing else has specifically been set.
+	if (status != "Active")
+		return
+
+
+	//Ok the records say active, that means nothing.
+	//In that case we'll show as inactive if the mob has been inactive longer than 15 minutes
+	if (inactive_time >= 15 MINUTES)
+		return "Inactive"

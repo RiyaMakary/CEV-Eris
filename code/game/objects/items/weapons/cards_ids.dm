@@ -16,7 +16,6 @@
 	desc = "Does card things."
 	icon = 'icons/obj/card.dmi'
 	w_class = ITEM_SIZE_TINY
-	var/associated_account_number = 0
 
 	var/list/files = list(  )
 
@@ -46,7 +45,7 @@
 	icon_state = "data"
 	item_state = "card-id"
 	layer = 3
-	level = 2
+	level = ABOVE_PLATING_LEVEL
 	desc = "This card contains coordinates to the fabled Clown Planet. Handle with care."
 	function = "teleporter"
 	data = "Clown Land"
@@ -92,12 +91,15 @@ var/const/NO_EMAG_ACT = -50
 
 /obj/item/weapon/card/id
 	name = "identification card"
-	desc = "A card used to provide ID and determine access across the station."
+	desc = "A card used to provide ID and determine access across the ship."
 	icon_state = "id"
 	item_state = "card-id"
+	slot_flags = SLOT_ID
+
 	var/access = list()
 	var/registered_name = "Unknown" // The name registered_name on the card
-	slot_flags = SLOT_ID
+	var/list/associated_email_login = list("login" = "", "password" = "")
+	var/associated_account_number = 0
 
 	var/age = "\[UNSET\]"
 	var/blood_type = "\[UNSET\]"
@@ -112,13 +114,16 @@ var/const/NO_EMAG_ACT = -50
 	var/rank = null			//actual job
 	var/dorm = 0			// determines if this ID has claimed a dorm already
 
+	var/formal_name_prefix
+	var/formal_name_suffix
+
 /obj/item/weapon/card/id/examine(mob/user)
 	set src in oview(1)
 	if(in_range(usr, src))
 		show(usr)
-		usr << desc
+		to_chat(usr, desc)
 	else
-		usr << SPAN_WARNING("It is too far away.")
+		to_chat(usr, SPAN_WARNING("It is too far away."))
 
 /obj/item/weapon/card/id/proc/prevent_tracking()
 	return 0
@@ -180,7 +185,7 @@ var/const/NO_EMAG_ACT = -50
 /obj/item/weapon/card/id/GetAccess()
 	return access
 
-/obj/item/weapon/card/id/GetID()
+/obj/item/weapon/card/id/GetIdCard()
 	return src
 
 /obj/item/weapon/card/id/verb/read()
@@ -188,10 +193,10 @@ var/const/NO_EMAG_ACT = -50
 	set category = "Object"
 	set src in usr
 
-	usr << text("\icon[] []: The current assignment on the card is [].", src, src.name, src.assignment)
-	usr << "The blood type on the card is [blood_type]."
-	usr << "The DNA hash on the card is [dna_hash]."
-	usr << "The fingerprint hash on the card is [fingerprint_hash]."
+	to_chat(usr, text("\icon[] []: The current assignment on the card is [].", src, src.name, src.assignment))
+	to_chat(usr, "The blood type on the card is [blood_type].")
+	to_chat(usr, "The DNA hash on the card is [dna_hash].")
+	to_chat(usr, "The fingerprint hash on the card is [fingerprint_hash].")
 	return
 
 
@@ -205,10 +210,11 @@ var/const/NO_EMAG_ACT = -50
 /obj/item/weapon/card/id/captains_spare
 	name = "captain's spare ID"
 	desc = "The spare ID of the High Lord himself."
-	icon_state = "gold"
+	icon_state = MATERIAL_GOLD
 	item_state = "gold_id"
 	registered_name = "Captain"
 	assignment = "Captain"
+
 /obj/item/weapon/card/id/captains_spare/New()
 	access = get_all_station_access()
 	..()
@@ -246,7 +252,7 @@ var/const/NO_EMAG_ACT = -50
 		..()
 
 /obj/item/weapon/card/id/gold
-	icon_state = "gold"
+	icon_state = MATERIAL_GOLD
 	item_state = "gold_id"
 
 /obj/item/weapon/card/id/sci
@@ -308,6 +314,9 @@ var/const/NO_EMAG_ACT = -50
 
 /obj/item/weapon/card/id/chaplain
 	icon_state = "id_chaplain"
+
+/obj/item/weapon/card/id/church
+	icon_state = "id_nt"
 
 /obj/item/weapon/card/id/black
 	icon_state = "id_black"

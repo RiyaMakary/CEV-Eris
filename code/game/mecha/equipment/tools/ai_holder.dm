@@ -3,6 +3,7 @@
 	desc = "AI holder - allowed AI control exo-suits."
 	icon_state = "ai_holder"
 	origin_tech = list(TECH_POWER = 3, TECH_ENGINEERING = 3)
+	matter = list(MATERIAL_STEEL = 20, MATERIAL_GLASS = 3)
 	energy_drain = 2
 	equip_cooldown = 20
 	salvageable = 0
@@ -47,7 +48,7 @@
 		if(occupant == user)
 			go_out()
 		else
-			user << "Controller is already occupied!"
+			to_chat(user, "Controller is already occupied!")
 	else
 		//No OC
 		if(isAI(user))
@@ -57,7 +58,7 @@
 
 /obj/item/mecha_parts/mecha_equipment/tool/ai_holder/attach()
 	..()
-	Cam = PoolOrNew(/obj/machinery/camera)
+	Cam = new
 	Cam.c_tag = chassis.name
 
 /obj/item/mecha_parts/mecha_equipment/tool/ai_holder/detach()

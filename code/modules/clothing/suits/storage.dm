@@ -1,4 +1,5 @@
 /obj/item/clothing/suit/storage
+	item_flags = DRAG_AND_DROP_UNEQUIP|EQUIP_SOUNDS
 	var/obj/item/weapon/storage/internal/pockets
 
 /obj/item/clothing/suit/storage/New()
@@ -11,17 +12,19 @@
 /obj/item/clothing/suit/storage/Destroy()
 	qdel(pockets)
 	pockets = null
-	..()
+	. = ..()
 
-/obj/item/clothing/suit/storage/attack_hand(mob/user as mob)
-	if (pockets.handle_attack_hand(user))
-		..(user)
+/obj/item/clothing/suit/storage/attack_hand(mob/user)
+	if ((is_worn() || is_held()) && !pockets.handle_attack_hand(user))
+		return TRUE
+	..(user)
 
-/obj/item/clothing/suit/storage/MouseDrop(obj/over_object as obj)
-	if (pockets.handle_mousedrop(usr, over_object))
-		..(over_object)
+/obj/item/clothing/suit/storage/MouseDrop(obj/over_object)
+	if(pockets.handle_mousedrop(usr, over_object))
+		return TRUE
+	..(over_object)
 
-/obj/item/clothing/suit/storage/attackby(obj/item/W as obj, mob/user as mob)
+/obj/item/clothing/suit/storage/attackby(obj/item/W, mob/user)
 	..()
 	pockets.attackby(W, user)
 
@@ -42,14 +45,14 @@
 
 		if(icon_state == icon_open) //Will check whether icon state is currently set to the "open" or "closed" state and switch it around with a message to the user
 			icon_state = icon_closed
-			usr << "You button up the coat."
+			to_chat(usr, "You button up the coat.")
 		else if(icon_state == icon_closed)
 			icon_state = icon_open
-			usr << "You unbutton the coat."
+			to_chat(usr, "You unbutton the coat.")
 		else //in case some goofy admin switches icon states around without switching the icon_open or icon_closed
-			usr << "You attempt to button-up the velcro on your [src], before promptly realising how silly you are."
+			to_chat(usr, "You attempt to button-up the velcro on your [src], before promptly realising how silly you are.")
 			return
-		update_clothing_icon()	//so our overlays update
+		update_wear_icon()	//so our overlays update
 
 
 /obj/item/clothing/suit/storage/vest/merc/New()

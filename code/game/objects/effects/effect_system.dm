@@ -5,6 +5,9 @@ it needs to create more trails.A beaker could have a steam_trail_follow system s
 would spawn and follow the beaker, even if it is carried or thrown.
 */
 
+/obj/effect
+	var/random_rotation = 0 //If 1, pick a random cardinal direction. if 2, pick a randomised angle
+	var/random_offset = 0
 
 /obj/effect/effect
 	name = "effect"
@@ -12,6 +15,24 @@ would spawn and follow the beaker, even if it is carried or thrown.
 	mouse_opacity = 0
 	unacidable = 1//So effect are not targeted by alien acid.
 	pass_flags = PASSTABLE | PASSGRILLE
+
+
+/obj/effect/Initialize(mapload, ...)
+	. = ..()
+	if (random_rotation)
+		var/matrix/M = transform
+		if (random_rotation == 1)
+			M.Turn(pick(0,90,180,-90))
+
+		else if (random_rotation == 2)
+			M.Turn(rand(0,360))
+
+		transform = M
+	if(random_offset)
+		pixel_x += rand(-random_offset,random_offset)
+		pixel_y += rand(-random_offset,random_offset)
+
+
 
 /obj/effect/Destroy()
 	if(reagents)
@@ -57,7 +78,7 @@ steam.start() -- spawns the effect
 /obj/effect/effect/steam
 	name = "steam"
 	icon = 'icons/effects/effects.dmi'
-	icon_state = "extinguish"
+	icon_state = "jet"
 	density = 0
 
 /datum/effect/effect/system/steam_spread
@@ -75,7 +96,7 @@ steam.start() -- spawns the effect
 			spawn(0)
 				if(holder)
 					src.location = get_turf(holder)
-				var/obj/effect/effect/steam/steam = PoolOrNew(/obj/effect/effect/steam, src.location)
+				var/obj/effect/effect/steam/steam = new(location)
 				var/direction
 				if(src.cardinals)
 					direction = pick(cardinal)
@@ -96,6 +117,7 @@ steam.start() -- spawns the effect
 
 /obj/effect/sparks
 	name = "sparks"
+	icon = 'icons/effects/effects.dmi'
 	icon_state = "sparks"
 	var/amount = 6.0
 	anchored = 1.0
@@ -108,9 +130,9 @@ steam.start() -- spawns the effect
 	if (istype(T, /turf))
 		T.hotspot_expose(1000,100)
 
-/obj/effect/sparks/initialize()
-	..()
-	schedule_task_in(10 SECONDS, /proc/qdel, list(src))
+/obj/effect/sparks/Initialize()
+	. = ..()
+	QDEL_IN(src, 10 SECONDS)
 
 /obj/effect/sparks/Destroy()
 	var/turf/T = src.loc
@@ -118,8 +140,8 @@ steam.start() -- spawns the effect
 		T.hotspot_expose(1000,100)
 	return ..()
 
-/obj/effect/sparks/Move()
-	..()
+/obj/effect/sparks/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
+	. = ..()
 	var/turf/T = src.loc
 	if (istype(T, /turf))
 		T.hotspot_expose(1000,100)
@@ -145,7 +167,7 @@ steam.start() -- spawns the effect
 			spawn(0)
 				if(holder)
 					src.location = get_turf(holder)
-				var/obj/effect/sparks/sparks = PoolOrNew(/obj/effect/sparks, src.location)
+				var/obj/effect/sparks/sparks = new(location)
 				src.total_sparks++
 				var/direction
 				if(src.cardinals)
@@ -153,7 +175,7 @@ steam.start() -- spawns the effect
 				else
 					direction = pick(alldirs)
 				for(i=0, i<pick(1,2,3), i++)
-					sleep(5)
+					sleep(rand(1,5))
 					step(sparks,direction)
 				spawn(20)
 					if(sparks)
@@ -177,20 +199,27 @@ steam.start() -- spawns the effect
 	mouse_opacity = 0
 	var/amount = 6.0
 	var/time_to_live = 100
+	var/fading = FALSE
 
 	//Remove this bit to use the old smoke
 	icon = 'icons/effects/96x96.dmi'
 	pixel_x = -32
 	pixel_y = -32
 
-/obj/effect/effect/smoke/New()
-	..()
-	spawn (time_to_live)
-		qdel(src)
+
+/obj/effect/effect/smoke/Initialize()
+	spawn(time_to_live)
+		fade_out()
+
 
 /obj/effect/effect/smoke/Crossed(mob/living/carbon/M as mob )
 	..()
 	if(istype(M))
+		affect(M)
+
+/obj/effect/effect/smoke/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
+	. = ..()
+	for(var/mob/living/carbon/M in get_turf(src))
 		affect(M)
 
 /obj/effect/effect/smoke/proc/affect(var/mob/living/carbon/M)
@@ -206,9 +235,41 @@ steam.start() -- spawns the effect
 		return 0
 	return 1
 
+
+// Fades out the smoke smoothly using it's alpha variable.
+/obj/effect/effect/smoke/proc/fade_out(var/frames = 16)
+	if(!alpha) return //already transparent
+	fading = TRUE
+	frames = max(frames, 1) //We will just assume that by 0 frames, the coder meant "during one frame".
+	var/alpha_step = round(alpha / frames)
+	while(alpha > 0)
+		alpha = max(0, alpha - alpha_step)
+		sleep(world.tick_lag)
+	qdel(src)
+
 /////////////////////////////////////////////
 // Illumination
 /////////////////////////////////////////////
+/obj/effect/effect/light
+	name = "light"
+	opacity = FALSE
+	mouse_opacity = FALSE
+	icon_state = "nothing"
+	var/radius = 3
+	var/brightness = 2
+
+/obj/effect/effect/light/New(var/newloc, var/radius, var/brightness)
+	..()
+
+	src.radius = radius
+	src.brightness = brightness
+
+	set_light(radius,brightness)
+
+/obj/effect/effect/light/set_light(l_range, l_power, l_color)
+	..()
+	radius = l_range
+	brightness = l_power
 
 /obj/effect/effect/smoke/illumination
 	name = "illumination"
@@ -227,11 +288,6 @@ steam.start() -- spawns the effect
 
 /obj/effect/effect/smoke/bad
 	time_to_live = 200
-
-/obj/effect/effect/smoke/bad/Move()
-	..()
-	for(var/mob/living/carbon/M in get_turf(src))
-		affect(M)
 
 /obj/effect/effect/smoke/bad/affect(var/mob/living/carbon/M)
 	if (!..())
@@ -254,12 +310,6 @@ steam.start() -- spawns the effect
 // Sleep smoke
 /////////////////////////////////////////////
 
-/obj/effect/effect/smoke/sleepy
-
-/obj/effect/effect/smoke/sleepy/Move()
-	..()
-	for(var/mob/living/carbon/M in get_turf(src))
-		affect(M)
 
 /obj/effect/effect/smoke/sleepy/affect(mob/living/carbon/M as mob )
 	if (!..())
@@ -281,10 +331,6 @@ steam.start() -- spawns the effect
 	name = "mustard gas"
 	icon_state = "mustard"
 
-/obj/effect/effect/smoke/mustard/Move()
-	..()
-	for(var/mob/living/carbon/human/R in get_turf(src))
-		affect(R)
 
 /obj/effect/effect/smoke/mustard/affect(var/mob/living/carbon/human/R)
 	if (!..())
@@ -324,26 +370,20 @@ steam.start() -- spawns the effect
 
 /datum/effect/effect/system/smoke_spread/start()
 	var/i = 0
+	if(holder)
+		src.location = get_turf(holder)
 	for(i=0, i<src.number, i++)
-		if(src.total_smoke > 20)
-			return
-		spawn(0)
-			if(holder)
-				src.location = get_turf(holder)
-			var/obj/effect/effect/smoke/smoke = PoolOrNew(smoke_type, src.location)
-			src.total_smoke++
-			var/direction = src.direction
-			if(!direction)
-				if(src.cardinals)
-					direction = pick(cardinal)
-				else
-					direction = pick(alldirs)
+		spawn()
+			var/obj/effect/effect/smoke/smoke = new smoke_type(location)
+			var/direction
+			if(cardinals)
+				direction = pick(cardinal)
+			else
+				direction = pick(alldirs)
+
 			for(i=0, i<pick(0,1,1,1,2,2,2,3), i++)
 				sleep(10)
 				step(smoke,direction)
-			spawn(smoke.time_to_live*0.75+rand(10,30))
-				if (smoke) qdel(smoke)
-				src.total_smoke--
 
 
 /datum/effect/effect/system/smoke_spread/bad
@@ -357,103 +397,8 @@ steam.start() -- spawns the effect
 	smoke_type = /obj/effect/effect/smoke/mustard
 
 
-/////////////////////////////////////////////
-//////// Attach an Ion trail to any object, that spawns when it moves (like for the jetpack)
-/// just pass in the object to attach it to in set_up
-/// Then do start() to start it and stop() to stop it, obviously
-/// and don't call start() in a loop that will be repeated otherwise it'll get spammed!
-/////////////////////////////////////////////
-
-/obj/effect/effect/ion_trails
-	name = "ion trails"
-	icon_state = "ion_trails"
-	anchored = 1.0
-
-/datum/effect/effect/system/ion_trail_follow
-	var/turf/oldposition
-	var/processing = 1
-	var/on = 1
-
-	set_up(atom/atom)
-		attach(atom)
-		oldposition = get_turf(atom)
-
-	start()
-		if(!src.on)
-			src.on = 1
-			src.processing = 1
-		if(src.processing)
-			src.processing = 0
-			spawn(0)
-				var/turf/T = get_turf(src.holder)
-				if(T != src.oldposition)
-					if(istype(T, /turf/space))
-						var/obj/effect/effect/ion_trails/I = PoolOrNew(/obj/effect/effect/ion_trails, src.oldposition)
-						src.oldposition = T
-						I.set_dir(src.holder.dir)
-						flick("ion_fade", I)
-						I.icon_state = "blank"
-						spawn( 20 )
-							qdel(I)
-					spawn(2)
-						if(src.on)
-							src.processing = 1
-							src.start()
-				else
-					spawn(2)
-						if(src.on)
-							src.processing = 1
-							src.start()
-
-	proc/stop()
-		src.processing = 0
-		src.on = 0
 
 
-
-
-/////////////////////////////////////////////
-//////// Attach a steam trail to an object (eg. a reacting beaker) that will follow it
-// even if it's carried of thrown.
-/////////////////////////////////////////////
-
-/datum/effect/effect/system/steam_trail_follow
-	var/turf/oldposition
-	var/processing = 1
-	var/on = 1
-
-	set_up(atom/atom)
-		attach(atom)
-		oldposition = get_turf(atom)
-
-	start()
-		if(!src.on)
-			src.on = 1
-			src.processing = 1
-		if(src.processing)
-			src.processing = 0
-			spawn(0)
-				if(src.number < 3)
-					var/obj/effect/effect/steam/I = PoolOrNew(/obj/effect/effect/steam, src.oldposition)
-					src.number++
-					src.oldposition = get_turf(holder)
-					I.set_dir(src.holder.dir)
-					spawn(10)
-						qdel(I)
-						src.number--
-					spawn(2)
-						if(src.on)
-							src.processing = 1
-							src.start()
-				else
-					spawn(2)
-						if(src.on)
-							src.processing = 1
-							src.start()
-
-	proc/stop()
-		src.processing = 0
-		src.on = 0
 
 /datum/effect/effect/system/reagents_explosion
 	var/amount 						// TNT equivalent
@@ -474,15 +419,15 @@ steam.start() -- spawns the effect
 
 	start()
 		if (amount <= 2)
-			var/datum/effect/effect/system/spark_spread/s = PoolOrNew(/datum/effect/effect/system/spark_spread)
+			var/datum/effect/effect/system/spark_spread/s = new
 			s.set_up(2, 1, location)
 			s.start()
 
 			for(var/mob/M in viewers(5, location))
-				M << SPAN_WARNING("The solution violently explodes.")
+				to_chat(M, SPAN_WARNING("The solution violently explodes."))
 			for(var/mob/M in viewers(1, location))
 				if (prob (50 * amount))
-					M << SPAN_WARNING("The explosion knocks you down.")
+					to_chat(M, SPAN_WARNING("The explosion knocks you down."))
 					M.Weaken(rand(1,5))
 			return
 		else
@@ -505,7 +450,7 @@ steam.start() -- spawns the effect
 				flash = (amount/4) * flashing_factor
 
 			for(var/mob/M in viewers(8, location))
-				M << SPAN_WARNING("The solution violently explodes.")
+				to_chat(M, SPAN_WARNING("The solution violently explodes."))
 
 			explosion(
 				location,

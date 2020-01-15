@@ -19,9 +19,16 @@
 		slot_l_hand_str = "welding",
 		slot_r_hand_str = "welding",
 		)
-	matter = list(DEFAULT_WALL_MATERIAL = 3000, "glass" = 1000)
+	matter = list(MATERIAL_STEEL = 4, MATERIAL_GLASS = 2)
 	var/up = 0
-	armor = list(melee = 10, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 0, rad = 0)
+	armor = list(
+		melee = 20,
+		bullet = 10,
+		energy = 10,
+		bomb = 0,
+		bio = 0,
+		rad = 0
+	)
 	flags_inv = (HIDEMASK|HIDEEARS|HIDEEYES|HIDEFACE)
 	body_parts_covered = HEAD|FACE|EYES
 	action_button_name = "Flip Welding Mask"
@@ -50,7 +57,7 @@
 			flash_protection = initial(flash_protection)
 			tint = initial(tint)
 			icon_state = base_state
-			usr << "You flip the [src] down to protect your eyes."
+			to_chat(usr, "You flip the [src] down to protect your eyes.")
 		else
 			src.up = !src.up
 			body_parts_covered &= ~(EYES|FACE)
@@ -58,8 +65,8 @@
 			tint = TINT_NONE
 			flags_inv &= ~(HIDEMASK|HIDEEARS|HIDEEYES|HIDEFACE)
 			icon_state = "[base_state]up"
-			usr << "You push the [src] up out of your face."
-		update_clothing_icon()	//so our mob-overlays
+			to_chat(usr, "You push the [src] up out of your face.")
+		update_wear_icon()	//so our mob-overlays
 		usr.update_action_buttons()
 
 
@@ -74,9 +81,9 @@
 	var/onfire = 0
 	body_parts_covered = HEAD
 
-/obj/item/clothing/head/cakehat/process()
+/obj/item/clothing/head/cakehat/Process()
 	if(!onfire)
-		processing_objects.Remove(src)
+		STOP_PROCESSING(SSobj, src)
 		return
 
 	var/turf/location = src.loc
@@ -95,7 +102,7 @@
 		src.damtype = "fire"
 		src.icon_state = "cake1"
 		src.item_state = "cake1"
-		processing_objects.Add(src)
+		START_PROCESSING(SSobj, src)
 	else
 		src.force = null
 		src.damtype = "brute"
@@ -116,10 +123,10 @@
 /obj/item/clothing/head/ushanka/attack_self(mob/user as mob)
 	if(src.icon_state == "ushankadown")
 		src.icon_state = "ushankaup"
-		user << "You raise the ear flaps on the ushanka."
+		to_chat(user, "You raise the ear flaps on the ushanka.")
 	else
 		src.icon_state = "ushankadown"
-		user << "You lower the ear flaps on the ushanka."
+		to_chat(user, "You lower the ear flaps on the ushanka.")
 
 /*
  * Pumpkin head
@@ -145,13 +152,19 @@
 	siemens_coefficient = 1.5
 	item_icons = list()
 
-	update_icon(var/mob/living/carbon/human/user)
-		if(!istype(user)) return
-		var/icon/ears = new/icon('icons/inventory/head/mob.dmi', "kitty")
-		ears.Blend(user.hair_color, ICON_ADD)
+/obj/item/clothing/head/kitty/equipped(mob/user, slot)
+	if(slot == slot_head)
+		update_icon(user)
+	..()
 
-		var/icon/earbit = new/icon('icons/inventory/head/mob.dmi', "kittyinner")
-		ears.Blend(earbit, ICON_OVERLAY)
+/obj/item/clothing/head/kitty/update_icon(var/mob/living/carbon/human/user)
+	if(!istype(user))
+		return
+	var/icon/ears = new/icon('icons/inventory/head/mob.dmi', "kitty")
+	ears.Blend(user.hair_color, ICON_ADD)
+
+	var/icon/earbit = new/icon('icons/inventory/head/mob.dmi', "kittyinner")
+	ears.Blend(earbit, ICON_OVERLAY)
 
 /obj/item/clothing/head/richard
 	name = "chicken mask"

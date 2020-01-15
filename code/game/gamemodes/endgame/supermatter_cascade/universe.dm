@@ -9,7 +9,7 @@ var/global/universe_has_ended = 0
 
 /datum/universal_state/supermatter_cascade/OnShuttleCall(var/mob/user)
 	if(user)
-		user << "<span class='sinister'>All you hear on the frequency is static and panicked screaming. There is no escape.</span>"
+		to_chat(user, "<span class='sinister'>All you hear on the frequency is static and panicked screaming. There is no escape.</span>")
 	return 0
 
 /datum/universal_state/supermatter_cascade/OnTurfChange(var/turf/T)
@@ -37,18 +37,17 @@ var/global/universe_has_ended = 0
 // Apply changes when entering state
 /datum/universal_state/supermatter_cascade/OnEnter()
 	set background = 1
-	garbage_collector.garbage_collect = 0
-	world << "<span class='sinister' style='font-size:22pt'>You are blinded by a brilliant flash of energy.</span>"
+	SSgarbage.state = SS_SLEEPING
+	to_chat(world, "<span class='sinister' style='font-size:22pt'>You are blinded by a brilliant flash of energy.</span>")
 
 	world << sound('sound/effects/cascade.ogg')
 
-	for(var/mob/living/M in player_list)
+	for(var/mob/living/M in GLOB.player_list)
 		if (M.HUDtech.Find("flash"))
 			flick("e_flash", M.HUDtech["flash"])
 
-	if(emergency_shuttle.can_recall())
+	if(evacuation_controller.cancel_evacuation())
 		priority_announcement.Announce("The evacuation has been aborted due to bluespace distortion.")
-		emergency_shuttle.recall()
 
 	AreaSet()
 	MiscSet()
@@ -71,19 +70,19 @@ The access requirements on the Asteroid Shuttles' consoles have now been revoked
 "}
 		priority_announcement.Announce(txt,"SUPERMATTER CASCADE DETECTED")
 
-		for(var/obj/machinery/computer/shuttle_control/C in machines)
+		for(var/obj/machinery/computer/shuttle_control/C in SSmachines.machinery)
 			if(istype(C, /obj/machinery/computer/shuttle_control/research) || istype(C, /obj/machinery/computer/shuttle_control/mining))
 				C.req_access = list()
 				C.req_one_access = list()
 
 		spawn(5 MINUTES)
-			ticker.station_explosion_cinematic(0,null) // TODO: Custom cinematic
+			SSticker.station_explosion_cinematic(0,null) // TODO: Custom cinematic
 			universe_has_ended = 1
 		return
 
 /datum/universal_state/supermatter_cascade/proc/AreaSet()
 	for(var/area/A in all_areas)
-		if(!istype(A,/area) || istype(A, /area/space) || istype(A,/area/beach))
+		if(!istype(A,/area) || istype(A, /area/space))
 			continue
 
 		A.updateicon()
@@ -91,7 +90,7 @@ The access requirements on the Asteroid Shuttles' consoles have now been revoked
 /datum/universal_state/supermatter_cascade/OverlayAndAmbientSet()
 	spawn(0)
 		for(var/atom/movable/lighting_overlay/L in world)
-			if(L.z in config.admin_levels)
+			if(isAdminLevel(L.z))
 				L.update_overlay(1,1,1)
 			else
 				L.update_overlay(0.0, 0.4, 1)
@@ -100,13 +99,13 @@ The access requirements on the Asteroid Shuttles' consoles have now been revoked
 			OnTurfChange(T)
 
 /datum/universal_state/supermatter_cascade/proc/MiscSet()
-	for (var/obj/machinery/firealarm/alm in machines)
+	for (var/obj/machinery/firealarm/alm in SSmachines.machinery)
 		if (!(alm.stat & BROKEN))
 			alm.ex_act(2)
 
 /datum/universal_state/supermatter_cascade/proc/APCSet()
-	for (var/obj/machinery/power/apc/APC in machines)
-		if (!(APC.stat & BROKEN) && !APC.is_critical)
+	for (var/obj/machinery/power/apc/APC in SSmachines.machinery)
+		if (!(APC.stat & BROKEN) && is_valid_apc(APC))
 			APC.chargemode = 0
 			if(APC.cell)
 				APC.cell.charge = 0

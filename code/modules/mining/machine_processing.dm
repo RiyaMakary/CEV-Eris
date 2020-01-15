@@ -29,7 +29,7 @@
 		return
 
 	if(!allowed(user))
-		user << "\red Access denied."
+		to_chat(user, "\red Access denied.")
 		return
 
 	user.set_machine(src)
@@ -69,10 +69,8 @@
 	if(..())
 		return 1
 	usr.set_machine(src)
-	src.add_fingerprint(usr)
 
 	if(href_list["toggle_smelting"])
-
 		var/choice = input("What setting do you wish to use for processing [href_list["toggle_smelting"]]?") as null|anything in list("Smelting","Compressing","Alloying","Nothing")
 		if(!choice) return
 
@@ -85,16 +83,14 @@
 		machine.ores_processing[href_list["toggle_smelting"]] = choice
 
 	if(href_list["toggle_power"])
-
 		machine.active = !machine.active
 
 	if(href_list["toggle_ores"])
-
 		show_all_ores = !show_all_ores
 
 	playsound(loc, 'sound/machines/machine_switch.ogg', 100, 1)
 	src.updateUsrDialog()
-	return
+
 
 /**********************Mineral processing unit**************************/
 
@@ -141,7 +137,7 @@
 		if(marker)
 			output_dir = get_dir(src, marker)
 
-/obj/machinery/mineral/processing_unit/process()
+/obj/machinery/mineral/processing_unit/Process()
 
 	if (!output_dir || !input_dir) return
 
@@ -206,7 +202,7 @@
 
 			else if(ores_processing[metal] == 2 && O.compresses_to) //Compressing.
 
-				var/can_make = Clamp(ores_stored[metal],0,sheets_per_tick-sheets)
+				var/can_make = CLAMP(ores_stored[metal],0,sheets_per_tick-sheets)
 				if(can_make%2>0) can_make--
 
 				var/material/M = get_material_by_name(O.compresses_to)
@@ -221,7 +217,7 @@
 
 			else if(ores_processing[metal] == 1 && O.smelts_to) //Smelting.
 
-				var/can_make = Clamp(ores_stored[metal],0,sheets_per_tick-sheets)
+				var/can_make = CLAMP(ores_stored[metal],0,sheets_per_tick-sheets)
 
 				var/material/M = get_material_by_name(O.smelts_to)
 				if(!istype(M) || !can_make || ores_stored[metal] < 1)

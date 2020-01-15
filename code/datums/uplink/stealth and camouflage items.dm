@@ -5,9 +5,9 @@
 	category = /datum/uplink_category/stealth_items
 
 /datum/uplink_item/item/stealth_items/syndigaloshes
-	name = "No-Slip Shoes"
+	name = "No-Slip sole"
 	item_cost = 1
-	path = /obj/item/clothing/shoes/syndigaloshes
+	path = /obj/item/noslipmodule
 
 /datum/uplink_item/item/stealth_items/spy
 	name = "Bug Kit"
@@ -33,3 +33,8 @@
 	name = "Chameleon-Projector"
 	item_cost = 8
 	path = /obj/item/device/chameleon
+
+/datum/uplink_item/item/stealth_items/tool_dampener
+	name = "Tool Upgrade: Aural Dampener"
+	item_cost = 1
+	path = /obj/item/weapon/tool_upgrade/augment/dampener

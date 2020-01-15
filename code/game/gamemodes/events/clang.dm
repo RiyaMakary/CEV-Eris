@@ -1,4 +1,6 @@
 /*
+This file is included but not used. This overpowered event is too game-ruining to enable for now
+
 Immovable rod random event.
 The rod will spawn at some location outside the station, and travel in a straight line to the opposite side of the station
 Everything solid in the way will be ex_act()'d
@@ -79,7 +81,7 @@ In my current plan for it, 'solid' will be defined as anything with density == 1
 	sleep(1)
 	while (immrod)
 		if (isNotStationLevel(immrod.z))
-			immrod.z = pick(config.station_levels)
+			immrod.z = pick(maps_data.station_levels)
 		if(immrod.loc == end)
 			qdel(immrod)
 		sleep(10)

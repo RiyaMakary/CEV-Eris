@@ -66,6 +66,7 @@
 		interpreter.SetVar("$science",	SCI_FREQ)
 		interpreter.SetVar("$command",	COMM_FREQ)
 		interpreter.SetVar("$medical",	MED_FREQ)
+		interpreter.SetVar("$nt",	NT_FREQ)
 		interpreter.SetVar("$engineering",ENG_FREQ)
 		interpreter.SetVar("$security",	SEC_FREQ)
 		interpreter.SetVar("$supply",	SUP_FREQ)
@@ -258,7 +259,7 @@ datum/signal
 			freq = text2num(freq)
 		newsign.frequency = freq
 
-		var/datum/radio_frequency/connection = radio_controller.return_frequency(freq)
+		var/datum/radio_frequency/connection = SSradio.return_frequency(freq)
 		newsign.data["connection"] = connection
 
 

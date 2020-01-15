@@ -6,6 +6,7 @@
 	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "mass_driver"
 	anchored = 1.0
+	layer = LOW_OBJ_LAYER
 	use_power = 1
 	idle_power_usage = 2
 	active_power_usage = 50
@@ -17,8 +18,8 @@
 	var/_wifi_id
 	var/datum/wifi/receiver/button/mass_driver/wifi_receiver
 
-/obj/machinery/mass_driver/initialize()
-	..()
+/obj/machinery/mass_driver/Initialize()
+	. = ..()
 	if(_wifi_id)
 		wifi_receiver = new(_wifi_id, src)
 
@@ -38,7 +39,7 @@
 			O_limit++
 			if(O_limit >= 20)
 				for(var/mob/M in hearers(src, null))
-					M << SPAN_NOTICE("The mass driver lets out a screech, it mustn't be able to handle any more items.")
+					to_chat(M, SPAN_NOTICE("The mass driver lets out a screech, it mustn't be able to handle any more items."))
 				break
 			use_power(500)
 			spawn( 0 )

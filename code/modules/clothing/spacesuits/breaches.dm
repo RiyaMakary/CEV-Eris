@@ -12,8 +12,8 @@
 
 	var/can_breach = 1                      // Set to 0 to disregard all breaching.
 	var/list/breaches = list()              // Breach datum container.
-	var/resilience = 0.2                    // Multiplier that turns damage into breach class. 1 is 100% of damage to breach, 0.1 is 10%. 0.2 -> 50 brute/burn damage to cause 10 breach damage
-	var/breach_threshold = 3                // Min damage before a breach is possible. Damage is subtracted by this amount, it determines the "hardness" of the suit.
+	var/resilience = 0.1                    // Multiplier that turns damage into breach class. 1 is 100% of damage to breach, 0.1 is 10%. 0.2 -> 50 brute/burn damage to cause 10 breach damage
+	var/breach_threshold = 3                // Min attack damage before a breach is possible. Damage is subtracted by this amount, it determines the "hardness" of the suit.
 	var/damage = 0                          // Current total damage
 	var/brute_damage = 0                    // Specifically brute damage.
 	var/burn_damage = 0                     // Specifically burn damage.
@@ -55,7 +55,7 @@ var/global/list/breach_burn_descriptors = list(
 /obj/item/clothing/suit/space/proc/repair_breaches(var/damtype, var/amount, var/mob/user)
 
 	if(!can_breach || !breaches || !breaches.len || !damage)
-		user << "There are no breaches to repair on \the [src]."
+		to_chat(user, "There are no breaches to repair on \the [src].")
 		return
 
 	var/list/valid_breaches = list()
@@ -65,7 +65,7 @@ var/global/list/breach_burn_descriptors = list(
 			valid_breaches += B
 
 	if(!valid_breaches.len)
-		user << "There are no breaches to repair on \the [src]."
+		to_chat(user, "There are no breaches to repair on \the [src].")
 		return
 
 	var/amount_left = amount
@@ -85,7 +85,6 @@ var/global/list/breach_burn_descriptors = list(
 	calc_breach_damage()
 
 /obj/item/clothing/suit/space/proc/create_breaches(var/damtype, var/amount)
-
 	amount -= src.breach_threshold
 	amount *= src.resilience
 
@@ -177,11 +176,25 @@ var/global/list/breach_burn_descriptors = list(
 
 //Handles repairs (and also upgrades).
 
-/obj/item/clothing/suit/space/attackby(obj/item/W as obj, mob/user as mob)
-	if(istype(W,/obj/item/stack/material))
+/obj/item/clothing/suit/space/attackby(obj/item/I, mob/user)
+
+	//Using duct tape, you can repair both types of breaches while still wearing the suit!
+	if(I.has_quality(QUALITY_SEALING))
+		if(!damage && !burn_damage)
+			to_chat(user, "There is no surface damage on \the [src] to repair.")
+			return
+
+		user.visible_message("[user] starts repairing breaches on their [src] with the [I]", "You start repairing breaches on the [src] with the [I]")
+		if (I.use_tool(user, src, 60 + (damage*10), QUALITY_SEALING, 0, STAT_MEC))
+			to_chat(user, "There we go, that should hold nicely!")
+			repair_breaches(BURN, burn_damage, user)
+			repair_breaches(BRUTE, damage, user)
+		return
+
+	if(istype(I,/obj/item/stack/material))
 		var/repair_power = 0
-		switch(W.get_material_name())
-			if(DEFAULT_WALL_MATERIAL)
+		switch(I.get_material_name())
+			if(MATERIAL_STEEL)
 				repair_power = 2
 			if("plastic")
 				repair_power = 1
@@ -190,35 +203,34 @@ var/global/list/breach_burn_descriptors = list(
 			return
 
 		if(isliving(loc))
-			user << SPAN_WARNING("How do you intend to patch a hardsuit while someone is wearing it?")
+			to_chat(user, SPAN_WARNING("How do you intend to patch a hardsuit while someone is wearing it?"))
 			return
 
-		if(!damage || !burn_damage)
-			user << "There is no surface damage on \the [src] to repair."
+		if(!brute_damage && !burn_damage)
+			to_chat(user, "There is no surface damage on \the [src] to repair.")
 			return
 
-		var/obj/item/stack/P = W
+		var/obj/item/stack/P = I
 		var/use_amt = min(P.get_amount(), 3)
 		if(use_amt && P.use(use_amt))
 			repair_breaches(BURN, use_amt * repair_power, user)
 		return
 
-	else if(istype(W, /obj/item/weapon/weldingtool))
+	else if(QUALITY_WELDING in I.tool_qualities)
 
 		if(isliving(loc))
-			user << "\red How do you intend to patch a hardsuit while someone is wearing it?"
+			to_chat(user, SPAN_WARNING("How do you intend to patch a hardsuit while someone is wearing it?"))
 			return
 
-		if (!damage || ! brute_damage)
-			user << "There is no structural damage on \the [src] to repair."
+		if (!damage && ! brute_damage)
+			to_chat(user, SPAN_WARNING("There is no structural damage on \the [src] to repair."))
 			return
 
-		var/obj/item/weapon/weldingtool/WT = W
-		if(!WT.remove_fuel(5))
-			user << "\red You need more welding fuel to repair this suit."
+		if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_WELDING, FAILCHANCE_NORMAL, required_stat = STAT_MEC))
+			repair_breaches(BRUTE, 3, user)
+			to_chat(user, SPAN_NOTICE("You repair the damage on the [src]."))
 			return
 
-		repair_breaches(BRUTE, 3, user)
 		return
 
 	..()
@@ -227,4 +239,6 @@ var/global/list/breach_burn_descriptors = list(
 	..(user)
 	if(can_breach && breaches && breaches.len)
 		for(var/datum/breach/B in breaches)
-			user << "\red <B>It has \a [B.descriptor].</B>"
+			to_chat(user, "\red <B>It has \a [B.descriptor].</B>")
+
+

@@ -21,7 +21,7 @@
 	spawn_flags = IC_SPAWN_DEFAULT|IC_SPAWN_RESEARCH
 
 /obj/item/integrated_circuit/input/button/ask_for_input(mob/user) //Bit misleading name for this specific use.
-	user << SPAN_NOTICE("You press the button labeled '[src.name]'.")
+	to_chat(user, SPAN_NOTICE("You press the button labeled '[src.name]'."))
 	activate_pin(1)
 
 /obj/item/integrated_circuit/input/toggle_button
@@ -39,7 +39,7 @@
 	set_pin_data(IC_OUTPUT, 1, !get_pin_data(IC_OUTPUT, 1))
 	push_data()
 	activate_pin(1)
-	user << "<span class='notice'>You toggle the button labeled '[src.name]' [get_pin_data(IC_OUTPUT, 1) ? "on" : "off"].</span>"
+	to_chat(user, "<span class='notice'>You toggle the button labeled '[src.name]' [get_pin_data(IC_OUTPUT, 1) ? "on" : "off"].</span>")
 
 /obj/item/integrated_circuit/input/numberpad
 	name = "number pad"
@@ -55,7 +55,7 @@
 
 /obj/item/integrated_circuit/input/numberpad/ask_for_input(mob/user)
 	var/new_input = input(user, "Enter a number, please.","Number pad") as null|num
-	if(isnum(new_input) && CanInteract(user, physical_state))
+	if(isnum(new_input) && CanInteract(user,GLOB.physical_state))
 		set_pin_data(IC_OUTPUT, 1, new_input)
 		push_data()
 		activate_pin(1)
@@ -74,7 +74,7 @@
 
 /obj/item/integrated_circuit/input/textpad/ask_for_input(mob/user)
 	var/new_input = input(user, "Enter some words, please.","Number pad") as null|text
-	if(istext(new_input) && CanInteract(user, physical_state))
+	if(istext(new_input) && CanInteract(user,GLOB.physical_state))
 		set_pin_data(IC_OUTPUT, 1, new_input)
 		push_data()
 		activate_pin(1)
@@ -219,16 +219,15 @@
 	var/code = 30
 	var/datum/radio_frequency/radio_connection
 
-/obj/item/integrated_circuit/input/signaler/initialize()
-	..()
+/obj/item/integrated_circuit/input/signaler/Initialize()
+	. = ..()
 	set_frequency(frequency)
 	// Set the pins so when someone sees them, they won't show as null
 	set_pin_data(IC_INPUT, 1, frequency)
 	set_pin_data(IC_INPUT, 2, code)
 
 /obj/item/integrated_circuit/input/signaler/Destroy()
-	if(radio_controller)
-		radio_controller.remove_object(src,frequency)
+	SSradio.remove_object(src,frequency)
 	frequency = 0
 	. = ..()
 
@@ -255,13 +254,9 @@
 /obj/item/integrated_circuit/input/signaler/proc/set_frequency(new_frequency)
 	if(!frequency)
 		return
-	if(!radio_controller)
-		sleep(20)
-	if(!radio_controller)
-		return
-	radio_controller.remove_object(src, frequency)
+	SSradio.remove_object(src, frequency)
 	frequency = new_frequency
-	radio_connection = radio_controller.add_object(src, frequency, RADIO_CHAT)
+	radio_connection = SSradio.add_object(src, frequency, RADIO_CHAT)
 
 /obj/item/integrated_circuit/input/signaler/receive_signal(datum/signal/signal)
 	var/new_code = get_pin_data(IC_INPUT, 2)
@@ -381,7 +376,7 @@
 	remove_hearing()
 	return ..()
 
-/obj/item/integrated_circuit/input/microphone/hear_talk(mob/living/M, msg, var/verb="says", datum/language/speaking=null)
+/obj/item/integrated_circuit/input/microphone/hear_talk(mob/living/M, msg, var/verb="says", datum/language/speaking=null, speech_volume)
 	var/translated = FALSE
 	if(M && msg)
 		if(speaking)
@@ -443,7 +438,7 @@
 	stuff_to_display = null
 
 /obj/item/integrated_circuit/output/screen/any_examine(mob/user)
-	user << "There is a little screen labeled '[name]', which displays [stuff_to_display ? "'[stuff_to_display]'" : "nothing"]."
+	to_chat(user, "There is a little screen labeled '[name]', which displays [stuff_to_display ? "'[stuff_to_display]'" : "nothing"].")
 
 /obj/item/integrated_circuit/output/screen/do_work()
 	var/datum/integrated_io/I = inputs[1]
@@ -465,7 +460,7 @@
 	var/list/nearby_things = range(0, get_turf(src))
 	for(var/mob/M in nearby_things)
 		var/obj/O = assembly ? assembly : src
-		M << SPAN_NOTICE("\icon[O] [stuff_to_display]")
+		to_chat(M, SPAN_NOTICE("\icon[O] [stuff_to_display]"))
 
 /obj/item/integrated_circuit/output/screen/large
 	name = "large screen"
@@ -510,10 +505,10 @@
 	var/brightness = get_pin_data(IC_INPUT, 4)
 
 	if(isnum(R) && isnum(G) && isnum(B) && isnum(brightness))
-		R = Clamp(R, 0, 255)
-		G = Clamp(G, 0, 255)
-		B = Clamp(B, 0, 255)
-		brightness = Clamp(brightness, 0, 6)
+		R = CLAMP(R, 0, 255)
+		G = CLAMP(G, 0, 255)
+		B = CLAMP(B, 0, 255)
+		brightness = CLAMP(brightness, 0, 6)
 		light_rgb = rgb(R, G, B)
 		light_brightness = brightness
 
@@ -593,8 +588,8 @@
 		var/selected_sound = sounds[ID.data]
 		if(!selected_sound)
 			return
-		vol.data = Clamp(vol.data, 0, 100)
-		frequency.data = round(Clamp(frequency.data, 0, 1))
+		vol.data = CLAMP(vol.data, 0, 100)
+		frequency.data = round(CLAMP(frequency.data, 0, 1))
 		playsound(get_turf(src), selected_sound, vol.data, frequency.data, -1)
 
 /obj/item/integrated_circuit/output/sound/beeper

@@ -1,18 +1,25 @@
 /obj/item/weapon/gun/projectile/olivaw
-	name = "FS HG .32 \"Olivaw\""
-	desc = "That's the 'Frozen Star' popular traumatic pistol. This one seems to have a two-round burst-fire mode. Uses .32 rounds."
+	name = "FS MP .35 Auto \"Olivaw\""
+	desc = "A popular \"Frozen Star\" machine pistol. This one has a two-round burst-fire mode and is chambered for .35 auto. It can use normal and high capacity magazines."
+	icon = 'icons/obj/guns/projectile/olivawcivil.dmi'
 	icon_state = "olivawcivil"
+	item_state = "pistol"
 	fire_sound = 'sound/weapons/guns/fire/pistol_fire.ogg'
-	caliber = ".32"
-	ammo_mag = "mag_cl32"
-	fire_delay = 1.2
+	caliber = "pistol"
+	ammo_mag = "mag_lpistol"
 	origin_tech = list(TECH_COMBAT = 3, TECH_MATERIAL = 3)
+	can_dual = 1
 	load_method = MAGAZINE
-	accuracy = 2
+	mag_well = MAG_WELL_PISTOL
+	matter = list(MATERIAL_PLASTEEL = 12, MATERIAL_WOOD = 6)
+	price_tag = 800
+	damage_multiplier = 1.1
+	penetration_multiplier = 1.1
+	recoil_buildup = 6
 
 	firemodes = list(
-		list(mode_name="semiauto",       burst=1, fire_delay=1.2,    move_delay=null, burst_accuracy=null, dispersion=null),
-		list(mode_name="2-round bursts", burst=2, fire_delay=0.2, move_delay=4,    burst_accuracy=list(0,-1),       dispersion=list(1.2, 1.8)),
+		list(mode_name="semiauto",       burst=1, fire_delay=1.2, move_delay=null, 				icon="semi"),
+		list(mode_name="2-round bursts", burst=2, fire_delay=0.2, move_delay=4,    	icon="burst"),
 		)
 
 /obj/item/weapon/gun/projectile/olivaw/update_icon()

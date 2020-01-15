@@ -3,7 +3,7 @@
 	anchored = 1
 	opacity = 0
 	density = 0
-	layer = 3.5
+	layer = SIGN_LAYER
 	w_class = ITEM_SIZE_NORMAL
 
 /obj/structure/sign/ex_act(severity)
@@ -21,8 +21,8 @@
 	return
 
 /obj/structure/sign/attackby(obj/item/tool as obj, mob/user as mob)	//deconstruction
-	if(istype(tool, /obj/item/weapon/screwdriver) && !istype(src, /obj/structure/sign/double))
-		user << "You unfasten the sign with your [tool]."
+	if(istype(tool, /obj/item/weapon/tool/screwdriver) && !istype(src, /obj/structure/sign/double))
+		to_chat(user, "You unfasten the sign with your [tool].")
 		var/obj/item/sign/S = new(src.loc)
 		S.name = name
 		S.desc = desc
@@ -41,7 +41,7 @@
 	var/sign_state = ""
 
 /obj/item/sign/attackby(obj/item/tool as obj, mob/user as mob)	//construction
-	if(istype(tool, /obj/item/weapon/screwdriver) && isturf(user.loc))
+	if(istype(tool, /obj/item/weapon/tool/screwdriver) && isturf(user.loc))
 		var/direction = input("In which direction?", "Select direction.") in list("North", "East", "South", "West", "Cancel")
 		if(direction == "Cancel") return
 		var/obj/structure/sign/S = new(user.loc)
@@ -58,7 +58,7 @@
 		S.name = name
 		S.desc = desc
 		S.icon_state = sign_state
-		user << "You fasten \the [S] with your [tool]."
+		to_chat(user, "You fasten \the [S] with your [tool].")
 		qdel(src)
 	else ..()
 
@@ -521,22 +521,22 @@
 
 /obj/structure/sign/faction/ironhammer
 	name = "Ironhammer Security"
-	desc = "Sign depicts the symbolic of Ironhammer Security, the largest security provider within Trade Union of Hansa."
+	desc = "This sign depicts the symbol of Ironhammer Security, the largest security provider within the Hansa Trade Union."
 	icon_state = "ironhammer"
 
-/obj/structure/sign/faction/alliance
-	name = "Mankind Alliance"
-	desc = "Alliance's all-seeing eye, banner of now fallen empire. Once they were owning all the Milky Way. Now it's just dust, forgotten derelicts and automated ships."
-	icon_state = "alliance"
+/obj/structure/sign/faction/one_star
+	name = "One Star"
+	desc = "One Star's all-seeing eye, a banner of a now fallen empire. They once controlled this sector from their capital Earth. Now it's all just dust, forgotten derelicts, and automated ships."
+	icon_state = "one_star"
 
-/obj/structure/sign/faction/alliance_old
-	name = "Mankind Alliance"
-	desc = "Alliance's all-seeing eye, banner of now fallen empire. Once they were owning all the Milky Way. Now it's just dust, forgotten derelicts and automated ships."
-	icon_state = "alliance-old"
+/obj/structure/sign/faction/one_star_old
+	name = "One Star"
+	desc = "One Star's all-seeing eye, a banner of a now fallen empire. They once controlled this sector from their capital Earth. Now it's all just dust, forgotten derelicts, and automated ships."
+	icon_state = "one_star_old"
 
 /obj/structure/sign/faction/frozenstar
 	name = "Frozen Star"
-	desc = "The most popular Hanza's weapon manufacturer."
+	desc = "The most popular weapon manufacturer in the Hansa Trade Union."
 	icon_state = "frozenstar"
 
 /obj/structure/sign/faction/moebius
@@ -546,22 +546,20 @@
 
 /obj/structure/sign/faction/neotheology
 	name = "NeoTheology"
-	desc = "Tau Cross of Cyberchristianity - symbol of NeoTheology."
+	desc = "the Tau Cross - symbol of NeoTheology."
 	icon_state = "neotheology"
 
 /obj/structure/sign/faction/neotheology_old
 	name = "NeoTheology"
-	desc = "Tau Cross of Cyberchristianity - symbol of NeoTheology."
+	desc = "the Tau Cross - symbol of NeoTheology."
 	icon_state = "neotheology-old"
 
 /obj/structure/sign/faction/neotheology_cross
-	name = "Cyberñhristianity Tau cross"
-	desc = "Religious symbol of Cyberchristianity - the Tau cross. It looks like a decoration, not a real cruciform."
+	name = "NeoTheology Tau cross"
+	desc = "Religious symbol of NeoTheology - the Tau cross. It looks like a decoration, not a real cruciform."
 	icon_state = "wall_cross_steel"
 
 /obj/structure/sign/faction/neotheology_cross/gold
-	name = "Cyberñhristianity Tau cross"
-	desc = "Religious symbol of Cyberchristianity - the Tau cross. It looks like a decoration, not a real cruciform."
 	icon_state = "wall_cross_gold"
 
 /obj/structure/sign/faction/astersguild
@@ -576,12 +574,12 @@
 
 /obj/structure/sign/faction/excelsior
 	name = "EXCELSIOR"
-	desc = "EXCELSIOR is union of communist mining communities with no respect to any private property."
+	desc = "EXCELSIOR is a union of communist mining communities with no respect to any private property."
 	icon_state = "excelsior"
 
 /obj/structure/sign/faction/excelsior_old
 	name = "EXCELSIOR"
-	desc = "EXCELSIOR is union of communist mining communities with no respect to any private property."
+	desc = "EXCELSIOR is a union of communist mining communities with no respect to any private property."
 	icon_state = "excelsior-old"
 
 /obj/structure/sign/derelict1

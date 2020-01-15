@@ -18,7 +18,7 @@
 	name = "Dual Port Air Vent"
 	desc = "Has a valve and pump attached to it. There are two ports."
 
-	level = 1
+	level = BELOW_PLATING_LEVEL
 
 	use_power = 0
 	idle_power_usage = 150		//internal circuitry, friction losses and stuff
@@ -67,7 +67,7 @@
 	if(!istype(T))
 		return
 
-	if(!T.is_plating() && node1 && node2 && node1.level == 1 && node2.level == 1 && istype(node1, /obj/machinery/atmospherics/pipe) && istype(node2, /obj/machinery/atmospherics/pipe))
+	if(!T.is_plating() && node1 && node2 && node1.level == BELOW_PLATING_LEVEL && node2.level == BELOW_PLATING_LEVEL && istype(node1, /obj/machinery/atmospherics/pipe) && istype(node2, /obj/machinery/atmospherics/pipe))
 		vent_icon += "h"
 
 	if(!powered())
@@ -83,7 +83,7 @@
 		var/turf/T = get_turf(src)
 		if(!istype(T))
 			return
-		if(!T.is_plating() && node1 && node2 && node1.level == 1 && node2.level == 1 && istype(node1, /obj/machinery/atmospherics/pipe) && istype(node2, /obj/machinery/atmospherics/pipe))
+		if(!T.is_plating() && node1 && node2 && node1.level == BELOW_PLATING_LEVEL && node2.level == BELOW_PLATING_LEVEL && istype(node1, /obj/machinery/atmospherics/pipe) && istype(node2, /obj/machinery/atmospherics/pipe))
 			return
 		else
 			if (node1)
@@ -99,7 +99,7 @@
 	update_icon()
 	update_underlays()
 
-/obj/machinery/atmospherics/binary/dp_vent_pump/process()
+/obj/machinery/atmospherics/binary/dp_vent_pump/Process()
 	..()
 
 	last_power_draw = 0
@@ -161,10 +161,10 @@
 //Radio remote control
 
 /obj/machinery/atmospherics/binary/dp_vent_pump/proc/set_frequency(new_frequency)
-	radio_controller.remove_object(src, frequency)
+	SSradio.remove_object(src, frequency)
 	frequency = new_frequency
 	if(frequency)
-		radio_connection = radio_controller.add_object(src, frequency, filter = RADIO_ATMOSIA)
+		radio_connection = SSradio.add_object(src, frequency, filter = RADIO_ATMOSIA)
 
 /obj/machinery/atmospherics/binary/dp_vent_pump/proc/broadcast_status()
 	if(!radio_connection)
@@ -189,14 +189,14 @@
 
 	return 1
 
-/obj/machinery/atmospherics/binary/dp_vent_pump/initialize()
+/obj/machinery/atmospherics/binary/dp_vent_pump/atmos_init()
 	..()
 	if(frequency)
 		set_frequency(frequency)
 
 /obj/machinery/atmospherics/binary/dp_vent_pump/examine(mob/user)
 	if(..(user, 1))
-		user << "A small gauge in the corner reads [round(last_flow_rate, 0.1)] L/s; [round(last_power_draw)] W"
+		to_chat(user, "A small gauge in the corner reads [round(last_flow_rate, 0.1)] L/s; [round(last_power_draw)] W")
 
 
 /obj/machinery/atmospherics/unary/vent_pump/power_change()

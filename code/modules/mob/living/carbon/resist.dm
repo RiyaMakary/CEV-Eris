@@ -1,9 +1,95 @@
+/mob/living/verb/resist()
+	set name = "Resist"
+	set category = "IC"
+
+	if(!stat && can_click())
+		setClickCooldown(1)//only 1/10th of a second so no macros spamming
+		resist_grab()
+		if(!weakened)
+			process_resist()
+
+/mob/living/proc/process_resist()
+	//Getting out of someone's inventory.
+	if(istype(src.loc, /obj/item/weapon/holder))
+		escape_inventory(src.loc)
+		return
+
+	//unbuckling yourself
+	if(buckled)
+		if (buckled.resist_buckle(src))
+			spawn()
+				escape_buckle()
+			return TRUE
+		else
+			return FALSE
+
+	//Breaking out of a locker?
+	if( src.loc && (istype(src.loc, /obj/structure/closet)) )
+		var/obj/structure/closet/C = loc
+		spawn() C.mob_breakout(src)
+		return TRUE
+
+/mob/living/proc/escape_inventory(obj/item/weapon/holder/H)
+	if(H != src.loc) return
+
+	var/mob/M = H.loc //Get our mob holder (if any).
+
+	if(istype(M))
+		M.drop_from_inventory(H)
+		to_chat(M, "<span class='warning'>\The [H] wriggles out of your grip!</span>")
+		to_chat(src, "<span class='warning'>You wriggle out of \the [M]'s grip!</span>")
+
+		// Update whether or not this mob needs to pass emotes to contents.
+		for(var/atom/A in M.contents)
+			if(istype(A,/mob/living/simple_animal/borer) || istype(A,/obj/item/weapon/holder))
+				return
+		M.status_flags &= ~PASSEMOTES
+
+	else if(istype(H.loc,/obj/item/clothing/accessory/holster))
+		var/obj/item/clothing/accessory/holster/holster = H.loc
+		if(holster.holstered == H)
+			holster.clear_holster()
+		to_chat(src, "<span class='warning'>You extricate yourself from \the [holster].</span>")
+		H.forceMove(get_turf(H))
+	else if(istype(H.loc,/obj/item))
+		to_chat(src, "<span class='warning'>You struggle free of \the [H.loc].</span>")
+		H.forceMove(get_turf(H))
+
+
+
+/mob/living/proc/resist_grab()
+	var/resisting = 0
+	for(var/obj/O in requests)
+		requests.Remove(O)
+		qdel(O)
+		resisting++
+	for(var/obj/item/weapon/grab/G in grabbed_by)
+		resisting++
+		switch(G.state)
+			if(GRAB_PASSIVE)
+				qdel(G)
+			if(GRAB_AGGRESSIVE)
+				if(prob(60)) //same chance of breaking the grab as disarm
+					visible_message("<span class='warning'>[src] has broken free of [G.assailant]'s grip!</span>")
+					qdel(G)
+			if(GRAB_NECK)
+				//If the you move when grabbing someone then it's easier for them to break free. Same if the affected mob is immune to stun.
+				if (((world.time - G.assailant.l_move_time < 30 || !stunned) && prob(15)) || prob(5))
+					visible_message("<span class='warning'>[src] has broken free of [G.assailant]'s headlock!</span>")
+					qdel(G)
+	if(resisting)
+		setClickCooldown(20)
+		visible_message("<span class='danger'>[src] resists!</span>")
+
+/mob/living/carbon/resist_grab()
+	return !handcuffed && ..()
+
 /mob/living/carbon/process_resist()
 
 	//drop && roll
 	if(on_fire && !buckled)
-		fire_stacks -= 1.2
-		Weaken(3)
+		fire_stacks -= 2.5
+		Weaken(4)
 		spin(32,2)
 		visible_message(
 			SPAN_DANGER("[src] rolls on the floor, trying to put themselves out!"),
@@ -40,12 +126,12 @@
 	var/obj/item/weapon/handcuffs/HC = handcuffed
 
 	//A default in case you are somehow handcuffed with something that isn't an obj/item/weapon/handcuffs type
-	var/breakouttime = 1200
-	var/displaytime = 2 //Minutes to display in the "this will take X minutes."
+	var/breakouttime = 1200 - src.stats.getStat(STAT_ROB) * 10
+	var/displaytime = round(breakouttime / 600) //Minutes to display in the "this will take X minutes."
 	//If you are handcuffed with actual handcuffs... Well what do I know, maybe someone will want to handcuff you with toilet paper in the future...
 	if(istype(HC))
-		breakouttime = HC.breakouttime
-		displaytime = breakouttime / 600 //Minutes
+		breakouttime = HC.breakouttime - src.stats.getStat(STAT_ROB) * 10
+		displaytime = round(breakouttime / 600) //Minutes
 
 	var/mob/living/carbon/human/H = src
 	if(istype(H) && H.gloves && istype(H.gloves,/obj/item/clothing/gloves/rig))
@@ -67,7 +153,7 @@
 		drop_from_inventory(handcuffed)
 
 /mob/living/carbon/proc/escape_legcuffs()
-	if(!canClick())
+	if(!can_click())
 		return
 
 	setClickCooldown(100)
@@ -131,7 +217,7 @@
 		update_inv_handcuffed()
 
 /mob/living/carbon/proc/break_legcuffs()
-	src << SPAN_WARNING("You attempt to break your legcuffs. (This will take around 5 seconds and you need to stand still)")
+	to_chat(src, SPAN_WARNING("You attempt to break your legcuffs. (This will take around 5 seconds and you need to stand still)"))
 	visible_message(SPAN_DANGER("[src] is trying to break the legcuffs!"))
 
 	if(do_after(src, 5 SECONDS, incapacitation_flags = INCAPACITATION_DEFAULT & ~INCAPACITATION_RESTRAINED))
@@ -154,13 +240,21 @@
 		return 1
 	return ..()
 
+//Returning anything but true will make the mob unable to resist out of this buckle
+/atom/proc/resist_buckle(var/mob/living/user)
+	return TRUE
+
+/mob/living/proc/escape_buckle()
+	if(buckled)
+		buckled.user_unbuckle_mob(src)
+
 /mob/living/carbon/escape_buckle()
-	setClickCooldown(100)
 	if(!buckled) return
 
 	if(!restrained())
 		..()
 	else
+		setClickCooldown(100)
 		visible_message(
 			SPAN_DANGER("[usr] attempts to unbuckle themself!"),
 			SPAN_WARNING("You attempt to unbuckle yourself. (This will take around 2 minutes and you need to stand still)")
@@ -173,3 +267,5 @@
 			visible_message(SPAN_DANGER("\The [usr] manages to unbuckle themself!"),
 							SPAN_NOTICE("You successfully unbuckle yourself."))
 			buckled.user_unbuckle_mob(src)
+
+

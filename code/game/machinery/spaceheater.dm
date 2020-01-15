@@ -5,16 +5,25 @@
 	icon_state = "sheater0"
 	name = "space heater"
 	desc = "Made by Space Amish using traditional space techniques, this heater is guaranteed not to set the station on fire."
-	var/obj/item/weapon/cell/medium/cell
+	var/obj/item/weapon/cell/large/cell
 	var/on = 0
 	var/set_temperature = T0C + 50	//K
 	var/heating_power = 40000
 
 
-/obj/machinery/space_heater/New()
-	..()
-	cell = new(src)
+/obj/machinery/space_heater/Initialize()
+	. = ..()
+	cell = new /obj/item/weapon/cell/large/high(src)
 	update_icon()
+
+/obj/machinery/space_heater/get_cell()
+	return cell
+
+/obj/machinery/space_heater/handle_atom_del(atom/A)
+	..()
+	if(A == cell)
+		cell = null
+		update_icon()
 
 /obj/machinery/space_heater/update_icon()
 	overlays.Cut()
@@ -25,11 +34,11 @@
 /obj/machinery/space_heater/examine(mob/user)
 	..(user)
 
-	user << "The heater is [on ? "on" : "off"] and the hatch is [panel_open ? "open" : "closed"]."
+	to_chat(user, "The heater is [on ? "on" : "off"] and the hatch is [panel_open ? "open" : "closed"].")
 	if(panel_open)
-		user << "The power cell is [cell ? "installed" : "missing"]."
+		to_chat(user, "The power cell is [cell ? "installed" : "missing"].")
 	else
-		user << "The charge meter reads [cell ? round(cell.percent(),1) : 0]%"
+		to_chat(user, "The charge meter reads [cell ? round(cell.percent(),1) : 0]%")
 	return
 
 /obj/machinery/space_heater/powered()
@@ -49,7 +58,7 @@
 	if(istype(I, /obj/item/weapon/cell/medium))
 		if(panel_open)
 			if(cell)
-				user << "There is already a power cell inside."
+				to_chat(user, "There is already a power cell inside.")
 				return
 			else
 				// insert cell
@@ -63,9 +72,9 @@
 					user.visible_message(SPAN_NOTICE("[user] inserts a power cell into [src]."), SPAN_NOTICE("You insert the power cell into [src]."))
 					power_change()
 		else
-			user << "The hatch must be open to insert a power cell."
+			to_chat(user, "The hatch must be open to insert a power cell.")
 			return
-	else if(istype(I, /obj/item/weapon/screwdriver))
+	else if(istype(I, /obj/item/weapon/tool/screwdriver))
 		panel_open = !panel_open
 		user.visible_message("<span class='notice'>[user] [panel_open ? "opens" : "closes"] the hatch on the [src].</span>", "<span class='notice'>You [panel_open ? "open" : "close"] the hatch on the [src].</span>")
 		update_icon()
@@ -140,7 +149,7 @@
 					if(istype(C))
 						usr.drop_item()
 						src.cell = C
-						C.loc = src
+						C.forceMove(src)
 						C.add_fingerprint(usr)
 						power_change()
 						usr.visible_message(SPAN_NOTICE("[usr] inserts \the [C] into \the [src]."), SPAN_NOTICE("You insert \the [C] into \the [src]."))
@@ -153,7 +162,7 @@
 
 
 
-/obj/machinery/space_heater/process()
+/obj/machinery/space_heater/Process()
 	if(on)
 		if(cell && cell.charge)
 			var/datum/gas_mixture/env = loc.return_air()
@@ -167,7 +176,7 @@
 						heat_transfer = min( heat_transfer , heating_power ) //limit by the power rating of the heater
 
 						removed.add_thermal_energy(heat_transfer)
-						cell.use(heat_transfer*CELLRATE)
+						cell.use((heat_transfer*CELLRATE)/10)
 					else	//cooling air
 						heat_transfer = abs(heat_transfer)
 
@@ -178,7 +187,7 @@
 						heat_transfer = removed.add_thermal_energy(-heat_transfer)	//get the actual heat transfer
 
 						var/power_used = abs(heat_transfer)/cop
-						cell.use(power_used*CELLRATE)
+						cell.use((power_used*CELLRATE)/10)
 
 				env.merge(removed)
 		else

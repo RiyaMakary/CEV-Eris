@@ -85,18 +85,18 @@
 			msg += "[T.He] [T.has] \icon[back] \a [back] on [T.his] back.\n"
 
 	//left hand
-	if(l_hand)
+	if(l_hand&& !(l_hand.item_flags & ABSTRACT))//Abstract items don't show up when examined.
 		if(l_hand.blood_DNA)
-			msg += "<span class='warning'>[T.He] [T.is] holding \icon[l_hand] [l_hand.gender==PLURAL?"some":"a"] [(l_hand.blood_color != "#030303") ? "blood" : "oil"]-stained [l_hand.name] in [T.his] left hand!</span>\n"
+			msg += "<span class='warning'>[T.He] [T.is] holding \icon[l_hand] [l_hand.gender==PLURAL?"some":"a"] [(l_hand.blood_color != "#030303") ? "blood" : "oil"]-stained [l_hand.name] in [T.his] [l_hand.wielded ? "hands" : "left hand"]!</span>\n"
 		else
-			msg += "[T.He] [T.is] holding \icon[l_hand] \a [l_hand] in [T.his] left hand.\n"
+			msg += "[T.He] [T.is] holding \icon[l_hand] \a [l_hand] in [T.his] [l_hand.wielded ? "hands" : "left hand"].\n"
 
 	//right hand
-	if(r_hand)
+	if(r_hand && !(r_hand.item_flags & ABSTRACT))
 		if(r_hand.blood_DNA)
-			msg += "<span class='warning'>[T.He] [T.is] holding \icon[r_hand] [r_hand.gender==PLURAL?"some":"a"] [(r_hand.blood_color != "#030303") ? "blood" : "oil"]-stained [r_hand.name] in [T.his] right hand!</span>\n"
+			msg += "<span class='warning'>[T.He] [T.is] holding \icon[r_hand] [r_hand.gender==PLURAL?"some":"a"] [(r_hand.blood_color != "#030303") ? "blood" : "oil"]-stained [r_hand.name] in [T.his] [r_hand.wielded ? "hands" : "right hand"]!</span>\n"
 		else
-			msg += "[T.He] [T.is] holding \icon[r_hand] \a [r_hand] in [T.his] right hand.\n"
+			msg += "[T.He] [T.is] holding \icon[r_hand] \a [r_hand] in [T.his] [r_hand.wielded ? "hands" : "right hand"].\n"
 
 	//gloves
 	if(gloves && !skipgloves)
@@ -163,16 +163,6 @@
 
 	//ID
 	if(wear_id)
-		/*var/id
-		if(istype(wear_id, /obj/item/device/pda))
-			var/obj/item/device/pda/pda = wear_id
-			id = pda.owner
-		else if(istype(wear_id, /obj/item/weapon/card/id)) //just in case something other than a PDA/ID card somehow gets in the ID slot :[
-			var/obj/item/weapon/card/id/idcard = wear_id
-			id = idcard.registered_name
-		if(id && (id != real_name) && (get_dist(src, usr) <= 1) && prob(10))
-			msg += "<span class='warning'>[T.He] [T.is] wearing \icon[wear_id] \a [wear_id] yet something doesn't seem right...</span>\n"
-		else*/
 		msg += "[T.He] [T.is] wearing \icon[wear_id] \a [wear_id].\n"
 
 	//Jitters
@@ -204,9 +194,9 @@
 			usr.visible_message("<b>[usr]</b> checks [src]'s pulse.", "You check [src]'s pulse.")
 		if(distance<=1 && do_mob(usr,src,15,progress=0))
 			if(pulse() == PULSE_NONE)
-				usr << "<span class='deadsay'>[T.He] [T.has] no pulse[src.client ? "" : " and [T.his] soul has departed"]...</span>"
+				to_chat(usr, "<span class='deadsay'>[T.He] [T.has] no pulse[src.client ? "" : " and [T.his] soul has departed"]...</span>")
 			else
-				usr << "<span class='deadsay'>[T.He] [T.has] a pulse!</span>"
+				to_chat(usr, "<span class='deadsay'>[T.He] [T.has] a pulse!</span>")
 
 	if(fire_stacks)
 		msg += "[T.He] [T.is] covered in some liquid.\n"
@@ -226,7 +216,7 @@
 
 	msg += "</span>"
 
-	if(species.show_ssd && (!species.has_organ[O_BRAIN] || has_brain()) && stat != DEAD)
+	if(species.show_ssd && (!species.has_organ[BP_BRAIN] || has_brain()) && stat != DEAD)
 		if(!key)
 			msg += "<span class='deadsay'>[T.He] [T.is] [species.show_ssd]. It doesn't look like [T.he] [T.is] waking up anytime soon.</span>\n"
 		else if(!client)
@@ -250,12 +240,12 @@
 
 	for(var/obj/item/organ/external/temp in organs)
 		if(temp)
-			if(temp.robotic >= ORGAN_ROBOT)
+			if(BP_IS_SILICON(temp))
 				if(!(temp.brute_dam + temp.burn_dam))
 					wound_flavor_text["[temp.name]"] = "<span class='warning'>[T.He] [T.has] a robot [temp.name]!</span>\n"
 					continue
 				else
-					wound_flavor_text["[temp.name]"] = "<span class='warning'>[T.He] [T.has] a robot [temp.name]. It has[temp.get_wounds_desc()]!</span>\n"
+					wound_flavor_text["[temp.name]"] = "<span class='warning'>[T.He] [T.has] a robot [temp.name]. It has [temp.get_wounds_desc()]!</span>\n"
 			else if(temp.wounds.len > 0 || temp.open)
 				if(temp.is_stump() && temp.parent_organ && organs_by_name[temp.parent_organ])
 					var/obj/item/organ/external/parent = organs_by_name[temp.parent_organ]
@@ -323,18 +313,10 @@
 	else if(is_bleeding["left leg"])
 		display_chest = 1
 
-	if(wound_flavor_text["left foot"]&& (is_destroyed["left foot"] || (!shoes && !skipshoes)))
-		msg += wound_flavor_text["left foot"]
-	else if(is_bleeding["left foot"])
-		display_shoes = 1
 	if(wound_flavor_text["right leg"] && (is_destroyed["right leg"] || (!w_uniform && !skipjumpsuit)))
 		msg += wound_flavor_text["right leg"]
 	else if(is_bleeding["right leg"])
 		display_chest = 1
-	if(wound_flavor_text["right foot"]&& (is_destroyed["right foot"] || (!shoes  && !skipshoes)))
-		msg += wound_flavor_text["right foot"]
-	else if(is_bleeding["right foot"])
-		display_shoes = 1
 
 	if(display_chest)
 		msg += "<span class='danger'>[src] [T.has] blood soaking through from under [T.his] clothing!</span>\n"
@@ -349,30 +331,18 @@
 		is_bleeding[limb] = null
 	for(var/limb in is_bleeding)
 		msg += is_bleeding[limb]
-	for(var/implant in get_visible_implants(0))
+	for(var/implant in get_visible_implants())
 		msg += "<span class='danger'>[src] [T.has] \a [implant] sticking out of [T.his] flesh!</span>\n"
 	if(digitalcamo)
 		msg += "[T.He] [T.is] repulsively uncanny!\n"
 
 	if(hasHUD(usr,"security"))
-		var/perpname = "wot"
+		var/perpname = get_id_name(name)
 		var/criminal = "None"
 
-		if(wear_id)
-			var/obj/item/weapon/card/id/I = wear_id.GetID()
-			if(I)
-				perpname = I.registered_name
-			else
-				perpname = name
-		else
-			perpname = name
-
 		if(perpname)
-			for (var/datum/data/record/E in data_core.general)
-				if(E.fields["name"] == perpname)
-					for (var/datum/data/record/R in data_core.security)
-						if(R.fields["id"] == E.fields["id"])
-							criminal = R.fields["criminal"]
+			var/datum/computer_file/report/crew_record/R = get_crewmember_record(perpname)
+			criminal = R ? R.get_criminalStatus() : "None"
 
 			msg += "<span class = 'deptradio'>Criminal status:</span> <a href='?src=\ref[src];criminal=1'>\[[criminal]\]</a>\n"
 			msg += "<span class = 'deptradio'>Security records:</span> <a href='?src=\ref[src];secrecord=`'>\[View\]</a>  <a href='?src=\ref[src];secrecordadd=`'>\[Add comment\]</a>\n"
@@ -382,11 +352,9 @@
 		var/medical = "None"
 
 		if(wear_id)
-			if(istype(wear_id,/obj/item/weapon/card/id))
-				perpname = wear_id:registered_name
-			else if(istype(wear_id,/obj/item/device/pda))
-				var/obj/item/device/pda/tempPda = wear_id
-				perpname = tempPda.owner
+			var/obj/item/weapon/card/id/id_card = wear_id.GetIdCard()
+			if(id_card)
+				perpname = id_card.registered_name
 		else
 			perpname = src.name
 
@@ -402,16 +370,15 @@
 		var/obj/item/clothing/under/U = w_uniform
 		if(U && istype(U) && U.sensor_mode >= 2)
 			msg += "<span class='deptradio'><b>Damage Specifics:</span> <span style=\"color:blue\">[round(src.getOxyLoss(), 1)]</span>-<span style=\"color:green\">[round(src.getToxLoss(), 1)]</span>-<span style=\"color:#FFA500\">[round(src.getFireLoss(), 1)]</span>-<span style=\"color:red\">[round(src.getBruteLoss(), 1)]</span></b>\n"
-
 	if(print_flavor_text()) msg += "[print_flavor_text()]\n"
 
 	msg += "*---------*</span>"
 	if (pose)
-		if( findtext(pose,".",lentext(pose)) == 0 && findtext(pose,"!",lentext(pose)) == 0 && findtext(pose,"?",lentext(pose)) == 0 )
+		if( findtext(pose,".",length(pose)) == 0 && findtext(pose,"!",length(pose)) == 0 && findtext(pose,"?",length(pose)) == 0 )
 			pose = addtext(pose,".") //Makes sure all emotes end with a period.
 		msg += "\n[T.He] [T.is] [pose]"
 
-	user << msg
+	to_chat(user, msg)
 
 //Helper procedure. Called by /mob/living/carbon/human/examine() and /mob/living/carbon/human/Topic() to determine HUD access to security and medical records.
 /proc/hasHUD(mob/M as mob, hudtype)

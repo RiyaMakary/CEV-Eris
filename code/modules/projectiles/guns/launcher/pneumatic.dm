@@ -1,9 +1,10 @@
 /obj/item/weapon/gun/launcher/pneumatic
 	name = "pneumatic cannon"
 	desc = "A large gas-powered cannon."
+	icon = 'icons/obj/guns/launcher/pneumatic.dmi'
 	icon_state = "pneumatic"
 	item_state = "pneumatic"
-	slot_flags = SLOT_BELT
+	slot_flags = SLOT_BACK
 	w_class = ITEM_SIZE_HUGE
 	flags =  CONDUCT
 	fire_sound_text = "a loud whoosh of moving air"
@@ -36,14 +37,14 @@
 	var/N = input("Percentage of tank used per shot:","[src]") as null|anything in possible_pressure_amounts
 	if (N)
 		pressure_setting = N
-		usr << "You dial the pressure valve to [pressure_setting]%."
+		to_chat(usr, "You dial the pressure valve to [pressure_setting]%.")
 
 /obj/item/weapon/gun/launcher/pneumatic/proc/eject_tank(mob/user) //Remove the tank.
 	if(!tank)
-		user << "There's no tank in [src]."
+		to_chat(user, "There's no tank in [src].")
 		return
 
-	user << "You twist the valve and pop the tank out of [src]."
+	to_chat(user, "You twist the valve and pop the tank out of [src].")
 	user.put_in_hands(tank)
 	tank = null
 	update_icon()
@@ -53,9 +54,9 @@
 		var/obj/item/removing = item_storage.contents[item_storage.contents.len]
 		item_storage.remove_from_storage(removing, src.loc)
 		user.put_in_hands(removing)
-		user << "You remove [removing] from the hopper."
+		to_chat(user, "You remove [removing] from the hopper.")
 	else
-		user << "There is nothing to remove in \the [src]."
+		to_chat(user, "There is nothing to remove in \the [src].")
 
 /obj/item/weapon/gun/launcher/pneumatic/attack_hand(mob/user as mob)
 	if(user.get_inactive_hand() == src)
@@ -79,7 +80,7 @@
 	if(!item_storage.contents.len)
 		return null
 	if (!tank)
-		user << "There is no gas tank in [src]!"
+		to_chat(user, SPAN_WARNING("There is no gas tank in [src]!"))
 		return null
 
 	var/environment_pressure = 10
@@ -91,7 +92,7 @@
 
 	fire_pressure = (tank.air_contents.return_pressure() - environment_pressure)*pressure_setting/100
 	if(fire_pressure < 10)
-		user << "There isn't enough gas in the tank to fire [src]."
+		to_chat(user, SPAN_WARNING("There isn't enough gas in the tank to fire [src]."))
 		return null
 
 	var/obj/item/launched = item_storage.contents[1]
@@ -101,11 +102,11 @@
 /obj/item/weapon/gun/launcher/pneumatic/examine(mob/user)
 	if(!..(user, 2))
 		return
-	user << "The valve is dialed to [pressure_setting]%."
+	to_chat(user, "The valve is dialed to [pressure_setting]%.")
 	if(tank)
-		user << "The tank dial reads [tank.air_contents.return_pressure()] kPa."
+		to_chat(user, "The tank dial reads [tank.air_contents.return_pressure()] kPa.")
 	else
-		user << "Nothing is attached to the tank valve!"
+		to_chat(user, SPAN_WARNING("Nothing is attached to the tank valve!"))
 
 /obj/item/weapon/gun/launcher/pneumatic/update_release_force(obj/item/projectile)
 	if(tank)
@@ -126,15 +127,12 @@
 /obj/item/weapon/gun/launcher/pneumatic/update_icon()
 	if(tank)
 		icon_state = "pneumatic-tank"
-		item_state = "pneumatic-tank"
+		set_item_state("-tank")
 	else
 		icon_state = "pneumatic"
-		item_state = "pneumatic"
+		set_item_state(null)
 
-	if (ismob(src.loc))
-		var/mob/M = src.loc
-		M.update_inv_r_hand()
-		M.update_inv_l_hand()
+	update_wear_icon()
 
 //Constructable pneumatic cannon.
 
@@ -152,62 +150,53 @@
 /obj/item/weapon/cannonframe/examine(mob/user)
 	..(user)
 	switch(buildstate)
-		if(1) user << "It has a pipe segment installed."
-		if(2) user << "It has a pipe segment welded in place."
-		if(3) user << "It has an outer chassis installed."
-		if(4) user << "It has an outer chassis welded in place."
-		if(5) user << "It has a transfer valve installed."
+		if(1) to_chat(user, "It has a pipe segment installed.")
+		if(2) to_chat(user, "It has a pipe segment welded in place.")
+		if(3) to_chat(user, "It has an outer chassis installed.")
+		if(4) to_chat(user, "It has an outer chassis welded in place.")
+		if(5) to_chat(user, "It has a transfer valve installed.")
 
-/obj/item/weapon/cannonframe/attackby(obj/item/W as obj, mob/user as mob)
-	if(istype(W,/obj/item/pipe))
+/obj/item/weapon/cannonframe/attackby(obj/item/I, mob/user)
+	if(istype(I,/obj/item/pipe))
 		if(buildstate == 0)
-			user.drop_from_inventory(W)
-			qdel(W)
-			user << SPAN_NOTICE("You secure the piping inside the frame.")
+			user.drop_from_inventory(I)
+			qdel(I)
+			to_chat(user, SPAN_NOTICE("You secure the piping inside the frame."))
 			buildstate++
 			update_icon()
 			return
-	else if(istype(W,/obj/item/stack/material) && W.get_material_name() == DEFAULT_WALL_MATERIAL)
+	else if(istype(I,/obj/item/stack/material) && I.get_material_name() == MATERIAL_STEEL)
 		if(buildstate == 2)
-			var/obj/item/stack/material/M = W
+			var/obj/item/stack/material/M = I
 			if(M.use(5))
-				user << SPAN_NOTICE("You assemble a chassis around the cannon frame.")
+				to_chat(user, SPAN_NOTICE("You assemble a chassis around the cannon frame."))
 				buildstate++
 				update_icon()
 			else
-				user << SPAN_NOTICE("You need at least five metal sheets to complete this task.")
+				to_chat(user, SPAN_NOTICE("You need at least five metal sheets to complete this task."))
 			return
-	else if(istype(W,/obj/item/device/transfer_valve))
+	else if(istype(I,/obj/item/device/transfer_valve))
 		if(buildstate == 4)
-			user.drop_from_inventory(W)
-			qdel(W)
-			user << SPAN_NOTICE("You install the transfer valve and connect it to the piping.")
+			user.drop_from_inventory(I)
+			qdel(I)
+			to_chat(user, SPAN_NOTICE("You install the transfer valve and connect it to the piping."))
 			buildstate++
 			update_icon()
 			return
-	else if(istype(W,/obj/item/weapon/weldingtool))
+	else if(QUALITY_WELDING in I.tool_qualities)
 		if(buildstate == 1)
-			var/obj/item/weapon/weldingtool/T = W
-			if(T.remove_fuel(0,user))
-				if(!src || !T.isOn()) return
-				playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
-				user << SPAN_NOTICE("You weld the pipe into place.")
+			if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_WELDING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+				to_chat(user, SPAN_NOTICE("You weld the pipe into place."))
 				buildstate++
 				update_icon()
 		if(buildstate == 3)
-			var/obj/item/weapon/weldingtool/T = W
-			if(T.remove_fuel(0,user))
-				if(!src || !T.isOn()) return
-				playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
-				user << SPAN_NOTICE("You weld the metal chassis together.")
+			if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_WELDING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+				to_chat(user, SPAN_NOTICE("You weld the metal chassis together."))
 				buildstate++
 				update_icon()
 		if(buildstate == 5)
-			var/obj/item/weapon/weldingtool/T = W
-			if(T.remove_fuel(0,user))
-				if(!src || !T.isOn()) return
-				playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
-				user << SPAN_NOTICE("You weld the valve into place.")
+			if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_WELDING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+				to_chat(user, SPAN_NOTICE("You weld the valve into place."))
 				new /obj/item/weapon/gun/launcher/pneumatic(get_turf(src))
 				qdel(src)
 		return

@@ -7,7 +7,7 @@
 	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "generic_key"
 	icon_screen = "comm_logs"
-	light_color = "#00b000"
+	light_color = COLOR_LIGHTING_BLUE_MACHINERY
 	density = 1
 	anchored = 1.0
 	circuit = /obj/item/weapon/circuitboard/atmoscontrol
@@ -23,9 +23,6 @@
 	icon_screen = "atmoslaptop"
 	density = 0
 	CheckFaceFlag = 0
-
-/obj/machinery/computer/atmoscontrol/attack_ai(var/mob/user as mob)
-	ui_interact(user)
 
 /obj/machinery/computer/atmoscontrol/attack_hand(mob/user)
 	if(..())

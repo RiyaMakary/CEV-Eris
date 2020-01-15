@@ -9,7 +9,6 @@
 	var/obj/machinery/mineral/stacking_machine/machine = null
 
 /obj/machinery/mineral/stacking_unit_console/New()
-
 	..()
 
 	spawn()
@@ -35,7 +34,6 @@
 			dat += "<tr><td width = 150><b>[capitalize(stacktype)]:</b></td><td width = 30>[machine.stack_storage[stacktype]]</td><td width = 50><A href='?src=\ref[src];release_stack=[stacktype]'>\[release\]</a></td></tr>"
 	dat += "</table><hr>"
 	dat += text("<br>Stacking: [machine.stack_amt] <A href='?src=\ref[src];change_stack=1'>\[change\]</a><br><br>")
-
 	user << browse("[dat]", "window=console_stacking_machine")
 	onclose(user, "console_stacking_machine")
 
@@ -45,22 +43,16 @@
 		return 1
 
 	if(href_list["change_stack"])
-		var/choice = input("What would you like to set the stack amount to?") as null|anything in list(1,5,10,20,50)
+		var/choice = input("What would you like to set the stack amount to?") as null|anything in list(1,5,10,20,50,120)
 		if(!choice) return
 		machine.stack_amt = choice
 
 	if(href_list["release_stack"])
-		if(machine.stack_storage[href_list["release_stack"]] > 0)
-			var/stacktype = machine.stack_paths[href_list["release_stack"]]
-			var/obj/item/stack/material/S = new stacktype (get_step(machine, machine.output_dir))
-			S.amount = machine.stack_storage[href_list["release_stack"]]
-			machine.stack_storage[href_list["release_stack"]] = 0
+		var/material_name = href_list["release_stack"]
+		machine.outputMaterial(material_name, machine.stack_amt)
 
 	playsound(loc, 'sound/machines/machine_switch.ogg', 100, 1)
-	src.add_fingerprint(usr)
 	src.updateUsrDialog()
-
-	return
 
 /**********************Mineral stacking unit**************************/
 
@@ -74,26 +66,16 @@
 	var/obj/machinery/mineral/stacking_unit_console/console
 	var/input_dir = null
 	var/output_dir = null
-	var/list/stack_storage[0]
-	var/list/stack_paths[0]
-	var/stack_amt = 50; // Amount to stack before releassing
+	var/list/stack_storage
+	var/stack_amt = 120 // Amount to stack before releassing
 
 /obj/machinery/mineral/stacking_machine/New()
-	..()
+	stack_storage = new
 
-	for(var/stacktype in typesof(/obj/item/stack/material)-/obj/item/stack/material)
-		var/obj/item/stack/S = new stacktype(src)
-		stack_storage[S.name] = 0
-		stack_paths[S.name] = stacktype
-		qdel(S)
-
-	stack_storage["glass"] = 0
-	stack_paths["glass"] = /obj/item/stack/material/glass
-	stack_storage[DEFAULT_WALL_MATERIAL] = 0
-	stack_paths[DEFAULT_WALL_MATERIAL] = /obj/item/stack/material/steel
-	stack_storage["plasteel"] = 0
-	stack_paths["plasteel"] = /obj/item/stack/material/plasteel
-
+	//TODO: Make this dynamic based on detecting conveyor belts or something. Maybe an interface to manually configure it
+	//These markers delete themselves on initialize so the machine can never be properly rebuilt during a round. This is bad.
+	input_dir = NORTH //Sensible default so that the machine can at least be replaced in the same location
+	output_dir = SOUTH
 	spawn()
 		//Locate our output and input machinery.
 		var/obj/marker = null
@@ -104,27 +86,35 @@
 		if(marker)
 			output_dir = get_dir(src, marker)
 
-/obj/machinery/mineral/stacking_machine/process()
-	if(src.output_dir && src.input_dir)
+/obj/machinery/mineral/stacking_machine/proc/outputMaterial(var/material_name, var/amount)
+	var/stored_amount = stack_storage[material_name] || 0
+	amount = min(stored_amount, amount)
+	if (amount > 0)
+		stack_storage[material_name] -= amount
+		var/stacktype = material_stack_type(material_name)
+		new stacktype (get_step(src, output_dir), amount)
+
+/obj/machinery/mineral/stacking_machine/Process()
+	if (src.output_dir && src.input_dir)
 		var/turf/T = get_step(src, input_dir)
-		for(var/obj/item/O in T.contents)
-			if(!O) return
-			if(istype(O,/obj/item/stack))
-				if(!isnull(stack_storage[O.name]))
-					stack_storage[O.name]++
-					O.forceMove(null)
+		for (var/obj/item/O in T.contents)
+			if (istype(O))
+				if (istype(O, /obj/item/stack/material))
+					var/obj/item/stack/material/M = O
+					if (M.material && M.material.name)
+						var/material_name = M.material.name
+						var/stack_amount = M.amount
+						var/stored_amount = stack_storage[material_name] || 0
+						stack_storage[material_name] = stored_amount + stack_amount
+						qdel(M)
+					else
+						M.forceMove(get_step(src, output_dir))
 				else
 					O.forceMove(get_step(src, output_dir))
-			else
-				O.forceMove(get_step(src, output_dir))
 
 	//Output amounts that are past stack_amt.
-	for(var/sheet in stack_storage)
-		if(stack_storage[sheet] >= stack_amt)
-			var/stacktype = stack_paths[sheet]
-			var/obj/item/stack/material/S = new stacktype (get_step(src, output_dir))
-			S.amount = stack_amt
-			stack_storage[sheet] -= stack_amt
+	for (var/material_name in stack_storage)
+		if (stack_storage[material_name] >= stack_amt)
+			outputMaterial(material_name, stack_amt)
 
 	console.updateUsrDialog()
-	return

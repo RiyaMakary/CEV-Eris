@@ -10,13 +10,14 @@
 	item_state = "ass_jacket"
 	blood_overlay_type = "coat"
 	body_parts_covered = UPPER_TORSO|ARMS
-	allowed = list(
-		/obj/item/weapon/tank/emergency_oxygen, /obj/item/device/lighting/toggleable/flashlight,
-		/obj/item/weapon/gun/energy,/obj/item/weapon/gun/projectile,/obj/item/ammo_magazine,
-		/obj/item/ammo_casing,/obj/item/weapon/melee/baton,/obj/item/weapon/handcuffs,
-		/obj/item/weapon/storage/fancy/cigarettes,/obj/item/weapon/flame/lighter,/obj/item/device/taperecorder
+	armor = list(
+		melee = 10,
+		bullet = 10,
+		energy = 10,
+		bomb = 0,
+		bio = 0,
+		rad = 0
 	)
-	armor = list(melee = 10, bullet = 0, laser = 0, energy = 0, bomb = 0, bio = 0, rad = 0)
 
 //Guild Technician
 /obj/item/clothing/suit/storage/cargo_jacket
@@ -26,34 +27,32 @@
 	item_state = "cargo_jacket"
 	blood_overlay_type = "coat"
 	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
-	allowed = list (
-		/obj/item/device/analyzer, /obj/item/device/lighting/toggleable/flashlight, /obj/item/device/multitool,
-		/obj/item/device/pipe_painter, /obj/item/device/radio, /obj/item/device/t_scanner,
-		/obj/item/weapon/crowbar, /obj/item/weapon/screwdriver, /obj/item/weapon/weldingtool,
-		/obj/item/weapon/wirecutters, /obj/item/weapon/wrench, /obj/item/weapon/tank/emergency_oxygen,
-		/obj/item/clothing/mask/gas, /obj/item/taperoll/engineering
+	armor = list(
+		melee = 10,
+		bullet = 10,
+		energy = 10,
+		bomb = 0,
+		bio = 0,
+		rad = 0
 	)
-	armor = list(melee = 10, bullet = 0, laser = 0, energy = 0, bomb = 0, bio = 0, rad = 0)
 
 //Quartermaster
 /obj/item/clothing/suit/storage/qm_coat
 	name = "guild merchant coat"
-	desc = "An ideal choice for a smuggler. This coat seems have good impact resistant, and made from resistant and expensive materials.."
+	desc = "An ideal choice for a smuggler. This coat seems have good impact resistance, and is made from resistant and expensive materials."
 	icon_state = "qm_coat"
 	item_state = "qm_coat"
 	blood_overlay_type = "coat"
 	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
-	allowed = list(
-		/obj/item/device/lighting/toggleable/flashlight,/obj/item/weapon/gun/energy,/obj/item/weapon/gun/projectile,
-		/obj/item/ammo_magazine,/obj/item/ammo_casing,/obj/item/weapon/melee/baton,/obj/item/weapon/handcuffs,
-		/obj/item/weapon/storage/fancy/cigarettes,/obj/item/weapon/flame/lighter,/obj/item/device/taperecorder,
-		/obj/item/device/analyzer, /obj/item/device/multitool, /obj/item/device/pipe_painter,
-		/obj/item/device/radio, /obj/item/device/t_scanner, /obj/item/weapon/crowbar,
-		/obj/item/weapon/screwdriver, /obj/item/weapon/weldingtool, /obj/item/weapon/wirecutters,
-		/obj/item/weapon/wrench, /obj/item/weapon/tank/emergency_oxygen, /obj/item/clothing/mask/gas,
-		/obj/item/taperoll/engineering
+	armor = list(
+		melee = 30,
+		bullet = 20,
+		energy = 10,
+		bomb = 0,
+		bio = 0,
+		rad = 0
 	)
-	armor = list(melee = 40, bullet = 10, laser = 10, energy = 10, bomb = 0, bio = 0, rad = 0)
+	siemens_coefficient = 0.8
 
 //Botonist
 /obj/item/clothing/suit/apron
@@ -63,27 +62,34 @@
 	item_state = "apron"
 	blood_overlay_type = "armor"
 	body_parts_covered = 0
-	allowed = list (/obj/item/weapon/reagent_containers/spray/plantbgone,/obj/item/device/analyzer/plant_analyzer,/obj/item/seeds,/obj/item/weapon/reagent_containers/glass/fertilizer,/obj/item/weapon/material/minihoe)
+	extra_allowed = list(
+		/obj/item/seeds,
+		/obj/item/weapon/reagent_containers/glass/fertilizer,
+		/obj/item/weedkiller
+	)
 
 //Chaplain
 /obj/item/clothing/suit/chaplain_hoodie
-	name = "preacher coat"
-	desc = "This suit says to you 'hush'!"
+	name = "preacher jacket"
+	desc = "A long, lightly armoured jacket. Dark, stylish, and authoritarian."
 	icon_state = "chaplain_hoodie"
 	item_state = "chaplain_hoodie"
 	blood_overlay_type = "coat"
 	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
-	allowed = list(
-		/obj/item/device/lighting/toggleable/flashlight,/obj/item/weapon/gun/energy,/obj/item/weapon/gun/projectile,
-		/obj/item/ammo_magazine,/obj/item/ammo_casing,/obj/item/weapon/melee/baton,/obj/item/weapon/handcuffs,
-		/obj/item/weapon/storage/fancy/cigarettes,/obj/item/weapon/flame/lighter,/obj/item/device/taperecorder,
-		/obj/item/device/analyzer, /obj/item/device/multitool, /obj/item/device/pipe_painter,
-		/obj/item/device/radio, /obj/item/device/t_scanner, /obj/item/weapon/crowbar,
-		/obj/item/weapon/screwdriver, /obj/item/weapon/weldingtool, /obj/item/weapon/wirecutters,
-		/obj/item/weapon/wrench, /obj/item/weapon/tank/emergency_oxygen, /obj/item/clothing/mask/gas,
-		/obj/item/taperoll/engineering
+	armor = list(
+		melee = 10,
+		bullet = 10,
+		energy = 10,
+		bomb = 0,
+		bio = 0,
+		rad = 0
 	)
-	armor = list(melee = 10, bullet = 10, laser = 10, energy = 10, bomb = 0, bio = 0, rad = 0)
+
+/obj/item/clothing/suit/chaplain_hoodie/coat
+	name = "preacher coat"
+	desc = "A snugly fitting, lightly armoured brown coat."
+	icon_state = "church_coat"
+	item_state = "church_coat"
 
 //Chaplain
 /obj/item/clothing/suit/nun
@@ -100,10 +106,9 @@
 	desc = "An apron used by a high class chef."
 	icon_state = "chef"
 	item_state = "chef"
-	gas_transfer_coefficient = 0.90
-	permeability_coefficient = 0.50
+	gas_transfer_coefficient = 0.9
+	permeability_coefficient = 0.5
 	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
-	allowed = list (/obj/item/weapon/material/knife)
 
 //Chef
 /obj/item/clothing/suit/chef/classic
@@ -115,36 +120,29 @@
 	body_parts_covered = 0
 
 //Detective
-/obj/item/clothing/suit/storage/insp_trench
-	name = "Inspector's armored trenchcoat"
-	desc = "Brown and armored trenchcoat, designed and created by Ironhammer Security. The coat is externally impact resistant - perfect for your next act of autodefenestration!"
-	icon_state = "insp_coat"
-	item_state = "insp_coat"
-	blood_overlay_type = "coat"
-	body_parts_covered = UPPER_TORSO|ARMS
-	allowed = list(
-		/obj/item/weapon/tank/emergency_oxygen, /obj/item/device/lighting/toggleable/flashlight,
-		/obj/item/weapon/gun/energy,/obj/item/weapon/gun/projectile,/obj/item/ammo_magazine,
-		/obj/item/ammo_casing,/obj/item/weapon/melee/baton,/obj/item/weapon/handcuffs,
-		/obj/item/weapon/storage/fancy/cigarettes,/obj/item/weapon/flame/lighter,/obj/item/device/taperecorder
-	)
-	armor = list(melee = 50, bullet = 10, laser = 25, energy = 10, bomb = 0, bio = 0, rad = 0)
-
-/obj/item/clothing/suit/storage/det_trench
+/obj/item/clothing/suit/storage/detective
 	name = "brown trenchcoat"
 	desc = "A rugged canvas trenchcoat, designed and created by TX Fabrication Corp. The coat is externally impact resistant - perfect for your next act of autodefenestration!"
 	icon_state = "detective"
 	item_state = "det_suit"
 	blood_overlay_type = "coat"
 	body_parts_covered = UPPER_TORSO|ARMS
-	allowed = list(
-		/obj/item/weapon/tank/emergency_oxygen, /obj/item/device/lighting/toggleable/flashlight,
-		/obj/item/weapon/gun/energy,/obj/item/weapon/gun/projectile,/obj/item/ammo_magazine,
-		/obj/item/ammo_casing,/obj/item/weapon/melee/baton,/obj/item/weapon/handcuffs,
-		/obj/item/weapon/storage/fancy/cigarettes,/obj/item/weapon/flame/lighter,
-		/obj/item/device/taperecorder
+	armor = list(
+		melee = 30,
+		bullet = 20,
+		energy = 20,
+		bomb = 0,
+		bio = 0,
+		rad = 0
 	)
-	armor = list(melee = 50, bullet = 10, laser = 25, energy = 10, bomb = 0, bio = 0, rad = 0)
+	price_tag = 250
+
+/obj/item/clothing/suit/storage/detective/ironhammer
+	name = "Inspector's armored trenchcoat"
+	desc = "Brown and armored trenchcoat, designed and created by Ironhammer Security. The coat is externally impact resistant - perfect for your next act of autodefenestration!"
+	icon_state = "insp_coat"
+	item_state = "insp_coat"
+	blood_overlay_type = "coat"
 
 //Engineering
 /obj/item/clothing/suit/storage/hazardvest
@@ -153,14 +151,9 @@
 	icon_state = "hazard"
 	item_state = "hazard"
 	blood_overlay_type = "armor"
-	allowed = list(
-		/obj/item/device/analyzer, /obj/item/device/lighting/toggleable/flashlight, /obj/item/device/multitool,
-		/obj/item/device/pipe_painter, /obj/item/device/radio, /obj/item/device/t_scanner,
-		/obj/item/weapon/crowbar, /obj/item/weapon/screwdriver, /obj/item/weapon/weldingtool,
-		/obj/item/weapon/wirecutters, /obj/item/weapon/wrench, /obj/item/weapon/tank/emergency_oxygen,
-		/obj/item/clothing/mask/gas, /obj/item/taperoll/engineering
-	)
+	extra_allowed = list(/obj/item/weapon/tool)
 	body_parts_covered = UPPER_TORSO
+	price_tag = 50
 
 //Roboticist
 /obj/item/clothing/suit/storage/robotech_jacket
@@ -169,31 +162,32 @@
 	icon_state = "robotech_jacket"
 	item_state = "robotech_jacket"
 	blood_overlay_type = "coat"
-	allowed = list(
-		/obj/item/device/analyzer, /obj/item/device/lighting/toggleable/flashlight, /obj/item/device/multitool,
-		/obj/item/device/pipe_painter, /obj/item/device/radio, /obj/item/device/t_scanner,
-		/obj/item/weapon/crowbar, /obj/item/weapon/screwdriver, /obj/item/weapon/weldingtool,
-		/obj/item/weapon/wirecutters, /obj/item/weapon/wrench, /obj/item/weapon/tank/emergency_oxygen,
-		/obj/item/clothing/mask/gas, /obj/item/taperoll/engineering
-	)
 	body_parts_covered = UPPER_TORSO|ARMS
+	price_tag = 50
+	armor = list(
+		melee = 10,
+		bullet = 0,
+		energy = 0,
+		bomb = 0,
+		bio = 0,
+		rad = 0
+	)
 
 /obj/item/clothing/suit/storage/surgical_apron
 	name = "surgical apron"
-	desc = "Excelent blood collector."
+	desc = "Excellent blood collector."
 	icon_state = "surgeon"
 	item_state = "surgeon"
 	blood_overlay_type = "armor"
-	allowed = list(
-		/obj/item/weapon/bonesetter,
-		/obj/item/weapon/cautery,
-		/obj/item/weapon/circular_saw,
-		/obj/item/weapon/hemostat,
-		/obj/item/weapon/retractor,
-		/obj/item/weapon/scalpel,
-		/obj/item/weapon/surgicaldrill,
-		/obj/item/weapon/bonegel,
-		/obj/item/weapon/FixOVein,
+	extra_allowed = list(
+		/obj/item/weapon/tool/bonesetter,
+		/obj/item/weapon/tool/cautery,
+		/obj/item/weapon/tool/saw/circular,
+		/obj/item/weapon/tool/hemostat,
+		/obj/item/weapon/tool/retractor,
+		/obj/item/weapon/tool/scalpel,
+		/obj/item/weapon/tool/surgicaldrill,
 		/obj/item/stack/medical/advanced/bruise_pack
 	)
 	body_parts_covered = UPPER_TORSO|LOWER_TORSO
+	price_tag = 50

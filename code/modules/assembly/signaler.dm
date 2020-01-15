@@ -4,7 +4,7 @@
 	icon_state = "signaller"
 	item_state = "signaler"
 	origin_tech = list(TECH_MAGNET = 1)
-	matter = list(DEFAULT_WALL_MATERIAL = 1000, "glass" = 200, "waste" = 100)
+	matter = list(MATERIAL_PLASTIC = 1)
 	wires = WIRE_RECEIVE | WIRE_PULSE | WIRE_RADIO_PULSE | WIRE_RADIO_RECEIVE
 
 	secured = 1
@@ -93,7 +93,7 @@
 
 
 /obj/item/device/assembly/signaler/proc/signal()
-	if(!radio_connection) 
+	if(!radio_connection)
 		return
 
 	var/datum/signal/signal = new
@@ -129,25 +129,21 @@
 /obj/item/device/assembly/signaler/proc/set_frequency(new_frequency)
 	if(!frequency)
 		return
-	if(!radio_controller)
-		sleep(20)
-	if(!radio_controller)
-		return
-	radio_controller.remove_object(src, frequency)
+	SSradio.remove_object(src, frequency)
 	frequency = new_frequency
-	radio_connection = radio_controller.add_object(src, frequency, RADIO_CHAT)
+	radio_connection = SSradio.add_object(src, frequency, RADIO_CHAT)
 	return
 
 
-/obj/item/device/assembly/signaler/process()
+/obj/item/device/assembly/signaler/Process()
 	if(!deadman)
-		processing_objects.Remove(src)
+		STOP_PROCESSING(SSobj, src)
 	var/mob/M = src.loc
 	if(!M || !ismob(M))
 		if(prob(5))
 			signal()
 		deadman = 0
-		processing_objects.Remove(src)
+		STOP_PROCESSING(SSobj, src)
 	else if(prob(5))
 		M.visible_message("[M]'s finger twitches a bit over [src]'s signal button!")
 	return
@@ -158,12 +154,11 @@
 	set name = "Threaten to push the button!"
 	set desc = "BOOOOM!"
 	deadman = 1
-	processing_objects.Add(src)
+	START_PROCESSING(SSobj, src)
 	log_and_message_admins("is threatening to trigger a signaler deadman's switch")
 	usr.visible_message("\red [usr] moves their finger over [src]'s signal button...")
 
 /obj/item/device/assembly/signaler/Destroy()
-	if(radio_controller)
-		radio_controller.remove_object(src,frequency)
+	SSradio.remove_object(src,frequency)
 	frequency = 0
-	..()
+	. = ..()

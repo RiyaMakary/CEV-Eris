@@ -26,7 +26,7 @@ datum/puddle/Destroy()
 	puddles -= src
 	for(var/obj/O in liquid_objects)
 		qdel(O)
-	..()
+	. = ..()
 
 client/proc/splash()
 	var/volume = input("Volume?","Volume?", 0 ) as num
@@ -128,12 +128,12 @@ obj/effect/liquid/proc/apply_calculated_effect()
 	new_volume = 0
 	update_icon2()
 
-obj/effect/liquid/Move()
+obj/effect/liquid/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	return 0
 
 obj/effect/liquid/Destroy()
 	src.controller.liquid_objects.Remove(src)
-	..()
+	. = ..()
 
 obj/effect/liquid/proc/update_icon2()
 	//icon_state = num2text( max(1,min(7,(floor(volume),10)/10)) )

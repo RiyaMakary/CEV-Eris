@@ -10,11 +10,11 @@
 
 /client/verb/change_ui_format()
 	set name = "Change UI format"
-	set category = "Preferences"
+	set category = "OOC"
 	set desc = "Minimize or maximaze you UI"
 
 	if(!ishuman(usr))
-		usr << SPAN_WARNING("You must be human to use this verb.")
+		to_chat(usr, SPAN_WARNING("You must be human to use this verb."))
 		return
 
 
@@ -25,11 +25,11 @@
 
 /client/verb/change_ui()
 	set name = "Change UI"
-	set category = "Preferences"
+	set category = "OOC"
 	set desc = "Configure your user interface"
 
 	if(!ishuman(usr))
-		usr << SPAN_WARNING("You must be human to use this verb.")
+		to_chat(usr, SPAN_WARNING("You must be human to use this verb."))
 		return
 //to:do make normal HUDoption page
 

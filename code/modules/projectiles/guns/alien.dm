@@ -8,7 +8,7 @@
 	var/max_spikes = 3
 	var/spikes = 3
 	release_force = 30
-	icon = 'icons/obj/gun.dmi'
+	icon = 'icons/obj/guns/launcher.dmi'
 	icon_state = "spikethrower3"
 	item_state = "spikethrower"
 	fire_sound_text = "a strange noise"
@@ -16,14 +16,14 @@
 
 /obj/item/weapon/gun/launcher/spikethrower/New()
 	..()
-	processing_objects.Add(src)
+	START_PROCESSING(SSobj, src)
 	last_regen = world.time
 
 /obj/item/weapon/gun/launcher/spikethrower/Destroy()
-	processing_objects.Remove(src)
-	..()
+	STOP_PROCESSING(SSobj, src)
+	. = ..()
 
-/obj/item/weapon/gun/launcher/spikethrower/process()
+/obj/item/weapon/gun/launcher/spikethrower/Process()
 	if(spikes < max_spikes && world.time > last_regen + spike_gen_time)
 		spikes++
 		last_regen = world.time
@@ -31,14 +31,14 @@
 
 /obj/item/weapon/gun/launcher/spikethrower/examine(mob/user)
 	..(user)
-	user << "It has [spikes] spike\s remaining."
+	to_chat(user, "It has [spikes] spike\s remaining.")
 
 /obj/item/weapon/gun/launcher/spikethrower/update_icon()
 	icon_state = "spikethrower[spikes]"
 
 /obj/item/weapon/gun/launcher/spikethrower/special_check(user)
 	if(ishuman(user))
-		user << SPAN_WARNING("\The [src] does not respond to you!")
+		to_chat(user, SPAN_WARNING("\The [src] does not respond to you!"))
 		return 0
 	return ..()
 

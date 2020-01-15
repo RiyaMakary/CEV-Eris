@@ -109,13 +109,22 @@
 	var/shutdown_pump = 0
 	switch(command)
 		if("cycle_ext")
+			//If airlock is already cycled in this direction, just toggle the doors.
+			if(!memory["purge"] && ISINRANGE(memory["external_sensor_pressure"], memory["chamber_sensor_pressure"] * 0.95, memory["chamber_sensor_pressure"] * 1.05))
+				//Cycling to exterior will close the inner door then open the outer door, if we're already in the pressure range
+				toggleDoor(memory["interior_status"], tag_interior_door, memory["secure"], "close")
+				toggleDoor(memory["exterior_status"], tag_exterior_door, memory["secure"], "open")
 			//only respond to these commands if the airlock isn't already doing something
 			//prevents the controller from getting confused and doing strange things
-			if(state == target_state)
+			else if(state == target_state)
 				begin_cycle_out()
 
 		if("cycle_int")
-			if(state == target_state)
+			if(!memory["purge"] && ISINRANGE(memory["internal_sensor_pressure"], memory["chamber_sensor_pressure"] * 0.95, memory["chamber_sensor_pressure"] * 1.05))
+				//Cycling to interior will close the inner door then open the outer door, if we're already in the pressure range
+				toggleDoor(memory["exterior_status"], tag_exterior_door, memory["secure"], "close")
+				toggleDoor(memory["interior_status"], tag_interior_door, memory["secure"], "open")
+			else if(state == target_state)
 				begin_cycle_in()
 
 		if("cycle_ext_door")
@@ -153,7 +162,7 @@
 		signalPump(tag_airpump, 0)		//send a signal to stop pressurizing
 
 
-/datum/computer/file/embedded_program/airlock/process()
+/datum/computer/file/embedded_program/airlock/Process()
 	if(!state) //Idle
 		if(target_state)
 			switch(target_state)
@@ -216,7 +225,7 @@
 					memory["target_pressure"] = memory["internal_sensor_pressure"]
 					state = STATE_PREPARE
 					target_state = TARGET_NONE
-				
+
 				else if(memory["pump_status"] != "off")
 					signalPump(tag_airpump, 0)
 				else
@@ -275,7 +284,8 @@
 		"sigtype" = "command",
 		"power" = power,
 		"direction" = direction,
-		"set_external_pressure" = pressure
+		"set_external_pressure" = pressure,
+		"expanded_range" = TRUE
 	)
 	post_signal(signal)
 

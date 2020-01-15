@@ -12,21 +12,17 @@
 	if(istype(I, /obj/item/clothing/accessory))
 
 		if(!valid_accessory_slots || !valid_accessory_slots.len)
-			usr << SPAN_WARNING("You cannot attach accessories of any kind to \the [src].")
+			to_chat(usr, SPAN_WARNING("You cannot attach accessories of any kind to \the [src]."))
 			return
 
 		var/obj/item/clothing/accessory/A = I
-		if(can_attach_accessory(A))
-			user.drop_item()
+		if(can_attach_accessory(A) && user.unEquip(A, src))
 			accessories += A
 			A.on_attached(src, user)
 			src.verbs |= /obj/item/clothing/proc/removetie_verb
-			if(ishuman(loc))
-				var/mob/living/carbon/human/H = loc
-				H.update_inv_w_uniform()
-			return
+			src.update_wear_icon()
 		else
-			user << SPAN_WARNING("You cannot attach more accessories of this type to [src].")
+			to_chat(user, SPAN_WARNING("You cannot attach more accessories of this type to [src]."))
 		return
 
 	if(accessories.len)
@@ -36,6 +32,18 @@
 
 	..()
 
+/**
+ *  Attach accessory A to src
+ *
+ *  user is the user doing the attaching. Can be null, such as when attaching
+ *  items on spawn
+ */
+/obj/item/clothing/proc/attach_accessory(mob/user, obj/item/clothing/accessory/A)
+	accessories += A
+	A.on_attached(src, user)
+	src.verbs |= /obj/item/clothing/proc/removetie_verb
+	src.update_wear_icon()
+
 /obj/item/clothing/attack_hand(var/mob/user)
 	//only forward to the attached accessory if the clothing is equipped (not in a storage)
 	if(accessories.len && src.loc == user)
@@ -44,31 +52,11 @@
 		return
 	return ..()
 
-/obj/item/clothing/MouseDrop(var/obj/over_object)
-	if (ishuman(usr) || issmall(usr))
-		//makes sure that the clothing is equipped so that we can't drag it into our hand from miles away.
-		if (!(src.loc == usr))
-			return
-
-		if (( usr.restrained() ) || ( usr.stat ))
-			return
-
-		if (!usr.unEquip(src))
-			return
-		if (istype(over_object, /obj/screen/inventory/hand))
-			var/obj/screen/inventory/hand/H = over_object
-			switch(H.slot_id)
-				if(slot_r_hand)
-					usr.put_in_r_hand(src)
-				if(slot_l_hand)
-					usr.put_in_l_hand(src)
-		src.add_fingerprint(usr)
-
 /obj/item/clothing/examine(var/mob/user)
 	..(user)
 	if(accessories.len)
 		for(var/obj/item/clothing/accessory/A in accessories)
-			user << "\A [A] is attached to it."
+			to_chat(user, "\A [A] is attached to it.")
 
 /obj/item/clothing/proc/remove_accessory(mob/user, obj/item/clothing/accessory/A)
 	if(!(A in accessories))
@@ -76,7 +64,7 @@
 
 	A.on_removed(user)
 	accessories -= A
-	update_clothing_icon()
+	update_wear_icon()
 
 /obj/item/clothing/proc/removetie_verb()
 	set name = "Remove Accessory"

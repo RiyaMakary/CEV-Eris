@@ -13,8 +13,8 @@
 	T = new/obj/item/stack/tile/floor(src)
 	..()
 
-/obj/machinery/floorlayer/Move(new_turf,M_Dir)
-	..()
+/obj/machinery/floorlayer/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
+	. = ..()
 
 	if(on)
 		if(mode["dismantle"])
@@ -27,7 +27,7 @@
 			CollectTiles(old_turf)
 
 
-	old_turf = new_turf
+	old_turf = NewLoc
 
 /obj/machinery/floorlayer/attack_hand(mob/user as mob)
 	on=!on
@@ -36,7 +36,7 @@
 
 /obj/machinery/floorlayer/attackby(var/obj/item/W as obj, var/mob/user as mob)
 
-	if (istype(W, /obj/item/weapon/wrench))
+	if (istype(W, /obj/item/weapon/tool/wrench))
 		var/m = input("Choose work mode", "Mode") as null|anything in mode
 		mode[m] = !mode[m]
 		var/O = mode[m]
@@ -44,23 +44,23 @@
 		return
 
 	if(istype(W, /obj/item/stack/tile))
-		user << SPAN_NOTICE("\The [W] successfully loaded.")
+		to_chat(user, SPAN_NOTICE("\The [W] successfully loaded."))
 		user.drop_item(T)
 		TakeTile(T)
 		return
 
-	if(istype(W, /obj/item/weapon/crowbar))
+	if(istype(W, /obj/item/weapon/tool/crowbar))
 		if(!length(contents))
-			user << SPAN_NOTICE("\The [src] is empty.")
+			to_chat(user, SPAN_NOTICE("\The [src] is empty."))
 		else
 			var/obj/item/stack/tile/E = input("Choose remove tile type.", "Tiles") as null|anything in contents
 			if(E)
-				user <<  SPAN_NOTICE("You remove the [E] from /the [src].")
+				to_chat(user, SPAN_NOTICE("You remove the [E] from /the [src]."))
 				E.loc = src.loc
 				T = null
 		return
 
-	if(istype(W, /obj/item/weapon/screwdriver))
+	if(istype(W, /obj/item/weapon/tool/screwdriver))
 		T = input("Choose tile type.", "Tiles") as null|anything in contents
 		return
 	..()
@@ -70,7 +70,7 @@
 	var/dismantle = mode["dismantle"]
 	var/laying = mode["laying"]
 	var/collect = mode["collect"]
-	user << "<span class='notice'>\The [src] [!T?"don't ":""]has [!T?"":"[T.get_amount()] [T] "]tile\s, dismantle is [dismantle?"on":"off"], laying is [laying?"on":"off"], collect is [collect?"on":"off"].</span>"
+	to_chat(user, "<span class='notice'>\The [src] [!T?"don't ":""]has [!T?"":"[T.get_amount()] [T] "]tile\s, dismantle is [dismantle?"on":"off"], laying is [laying?"on":"off"], collect is [collect?"on":"off"].</span>")
 
 /obj/machinery/floorlayer/proc/reset()
 	on=0

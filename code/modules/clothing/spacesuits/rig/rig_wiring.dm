@@ -3,11 +3,7 @@
 	holder_type = /obj/item/weapon/rig
 	wire_count = 5
 
-#define RIG_SECURITY 1
-#define RIG_AI_OVERRIDE 2
-#define RIG_SYSTEM_CONTROL 4
-#define RIG_INTERFACE_LOCK 8
-#define RIG_INTERFACE_SHOCK 16
+//The defines for the wires are moved to rig.dm, as they are used there
 /*
  * Rig security can be snipped to disable ID access checks on rig.
  * Rig AI override can be pulsed to toggle whether or not the AI can take control of the suit.
@@ -15,7 +11,7 @@
  * Interface lock can be pulsed to toggle whether or not the interface can be accessed.
  */
 
-/datum/wires/rig/UpdateCut(var/index, var/mended)
+/datum/wires/rig/UpdateCut(index, mended)
 
 	var/obj/item/weapon/rig/rig = holder
 	switch(index)
@@ -26,8 +22,15 @@
 		if(RIG_INTERFACE_SHOCK)
 			rig.electrified = mended ? 0 : -1
 			rig.shock(usr,100)
+		if(RIG_SYSTEM_CONTROL)
+			if(mended)
+				rig.malfunctioning = 0
+				rig.malfunction_delay = 0
+			else
+				rig.malfunctioning = 10
+				rig.malfunction_delay = 30
 
-/datum/wires/rig/UpdatePulsed(var/index)
+/datum/wires/rig/UpdatePulsed(index)
 
 	var/obj/item/weapon/rig/rig = holder
 	switch(index)
@@ -52,6 +55,10 @@
 
 /datum/wires/rig/CanUse(var/mob/living/L)
 	var/obj/item/weapon/rig/rig = holder
-	if(rig.open)
-		return 1
-	return 0
+	return rig.open
+
+#undef RIG_SECURITY
+#undef RIG_AI_OVERRIDE
+#undef RIG_SYSTEM_CONTROL
+#undef RIG_INTERFACE_LOCK
+#undef RIG_INTERFACE_SHOCK

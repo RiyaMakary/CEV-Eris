@@ -1,1 +1,0 @@
-#define get_turf(atom) get_step(atom, 0)

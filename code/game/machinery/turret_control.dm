@@ -42,9 +42,10 @@
 		var/area/A = control_area
 		if(A && istype(A))
 			A.turret_controls -= src
-	..()
+	. = ..()
 
-/obj/machinery/turretid/initialize()
+/obj/machinery/turretid/Initialize()
+	. = ..()
 	if(!control_area)
 		control_area = get_area(src)
 	else if(istext(control_area))
@@ -65,11 +66,11 @@
 
 /obj/machinery/turretid/proc/isLocked(mob/user)
 	if(ailock && issilicon(user))
-		user << SPAN_NOTICE("There seems to be a firewall preventing you from accessing this device.")
+		to_chat(user, SPAN_NOTICE("There seems to be a firewall preventing you from accessing this device."))
 		return 1
 
 	if(locked && !issilicon(user))
-		user << SPAN_NOTICE("Access denied.")
+		to_chat(user, SPAN_NOTICE("Access denied."))
 		return 1
 
 	return 0
@@ -84,20 +85,20 @@
 	if(stat & BROKEN)
 		return
 
-	if(istype(W, /obj/item/weapon/card/id)||istype(W, /obj/item/device/pda))
+	if(istype(W, /obj/item/weapon/card/id)||istype(W, /obj/item/modular_computer))
 		if(src.allowed(usr))
 			playsound(loc, 'sound/machines/id_swipe.ogg', 100, 1)
 			if(emagged)
-				user << SPAN_NOTICE("The turret control is unresponsive.")
+				to_chat(user, SPAN_NOTICE("The turret control is unresponsive."))
 			else
 				locked = !locked
-				user << "<span class='notice'>You [ locked ? "lock" : "unlock"] the panel.</span>"
+				to_chat(user, "<span class='notice'>You [ locked ? "lock" : "unlock"] the panel.</span>")
 		return
 	return ..()
 
 /obj/machinery/turretid/emag_act(var/remaining_charges, var/mob/user)
 	if(!emagged)
-		user << SPAN_DANGER("You short out the turret controls' access analysis module.")
+		to_chat(user, SPAN_DANGER("You short out the turret controls' access analysis module."))
 		emagged = 1
 		locked = 0
 		ailock = 0
@@ -115,7 +116,7 @@
 
 	ui_interact(user)
 
-/obj/machinery/turretid/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/turretid/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	var/data[0]
 	data["access"] = !isLocked(user)
 	data["locked"] = locked
@@ -133,7 +134,7 @@
 		settings[++settings.len] = list("category" = "Check misc. Lifeforms", "setting" = "check_anomalies", "value" = check_anomalies)
 		data["settings"] = settings
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "turret_control.tmpl", "Turret Controls", 500, 300)
 		ui.set_initial_data(data)
@@ -198,13 +199,13 @@
 	else if (enabled)
 		if (lethal)
 			icon_state = "control_kill"
-			set_light(1.5, 1,"#990000")
+			set_light(1.5, 1,COLOR_LIGHTING_RED_MACHINERY)
 		else
 			icon_state = "control_stun"
-			set_light(1.5, 1,"#FF9900")
+			set_light(1.5, 1,COLOR_LIGHTING_ORANGE_MACHINERY)
 	else
 		icon_state = "control_standby"
-		set_light(1.5, 1,"#003300")
+		set_light(1.5, 1,COLOR_LIGHTING_GREEN_MACHINERY)
 
 /obj/machinery/turretid/emp_act(severity)
 	if(enabled)

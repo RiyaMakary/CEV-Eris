@@ -2,11 +2,10 @@
 /*
 	The initialization of the game happens roughly like this:
 
-	1. All global variables are initialized (including the global_init instance).
+	1. All global variables are initialized (including the global_init and tgstation's master controller instances including subsystems).
 	2. The map is initialized, and map objects are created.
-	3. world/New() runs, creating the process scheduler (and the old master controller) and spawning their setup.
-	4. processScheduler/setup() runs, creating all the processes. game_controller/setup() runs, calling initialize() on all movable atoms in the world.
-	5. The gameticker is created.
+	3. world/New() runs.
+	4. tgstation's MC runs initialization for various subsystems (refer to its own defines for the load order).
 
 */
 var/global/datum/global_init/init = new ()
@@ -14,9 +13,9 @@ var/global/datum/global_init/init = new ()
 /*
 	Pre-map initialization stuff should go here.
 */
+
 /datum/global_init/New()
 	generate_gameid()
-
 	makeDatumRefLists()
 	load_configuration()
 
@@ -57,8 +56,18 @@ var/game_id = null
 	cache_lifespan = 0	//stops player uploaded stuff from being kept in the rsc past the current session
 
 
-#define RECOMMENDED_VERSION 509
+#define RECOMMENDED_VERSION 512
+// This function enable_debugger() enables local or remote (requires opening a port on router) debugging if the computer running this has set env EXTOOLS_DLL.
+// Only runs if env var EXTOOLS_DLL is set otherwise it won't load the dll file.
+// Used with the Visual Studio Code debugger and DreamMaker Language Client extension from https://github.com/SpaceManiac/SpacemanDMM/wiki/Setting-up-Debugging
+
+/world/proc/enable_debugger()
+    var/dll = world.GetConfig("env", "EXTOOLS_DLL")
+    if (dll)
+        call(dll, "debug_initialize")()
+
 /world/New()
+	enable_debugger()
 	//logs
 	var/date_string = time2text(world.realtime, "YYYY/MM-Month/DD-Day")
 	href_logfile = file("data/logs/[date_string] hrefs.htm")
@@ -67,16 +76,13 @@ var/game_id = null
 	changelog_hash = md5('html/changelog.html')					//used for telling if the changelog has changed recently
 
 	if(byond_version < RECOMMENDED_VERSION)
-		world.log << "Your server's byond version does not meet the recommended requirements for this server. Please update BYOND"
+		log_world("Your server's byond version does not meet the recommended requirements for this server. Please update BYOND")
 
 	config.post_load()
 
 	if(config && config.server_name != null && config.server_suffix && world.port > 0)
 		// dumb and hardcoded but I don't care~
 		config.server_name += " #[(world.port % 1000) / 100]"
-
-	if(config && config.log_runtime)
-		log = file("data/logs/runtime/[time2text(world.realtime, "YYYY-MM-DD-(hh-mm-ss)")]-runtime.log")
 
 	callHook("startup")
 	//Emergency Fix
@@ -89,11 +95,7 @@ var/game_id = null
 
 	. = ..()
 
-#ifndef UNIT_TEST
-
-	sleep_offline = 1
-
-#else
+#ifdef UNIT_TEST
 	log_unit_test("Unit Tests Enabled.  This will destroy the world when testing is complete.")
 	load_unit_test_changes()
 #endif
@@ -104,46 +106,12 @@ var/game_id = null
 	// This is kinda important. Set up details of what the hell things are made of.
 	populate_material_list()
 
-	if(config.generate_asteroid)
-		// These values determine the specific area that the map is applied to.
-		// Because we do not use Bay's default map, we check the config file to see if custom parameters are needed, so we need to avoid hardcoding.
-		if(config.asteroid_z_levels)
-			for(var/z_level in config.asteroid_z_levels)
-				// In case we got fed a string instead of a number...
-				z_level = text2num(z_level)
-				if(!isnum(z_level))
-					// If it's still not a number, we probably got fed some nonsense string.
-					admin_notice("<span class='danger'>Error: ASTEROID_Z_LEVELS config wasn't given a number.</span>")
-				// Now for the actual map generating.  This occurs for every z-level defined in the config.
-				new /datum/random_map/automata/cave_system(null, 1, 1, z_level, 300, 300)
-				// Let's add ore too.
-				new /datum/random_map/noise/ore(null, 1, 1, z_level, 64, 64)
-		else
-			admin_notice("<span class='danger'>Error: No asteroid z-levels defined in config!</span>")
+	Master.Initialize(10, FALSE)
 
-	// Create autolathe recipes, as above.
-	populate_lathe_recipes()
+	call_restart_webhook()
 
-	processScheduler = new
-	master_controller = new /datum/controller/game_controller()
-	spawn(1)
-		for(var/turf/T in world)
-			T.initialize()
-			turfs += T
-			if(config.generate_asteroid)
-				// Update all turfs to ensure everything looks good post-generation. Yes,
-				// it's brute-forcey, but frankly the alternative is a mine turf rewrite.
-				if(istype(T, /turf/simulated/mineral))
-					var/turf/simulated/mineral/M = T
-					M.updateMineralOverlays()
-				if(istype(T, /turf/simulated/floor/asteroid))
-					var/turf/simulated/floor/asteroid/M = T
-					M.updateMineralOverlays()
-		processScheduler.deferSetupFor(/datum/controller/process/ticker)
-		processScheduler.setup()
-		master_controller.setup()
 #ifdef UNIT_TEST
-		initialize_unit_tests()
+	initialize_unit_tests()
 #endif
 
 
@@ -160,241 +128,23 @@ var/world_topic_spam_protect_ip = "0.0.0.0"
 var/world_topic_spam_protect_time = world.timeofday
 
 /world/Topic(T, addr, master, key)
-	diary << "TOPIC: \"[T]\", from:[addr], master:[master], key:[key][log_end]"
+	var/list/topic_handlers = WorldTopicHandlers()
 
-	if (T == "ping")
-		var/x = 1
-		for (var/client/C)
-			x++
-		return x
+	var/list/input = params2list(T)
+	var/datum/world_topic/handler
+	for(var/I in topic_handlers)
+		if(I in input)
+			handler = topic_handlers[I]
+			break
 
-	else if(T == "players")
-		var/n = 0
-		for(var/mob/M in player_list)
-			if(M.client)
-				n++
-		return n
+	if(!handler || initial(handler.log))
+		diary << "TOPIC: \"[T]\", from:[addr], master:[master], key:[key][log_end]"
 
-	else if (copytext(T, 1, 7) == "status")
-		var/input[] = params2list(T)
-		var/list/s = list()
-		s["version"] = game_version
-		s["storyteller"] = master_storyteller
-		s["respawn"] = config.abandon_allowed
-		s["enter"] = config.enter_allowed
-		s["vote"] = config.allow_vote_mode
-		s["ai"] = config.allow_ai
-		s["host"] = host ? host : null
+	if(!handler)
+		return
 
-		// This is dumb, but spacestation13.com's banners break if player count isn't the 8th field of the reply, so... this has to go here.
-		s["players"] = 0
-		s["shiptime"] = stationtime2text()
-		s["roundduration"] = roundduration2text()
-
-		if(input["status"] == "2")
-			var/list/players = list()
-			var/list/admins = list()
-
-			for(var/client/C in clients)
-				if(C.holder)
-					if(C.holder.fakekey)
-						continue
-					admins[C.key] = C.holder.rank
-				players += C.key
-
-			s["players"] = players.len
-			s["playerlist"] = list2params(players)
-			s["admins"] = admins.len
-			s["adminlist"] = list2params(admins)
-		else
-			var/n = 0
-			var/admins = 0
-
-			for(var/client/C in clients)
-				if(C.holder)
-					if(C.holder.fakekey)
-						continue	//so stealthmins aren't revealed by the hub
-					admins++
-				s["player[n]"] = C.key
-				n++
-
-			s["players"] = n
-			s["admins"] = admins
-
-		return list2params(s)
-
-	else if(T == "manifest")
-		var/list/positions = list()
-		var/list/set_names = list(
-				"heads" = command_positions,
-				"sec" = security_positions,
-				"eng" = engineering_positions,
-				"med" = medical_positions,
-				"sci" = science_positions,
-				"car" = cargo_positions,
-				"civ" = civilian_positions,
-				"bot" = nonhuman_positions
-			)
-
-		for(var/datum/data/record/t in data_core.general)
-			var/name = t.fields["name"]
-			var/rank = t.fields["rank"]
-			var/real_rank = make_list_rank(t.fields["real_rank"])
-
-			var/department = 0
-			for(var/k in set_names)
-				if(real_rank in set_names[k])
-					if(!positions[k])
-						positions[k] = list()
-					positions[k][name] = rank
-					department = 1
-			if(!department)
-				if(!positions["misc"])
-					positions["misc"] = list()
-				positions["misc"][name] = rank
-
-		for(var/k in positions)
-			positions[k] = list2params(positions[k]) // converts positions["heads"] = list("Bob"="Captain", "Bill"="CMO") into positions["heads"] = "Bob=Captain&Bill=CMO"
-
-		return list2params(positions)
-
-	else if(T == "revision")
-		if(revdata.revision)
-			return list2params(list(branch = revdata.branch, date = revdata.date, revision = revdata.revision))
-		else
-			return "unknown"
-
-	else if(copytext(T, 1, 5) == "info")
-		var/input[] = params2list(T)
-		if(input["key"] != config.comms_password)
-			if(world_topic_spam_protect_ip == addr && abs(world_topic_spam_protect_time - world.time) < 50)
-
-				spawn(50)
-					world_topic_spam_protect_time = world.time
-					return "Bad Key (Throttled)"
-
-			world_topic_spam_protect_time = world.time
-			world_topic_spam_protect_ip = addr
-
-			return "Bad Key"
-
-		var/list/search = params2list(input["info"])
-		var/list/ckeysearch = list()
-		for(var/text in search)
-			ckeysearch += ckey(text)
-
-		var/list/match = list()
-
-		for(var/mob/M in mob_list)
-			var/strings = list(M.name, M.ckey)
-			if(M.mind)
-				strings += M.mind.assigned_role
-			for(var/text in strings)
-				if(ckey(text) in ckeysearch)
-					match[M] += 10 // an exact match is far better than a partial one
-				else
-					for(var/searchstr in search)
-						if(findtext(text, searchstr))
-							match[M] += 1
-
-		var/maxstrength = 0
-		for(var/mob/M in match)
-			maxstrength = max(match[M], maxstrength)
-		for(var/mob/M in match)
-			if(match[M] < maxstrength)
-				match -= M
-
-		if(!match.len)
-			return "No matches"
-		else if(match.len == 1)
-			var/mob/M = match[1]
-			var/info = list()
-			info["key"] = M.key
-			info["name"] = M.name == M.real_name ? M.name : "[M.name] ([M.real_name])"
-			info["role"] = M.mind ? (M.mind.assigned_role ? M.mind.assigned_role : "No role") : "No mind"
-/*
-			var/turf/MT = get_turf(M)
-			info["loc"] = M.loc ? "[M.loc]" : "null"
-			info["turf"] = MT ? "[MT] @ [MT.x], [MT.y], [MT.z]" : "null"
-			info["area"] = MT ? "[MT.loc]" : "null"
-*/
-			info["antag"] = M.mind ? (M.mind.antagonist.len ? "Antag" : "Not antag") : "No mind"
-			info["hasbeenrev"] = M.mind ? M.mind.has_been_rev : "No mind"
-			info["stat"] = M.stat
-			info["type"] = M.type
-			if(isliving(M))
-				var/mob/living/L = M
-				info["damage"] = list2params(list(
-							oxy = L.getOxyLoss(),
-							tox = L.getToxLoss(),
-							fire = L.getFireLoss(),
-							brute = L.getBruteLoss(),
-							clone = L.getCloneLoss(),
-							brain = L.getBrainLoss()
-						))
-			else
-				info["damage"] = "non-living"
-			info["gender"] = M.gender
-			return list2params(info)
-		else
-			var/list/ret = list()
-			for(var/mob/M in match)
-				ret[M.key] = M.name
-			return list2params(ret)
-
-	else if(copytext(T, 1, 9) == "adminmsg")
-		/*
-			We got an adminmsg from IRC bot lets split the input then validate the input.
-			expected output:
-				1. adminmsg = ckey of person the message is to
-				2. msg = contents of message, parems2list requires
-				3. validatationkey = the key the bot has, it should match the gameservers commspassword in it's configuration.
-				4. sender = the ircnick that send the message.
-		*/
-
-
-		var/input[] = params2list(T)
-		if(input["key"] != config.comms_password)
-			if(world_topic_spam_protect_ip == addr && abs(world_topic_spam_protect_time - world.time) < 50)
-
-				spawn(50)
-					world_topic_spam_protect_time = world.time
-					return "Bad Key (Throttled)"
-
-			world_topic_spam_protect_time = world.time
-			world_topic_spam_protect_ip = addr
-
-			return "Bad Key"
-
-		var/client/C
-		var/req_ckey = ckey(input["adminmsg"])
-
-		for(var/client/K in clients)
-			if(K.ckey == req_ckey)
-				C = K
-				break
-		if(!C)
-			return "No client with that name on server"
-
-		var/rank = input["rank"]
-		if(!rank)
-			rank = "Admin"
-
-		var/message =	"<font color='red'>IRC-[rank] PM from <b><a href='?irc_msg=[input["sender"]]'>IRC-[input["sender"]]</a></b>: [input["msg"]]</font>"
-		var/amessage =  "<font color='blue'>IRC-[rank] PM from <a href='?irc_msg=[input["sender"]]'>IRC-[input["sender"]]</a> to <b>[key_name(C)]</b> : [input["msg"]]</font>"
-
-		C.received_irc_pm = world.time
-		C.irc_admin = input["sender"]
-
-		C << 'sound/effects/adminhelp.ogg'
-		C << message
-
-
-		for(var/client/A in admins)
-			if(A != C)
-				A << amessage
-
-		return "Message Successful"
+	handler = new handler()
+	return handler.TryRun(input)
 
 
 /world/Reboot(var/reason)
@@ -402,12 +152,10 @@ var/world_topic_spam_protect_time = world.timeofday
 		world << sound(pick('sound/AI/newroundsexy.ogg','sound/misc/apcdestroyed.ogg','sound/misc/bangindonk.ogg')) // random end sounds!! - LastyBatsy
 		*/
 
-	processScheduler.stop()
-
 	for(var/client/C in clients)
 		if(config.server)	//if you set a server location in config.txt, it sends you there instead of trying to reconnect to the same world address. -- NeoFite
 			C << link("byond://[config.server]")
-
+			
 	..(reason)
 
 /hook/startup/proc/loadMode()
@@ -425,7 +173,6 @@ var/world_topic_spam_protect_time = world.timeofday
 	var/F = file("data/mode.txt")
 	fdel(F)
 	F << the_mode
-
 
 /hook/startup/proc/loadMOTD()
 	world.load_motd()
@@ -503,7 +250,7 @@ var/world_topic_spam_protect_time = world.timeofday
 
 	var/list/features = list()
 
-	if(ticker)
+	if(SSticker)
 		if(master_storyteller)
 			features += master_storyteller
 	else
@@ -521,7 +268,7 @@ var/world_topic_spam_protect_time = world.timeofday
 		features += "AI allowed"
 
 	var/n = 0
-	for (var/mob/M in player_list)
+	for (var/mob/M in GLOB.player_list)
 		if (M.client)
 			n++
 
@@ -547,9 +294,9 @@ var/failed_old_db_connections = 0
 
 /hook/startup/proc/connectDB()
 	if(!setup_database_connection())
-		world.log << "Your server failed to establish a connection with the feedback database."
+		log_world("Your server failed to establish a connection with the feedback database.")
 	else
-		world.log << "Feedback database connection established."
+		log_world("Feedback database connection established.")
 	return 1
 
 proc/setup_database_connection()
@@ -572,7 +319,7 @@ proc/setup_database_connection()
 		failed_db_connections = 0	//If this connection succeeded, reset the failed connections counter.
 	else
 		failed_db_connections++		//If it failed, increase the failed connections counter.
-		world.log << dbcon.ErrorMsg()
+		log_world(dbcon.ErrorMsg())
 
 	return .
 

@@ -4,7 +4,7 @@
 	icon_state = "lamp"
 	item_state = "lamp"
 	brightness_on = 4
-	w_class = ITEM_SIZE_LARGE
+	w_class = ITEM_SIZE_BULKY
 	flags = CONDUCT
 	slot_flags = null
 
@@ -28,4 +28,4 @@
 	icon_state = "lampgreen"
 	item_state = "lampgreen"
 	brightness_on = 4
-	light_color = "#FFC58F"
+	light_color = COLOR_LIGHTING_GREEN_BRIGHT

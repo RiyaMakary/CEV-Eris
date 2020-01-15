@@ -32,7 +32,7 @@
 	var/obj/item/weapon/reagent_containers/syringe/S = O
 
 	if(sample)
-		user << "\The [src] is already loaded."
+		to_chat(user, "\The [src] is already loaded.")
 		return
 
 	sample = S
@@ -40,7 +40,7 @@
 	S.loc = src
 
 	user.visible_message("[user] adds \a [O] to \the [src]!", "You add \a [O] to \the [src]!")
-	nanomanager.update_uis(src)
+	SSnano.update_uis(src)
 	update_icon()
 
 	src.attack_hand(user)
@@ -49,7 +49,7 @@
 	if(stat & (NOPOWER|BROKEN)) return
 	ui_interact(user)
 
-/obj/machinery/disease2/isolator/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/disease2/isolator/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	user.set_machine(src)
 
 	var/data[0]
@@ -64,7 +64,7 @@
 		if (HOME)
 			if (sample)
 				var/list/pathogen_pool[0]
-				for(var/datum/reagent/blood/B in sample.reagents.reagent_list)
+				for(var/datum/reagent/organic/blood/B in sample.reagents.reagent_list)
 					var/list/virus = B.data["virus2"]
 					for (var/ID in virus)
 						var/datum/disease2/disease/V = virus[ID]
@@ -100,13 +100,13 @@
 					"name" = entry.fields["name"], \
 					"description" = replacetext(desc, "\n", ""))
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "pathogenic_isolator.tmpl", src.name, 400, 500)
 		ui.set_initial_data(data)
 		ui.open()
 
-/obj/machinery/disease2/isolator/process()
+/obj/machinery/disease2/isolator/Process()
 	if (isolating > 0)
 		isolating -= 1
 		if (isolating == 0)
@@ -116,16 +116,14 @@
 				virus2 = null
 				ping("\The [src] pings, \"Viral strain isolated.\"")
 
-			nanomanager.update_uis(src)
+			SSnano.update_uis(src)
 			update_icon()
 
 /obj/machinery/disease2/isolator/Topic(href, href_list)
 	if (..()) return 1
 
 	var/mob/user = usr
-	var/datum/nanoui/ui = nanomanager.get_open_ui(user, src, "main")
-
-	src.add_fingerprint(user)
+	var/datum/nanoui/ui = SSnano.get_open_ui(user, src, "main")
 
 	if (href_list["close"])
 		user.unset_machine()
@@ -185,7 +183,7 @@
 
 			P.info += "<hr>"
 
-			for(var/datum/reagent/blood/B in sample.reagents.reagent_list)
+			for(var/datum/reagent/organic/blood/B in sample.reagents.reagent_list)
 				var/mob/living/carbon/human/D = B.data["donor"]
 				P.info += "<large><u>[D.get_species()] [B.name]:</u></large><br>[B.data["blood_DNA"]]<br>"
 

@@ -31,14 +31,13 @@
 		/obj/item/toy/cultsword							= 1
 	)
 
-/obj/machinery/computer/arcade/New()
+/obj/machinery/computer/arcade/Initialize()
+	. = ..()
 	if(!circuit)
 		circuit = pick(subtypesof(/obj/item/weapon/circuitboard/arcade))
 		var/build_path = initial(circuit.build_path)
 		new build_path (loc, circuit)
-		qdel(src)
-	else
-		..()
+		return INITIALIZE_HINT_QDEL
 
 /obj/machinery/computer/arcade/proc/prizevend()
 	if(!contents.len)
@@ -51,10 +50,6 @@
 	else
 		var/atom/movable/prize = pick(contents)
 		prize.loc = src.loc
-
-/obj/machinery/computer/arcade/attack_ai(mob/user as mob)
-	return src.attack_hand(user)
-
 
 /obj/machinery/computer/arcade/emp_act(severity)
 	if(stat & (NOPOWER|BROKEN))

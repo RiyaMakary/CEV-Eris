@@ -203,10 +203,22 @@ h4
 	position: relative;
 	background: #E9C183;
 	color: #15345A;
-	font-size: 10px;
-	font-style: italic;
+	font-size: 12px;
+    font-style: italic;
+    font-weight: bold;
 	padding: 2px 4px 0 4px;
 	margin: 4px;
+}
+
+.danger
+{
+	color: #ff0000;	
+	font-weight: bold;
+}
+.warning
+{
+	color: #ff0000;	
+	font-style: italic;
 }
 
 .notice.icon
@@ -235,6 +247,15 @@ div.notice
 	border: 1px solid #40628a;
 	padding: 4px;
 	margin: 3px 0;
+}
+
+.statusDisplayItem {
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid #40628a;
+    padding: 1px;
+    margin: 0px 4px;
+	overflow: hidden;
 }
 
 .block
@@ -320,4 +341,15 @@ div.notice
 	border: 1px solid #40628a;
 	padding: 4px;
 	margin: 3px 0;
+}
+
+.roleDescription
+{
+	background: #000000;
+	color: #ffffff;
+	border: 1px solid #40628a;
+	padding: 4px;
+	margin: 3px 0;
+	font-family: verdana;
+	line-height: 140%;
 }

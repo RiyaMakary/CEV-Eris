@@ -4,7 +4,7 @@
 	desc = "A specialised, complex scanner for gleaning information on all manner of small things."
 	anchored = 1
 	density = 1
-	flags = OPENCONTAINER
+	reagent_flags = OPENCONTAINER
 	icon = 'icons/obj/virology.dmi'
 	icon_state = "analyser"
 
@@ -51,6 +51,7 @@
 	coolant_reagents_purity["water"] = 0.5
 	coolant_reagents_purity["icecoffee"] = 0.6
 	coolant_reagents_purity["icetea"] = 0.6
+	coolant_reagents_purity["icegreentea"] = 0.6
 	coolant_reagents_purity["milkshake"] = 0.6
 	coolant_reagents_purity["leporazine"] = 0.7
 	coolant_reagents_purity["kelotane"] = 0.7
@@ -66,7 +67,7 @@
 
 /obj/machinery/radiocarbon_spectrometer/attackby(var/obj/I as obj, var/mob/user as mob)
 	if(scanning)
-		user << SPAN_WARNING("You can't do that while [src] is scanning!")
+		to_chat(user, SPAN_WARNING("You can't do that while [src] is scanning!"))
 	else
 		if(istype(I, /obj/item/stack/nanopaste))
 			var/choice = alert("What do you want to do with the nanopaste?","Radiometric Scanner","Scan nanopaste","Fix seal integrity")
@@ -82,23 +83,23 @@
 				var/obj/item/weapon/reagent_containers/glass/G = I
 				var/amount_transferred = min(src.reagents.maximum_volume - src.reagents.total_volume, G.reagents.total_volume)
 				G.reagents.trans_to(src, amount_transferred)
-				user << "<span class='info'>You empty [amount_transferred]u of coolant into [src].</span>"
+				to_chat(user, "<span class='info'>You empty [amount_transferred]u of coolant into [src].</span>")
 				update_coolant()
 				return
 			else if(choice == "Empty coolant")
 				var/obj/item/weapon/reagent_containers/glass/G = I
 				var/amount_transferred = min(G.reagents.maximum_volume - G.reagents.total_volume, src.reagents.total_volume)
 				src.reagents.trans_to(G, amount_transferred)
-				user << "<span class='info'>You remove [amount_transferred]u of coolant from [src].</span>"
+				to_chat(user, "<span class='info'>You remove [amount_transferred]u of coolant from [src].</span>")
 				update_coolant()
 				return
 		if(scanned_item)
-			user << "<span class=warning>\The [src] already has \a [scanned_item] inside!</span>"
+			to_chat(user, "<span class=warning>\The [src] already has \a [scanned_item] inside!</span>")
 			return
 		user.drop_item()
 		I.loc = src
 		scanned_item = I
-		user << "<span class=notice>You put \the [I] into \the [src].</span>"
+		to_chat(user, "<span class=notice>You put \the [I] into \the [src].</span>")
 
 /obj/machinery/radiocarbon_spectrometer/proc/update_coolant()
 	var/total_purity = 0
@@ -119,7 +120,7 @@
 	if(total_purity && fresh_coolant)
 		coolant_purity = total_purity / fresh_coolant
 
-/obj/machinery/radiocarbon_spectrometer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/radiocarbon_spectrometer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 
 	if(user.stat)
 		return
@@ -151,7 +152,7 @@
 	data["rad_shield_on"] = rad_shield
 
 	// update the ui if it exists, returns null if no ui is passed/found
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		// the ui does not exist, so we'll create a new() one
         // for a list of parameters and their descriptions see the code docs in \code\modules\nano\nanoui.dm
@@ -163,7 +164,7 @@
 		// auto update every Master Controller tick
 		ui.set_auto_update(1)
 
-/obj/machinery/radiocarbon_spectrometer/process()
+/obj/machinery/radiocarbon_spectrometer/Process()
 	if(scanning)
 		if(!scanned_item || scanned_item.loc != src)
 			scanned_item = null
@@ -326,8 +327,8 @@
 		scanned_item = null
 
 /obj/machinery/radiocarbon_spectrometer/Topic(href, href_list)
-	if(stat & (NOPOWER|BROKEN))
-		return 0 // don't update UIs attached to this object
+	if(..())
+		return 1
 
 	if(href_list["scanItem"])
 		if(scanning)
@@ -338,11 +339,11 @@
 					scanner_progress = 0
 					scanning = 1
 					t_left_radspike = pick(5,10,15)
-					usr << SPAN_NOTICE("Scan initiated.")
+					to_chat(usr, SPAN_NOTICE("Scan initiated."))
 				else
-					usr << SPAN_WARNING("Could not initiate scan, seal requires replacing.")
+					to_chat(usr, SPAN_WARNING("Could not initiate scan, seal requires replacing."))
 			else
-				usr << SPAN_WARNING("Insert an item to scan.")
+				to_chat(usr, SPAN_WARNING("Insert an item to scan."))
 
 	if(href_list["maserWavelength"])
 		maser_wavelength = max(min(maser_wavelength + 1000 * text2num(href_list["maserWavelength"]), 10000), 1)
@@ -362,5 +363,4 @@
 			scanned_item = null
 
 	playsound(loc, 'sound/machines/button.ogg', 100, 1)
-	add_fingerprint(usr)
 	return 1 // update UIs attached to this object

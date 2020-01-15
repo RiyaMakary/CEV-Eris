@@ -1,7 +1,23 @@
+/*
+ * Contains
+ * /obj/item/mecha_parts/mecha_equipment/weapon/energy/laser
+ * /obj/item/mecha_parts/mecha_equipment/weapon/energy/riggedlaser
+ * /obj/item/mecha_parts/mecha_equipment/weapon/energy/laser/heavy
+ * /obj/item/mecha_parts/mecha_equipment/weapon/energy/ion
+ * /obj/item/mecha_parts/mecha_equipment/weapon/energy/pulse
+ * /obj/item/mecha_parts/mecha_equipment/weapon/energy/taser
+ * /obj/item/mecha_parts/mecha_equipment/weapon/ballistic/scattershot
+ * /obj/item/mecha_parts/mecha_equipment/weapon/ballistic/lmg
+ * /obj/item/mecha_parts/mecha_equipment/weapon/ballistic/missile_rack/flare
+ * /obj/item/mecha_parts/mecha_equipment/weapon/ballistic/missile_rack/explosive
+ * /obj/item/mecha_parts/mecha_equipment/weapon/ballistic/missile_rack/flashbang
+ */
+
 /obj/item/mecha_parts/mecha_equipment/weapon
 	name = "mecha weapon"
 	range = RANGED
 	origin_tech = list(TECH_MATERIAL = 3, TECH_COMBAT = 3)
+	matter = list(MATERIAL_STEEL = 15)
 	var/projectile //Type of projectile fired.
 	var/projectiles = 1 //Amount of projectiles loaded.
 	var/projectiles_per_shot = 1 //Amount of projectiles fired per single shot.
@@ -151,7 +167,7 @@
 				var/mob/living/carbon/human/H = M
 				if(istype(H.l_ear, /obj/item/clothing/ears/earmuffs) || istype(H.r_ear, /obj/item/clothing/ears/earmuffs))
 					continue
-			M << "<font color='red' size='7'>HONK</font>"
+			to_chat(M, "<font color='red' size='7'>HONK</font>")
 			M.sleeping = 0
 			M.stuttering += 20
 			M.ear_deaf += 30
@@ -196,7 +212,7 @@
 	name = "\improper LBX AC 10 \"Scattershot\""
 	icon_state = "mecha_scatter"
 	equip_cooldown = 20
-	projectile = /obj/item/projectile/bullet/a10mm
+	projectile = /obj/item/projectile/bullet/pistol
 	fire_sound = 'sound/weapons/Gunshot.ogg'
 	fire_volume = 80
 	projectiles = 40
@@ -208,7 +224,7 @@
 	name = "\improper Ultra AC 2"
 	icon_state = "mecha_uac2"
 	equip_cooldown = 10
-	projectile = /obj/item/projectile/bullet/a10mm
+	projectile = /obj/item/projectile/bullet/pistol
 	fire_sound = 'sound/weapons/Gunshot.ogg'
 	projectiles = 300
 	projectiles_per_shot = 3

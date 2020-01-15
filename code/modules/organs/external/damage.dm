@@ -6,6 +6,9 @@
 	return (vital || brute_dam + burn_dam + additional_damage < max_damage)
 
 /obj/item/organ/external/take_damage(brute, burn, sharp, edge, used_weapon = null, list/forbidden_limbs = list())
+	var/prev_brute = brute_dam	//We'll record how much damage the limb already had, before we apply the damage from this incoming hit
+	var/prev_burn = burn_dam
+
 	brute = round(brute * brute_mod, 0.1)
 	burn = round(burn * burn_mod, 0.1)
 	if((brute <= 0) && (burn <= 0))
@@ -19,13 +22,16 @@
 			I.take_damage(brute / 2)
 			brute -= brute / 2
 
+	if(brute_dam > min_broken_damage && prob(brute_dam + brute))
+		fracture()
+
 	if(status & ORGAN_BROKEN && prob(40) && brute)
 		if (!(owner.species && (owner.species.flags & NO_PAIN)))
 			owner.emote("scream")	//getting hit on broken hand hurts
 	if(used_weapon)
 		add_autopsy_data("[used_weapon]", brute + burn)
 
-	var/can_cut = (prob(brute*2) || sharp) && robotic < ORGAN_ROBOT
+	var/can_cut = (prob(brute*2 || sharp) && !BP_IS_ROBOTIC(src))
 
 	// If the limbs can break, make sure we don't exceed the maximum damage a limb can take before breaking
 	// Non-vital organs are limited to max_damage. You can't kill someone by bludeonging their arm all the way to 200 -- you can
@@ -44,7 +50,7 @@
 	else
 		//If we can't inflict the full amount of damage, spread the damage in other ways
 		//How much damage can we actually cause?
-		var/can_inflict = max_damage * config.organ_health_multiplier - (brute_dam + burn_dam)
+		var/can_inflict = max_damage * ORGAN_HEALTH_MULTIPLIER - (brute_dam + burn_dam)
 		var/spillover = 0
 		if(can_inflict)
 			if (brute > 0)
@@ -76,9 +82,10 @@
 	src.update_damages()
 	owner.updatehealth() //droplimb will call updatehealth() again if it does end up being called
 
+
 	//If limb took enough damage, try to cut or tear it off
 	if(owner && loc == owner && !is_stump())
-		if(!cannot_amputate && config.limbs_can_break && (brute_dam + burn_dam) >= (max_damage * config.organ_health_multiplier))
+		if(!cannot_amputate && config.limbs_can_break && (brute_dam + burn_dam) >= (max_damage * ORGAN_HEALTH_MULTIPLIER))
 			//organs can come off in three cases
 			//1. If the damage source is edge_eligible and the brute damage dealt exceeds the edge threshold, then the organ is cut off.
 			//2. If the damage amount dealt exceeds the disintegrate threshold, the organ is completely obliterated.
@@ -95,19 +102,19 @@
 				else
 					edge_eligible = 1
 
-			if(edge_eligible && brute >= max_damage / DROPLIMB_THRESHOLD_EDGE && prob(brute))
+			if(edge_eligible && (brute + prev_brute) >= max_damage * DROPLIMB_THRESHOLD_EDGE && prob(brute))
 				droplimb(0, DROPLIMB_EDGE)
-			else if(burn >= max_damage / DROPLIMB_THRESHOLD_DESTROY && prob(burn/3))
+			else if((burn + prev_burn) >= max_damage * DROPLIMB_THRESHOLD_DESTROY && prob(burn/3))
 				droplimb(0, DROPLIMB_BURN)
-			else if(brute >= max_damage / DROPLIMB_THRESHOLD_DESTROY && prob(brute))
+			else if((brute + prev_brute) >= max_damage * DROPLIMB_THRESHOLD_DESTROY && prob(brute/2))
 				droplimb(0, DROPLIMB_BLUNT)
-			else if(brute >= max_damage / DROPLIMB_THRESHOLD_TEAROFF && prob(brute/3))
+			else if((brute + prev_brute) >= max_damage * DROPLIMB_THRESHOLD_TEAROFF && prob(brute/5))
 				droplimb(0, DROPLIMB_EDGE)
 
 	return update_damstate()
 
-/obj/item/organ/external/proc/heal_damage(brute, burn, internal = 0, robo_repair = 0)
-	if(robotic >= ORGAN_ROBOT && !robo_repair)
+/obj/item/organ/external/heal_damage(brute, burn, internal = 0, robo_repair = 0)
+	if(BP_IS_ROBOTIC(src) && !robo_repair)
 		return
 
 	//Heal damage on the individual wounds
@@ -130,4 +137,3 @@
 	owner.updatehealth()
 
 	return update_damstate()
-

@@ -23,44 +23,54 @@ avoid code duplication. This includes items that may sometimes act as a standard
 /obj/item/proc/attack_self(mob/user)
 	return
 
+
+// Called at the start of resolve_attackby(), before the actual attack.
+// Return a nonzero value to abort the attack
+/obj/item/proc/pre_attack(atom/a, mob/user, var/params)
+	return
+
 //I would prefer to rename this to attack(), but that would involve touching hundreds of files.
-/obj/item/proc/resolve_attackby(atom/A, mob/user)
+/obj/item/proc/resolve_attackby(atom/A, mob/user, params)
+	if(item_flags & ABSTRACT)//Abstract items cannot be interacted with. They're not real.
+		return 1
+	if (pre_attack(A, user, params))
+		return 1 //Returning 1 passes an abort signal upstream
 	add_fingerprint(user)
-	return A.attackby(src, user)
+	return A.attackby(src, user, params)
 
 // No comment
-/atom/proc/attackby(obj/item/W, mob/user)
+/atom/proc/attackby(obj/item/W, mob/user, params)
 	return
 
 /atom/movable/attackby(obj/item/I, mob/living/user)
 	if(!(I.flags & NOBLUDGEON))
-		visible_message(SPAN_DANGER("[src] has been hit by [user] with [I]."))
+		if(user.client && user.a_intent == I_HELP)
+			return
 
-/obj/item/attackby(obj/item/I, mob/living/user)
+		user.do_attack_animation(src)
+		if (I.hitsound)
+			playsound(loc, I.hitsound, 50, 1, -1)
+		visible_message(SPAN_DANGER("[src] has been hit by [user] with [I]."))
+		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
+
+/obj/item/attackby(obj/item/I, mob/living/user, var/params)
 	return
 
-/mob/living/attackby(obj/item/I, mob/living/user)
+/mob/living/attackby(obj/item/I, mob/living/user, var/params)
 	if(!ismob(user))
 		return FALSE
-	if(can_operate(src) && do_surgery(src, user, I)) //Surgery
+	if(can_operate(src, user) && do_surgery(src, user, I)) //Surgery
 		return TRUE
 	return I.attack(src, user, user.targeted_organ)
 
 // Proximity_flag is 1 if this afterattack was called on something adjacent, in your square, or on your person.
 // Click parameters is the params string from byond Click() code, see that documentation.
 /obj/item/proc/afterattack(atom/target, mob/user, proximity_flag, params)
-	if(istype(target, /obj/structure/table))
-		var/list/click_params = params2list(params)
-		//Center the icon where the user clicked.
-		pixel_x = (text2num(click_params["icon-x"]) - 16)
-		pixel_y = (text2num(click_params["icon-y"]) - 16)
-		layer = user.layer + 0.1
+	return
 
 //I would prefer to rename this attack_as_weapon(), but that would involve touching hundreds of files.
 /obj/item/proc/attack(mob/living/M, mob/living/user, var/target_zone)
 	if(!force || (flags & NOBLUDGEON))
-		return FALSE
-	if(M == user && user.a_intent != I_HURT)
 		return FALSE
 
 	/////////////////////////
@@ -76,6 +86,8 @@ avoid code duplication. This includes items that may sometimes act as a standard
 	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 	user.do_attack_animation(M)
 
+	user.stats.getPerk(/datum/perk/timeismoney)?.deactivate()
+
 	var/hit_zone = M.resolve_item_attack(src, user, target_zone)
 	if(hit_zone)
 		apply_hit_effect(M, user, hit_zone)
@@ -87,7 +99,11 @@ avoid code duplication. This includes items that may sometimes act as a standard
 	if(hitsound)
 		playsound(loc, hitsound, 50, 1, -1)
 
+	if (is_hot() >= HEAT_MOBIGNITE_THRESHOLD)
+		target.IgniteMob()
+
 	var/power = force
 	if(HULK in user.mutations)
 		power *= 2
-	return target.hit_with_weapon(src, user, power, hit_zone)
+	target.hit_with_weapon(src, user, power, hit_zone)
+	return

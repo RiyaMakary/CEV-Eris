@@ -15,7 +15,7 @@
 	icon = 'icons/obj/Cryogenic2.dmi'
 	icon_state = "cellconsole"
 	light_power = 1.5
-	light_color = COLOR_BLUE_LIGHT
+	light_color = COLOR_LIGHTING_BLUE_MACHINERY
 	circuit = /obj/item/weapon/circuitboard/cryopodcontrol
 	density = 0
 	interact_offline = 1
@@ -41,9 +41,6 @@
 	storage_name = "Robotic Storage Control"
 	allow_items = 0
 
-/obj/machinery/computer/cryopod/attack_ai()
-	src.attack_hand()
-
 /obj/machinery/computer/cryopod/attack_hand(mob/user = usr)
 	if(stat & (NOPOWER|BROKEN))
 		return
@@ -52,9 +49,6 @@
 	src.add_fingerprint(usr)
 
 	var/dat
-
-	if (!( ticker ))
-		return
 
 	dat += "<hr/><br/><b>[storage_name]</b><br/>"
 	dat += "<i>Welcome, [user.real_name].</i><br/><br/><hr/>"
@@ -99,7 +93,7 @@
 		if(!allow_items) return
 
 		if(frozen_items.len == 0)
-			user << "<span class='notice'>There is nothing to recover from storage.</span>"
+			to_chat(user, "<span class='notice'>There is nothing to recover from storage.</span>")
 			return
 
 		var/obj/item/I = input(usr, "Please choose which object to retrieve.","Object recovery",null) as null|anything in frozen_items
@@ -107,7 +101,7 @@
 			return
 
 		if(!(I in frozen_items))
-			user << "<span class='notice'>\The [I] is no longer in storage.</span>"
+			to_chat(user, "<span class='notice'>\The [I] is no longer in storage.</span>")
 			return
 
 		visible_message("<span class='notice'>The console beeps happily as it disgorges \the [I].</span>")
@@ -119,7 +113,7 @@
 		if(!allow_items) return
 
 		if(frozen_items.len == 0)
-			user << "<span class='notice'>There is nothing to recover from storage.</span>"
+			to_chat(user, "<span class='notice'>There is nothing to recover from storage.</span>")
 			return
 
 		visible_message("<span class='notice'>The console beeps happily as it disgorges the desired objects.</span>")
@@ -147,6 +141,7 @@
 	desc = "A bewildering tangle of machinery and pipes."
 	icon = 'icons/obj/Cryogenic2.dmi'
 	icon_state = "cryo_rear"
+	density = 1
 	anchored = 1
 	dir = WEST
 
@@ -169,7 +164,7 @@
 	var/disallow_occupant_types = list()
 
 	var/mob/occupant = null       // Person waiting to be despawned.
-	var/time_till_despawn = 18000 // 30 minutes-ish safe period before being despawned.
+	var/time_till_despawn = 6000  // 10 minutes-ish safe period before being despawned.
 	var/time_entered = 0          // Used to keep track of the safe period.
 	var/obj/item/device/radio/intercom/announce //
 
@@ -215,10 +210,10 @@
 	if(occupant)
 		occupant.forceMove(loc)
 		occupant.resting = 1
-	..()
+	. = ..()
 
-/obj/machinery/cryopod/initialize()
-	..()
+/obj/machinery/cryopod/Initialize()
+	. = ..()
 
 	find_control_computer()
 
@@ -253,7 +248,7 @@
 	return 1
 
 //Lifted from Unity stasis.dm and refactored. ~Zuhayr
-/obj/machinery/cryopod/process()
+/obj/machinery/cryopod/Process()
 	if(occupant)
 		//Allow a ten minute gap between entering the pod and actually despawning.
 		if(world.time - time_entered < time_till_despawn)
@@ -330,13 +325,13 @@
 		// them win or lose based on cryo is silly so we remove the objective.
 		if(O.target == occupant.mind)
 			if(O.owner && O.owner.current)
-				O.owner.current << "<span class='warning'>You get the feeling your target is no longer within your reach...</span>"
+				to_chat(O.owner.current, "<span class='warning'>You get the feeling your target is no longer within your reach...</span>")
 			qdel(O)
 
 	//Handle job slot/tater cleanup.
 	var/job = occupant.mind.assigned_role
 
-	job_master.FreeRole(job)
+	SSjob.FreeRole(job)
 
 	clear_antagonist(occupant.mind)
 
@@ -367,6 +362,23 @@
 	announce.autosay("[occupant.real_name], [occupant.mind.assigned_role], [on_store_message]", "[on_store_name]")
 	visible_message("<span class='notice'>\The [initial(name)] hums and hisses as it moves [occupant.real_name] into storage.</span>")
 
+
+	//When the occupant is put into storage, their respawn time is reduced.
+	//This check exists for the benefit of people who get put into cryostorage while SSD and come back later
+	if (occupant.in_perfect_health())
+		if (occupant.mind && occupant.mind.key)
+
+			//Whoever inhabited this body is long gone, we need some black magic to find where and who they are now
+			var/mob/M = key2mob(occupant.mind.key)
+			if (istype(M))
+				if (!(M.get_respawn_bonus("CRYOSLEEP")))
+					//We send a message to the occupant's current mob - probably a ghost, but who knows.
+					to_chat(M, SPAN_NOTICE("Because your body was put into cryostorage, your crew respawn time has been reduced by [CRYOPOD_SPAWN_BONUS_DESC]."))
+					M << 'sound/effects/magic/blind.ogg' //Play this sound to a player whenever their respawn time gets reduced
+
+				//Going safely to cryo will allow the patient to respawn more quickly
+				M.set_respawn_bonus("CRYOSLEEP", CRYOPOD_SPAWN_BONUS)
+
 	//This should guarantee that ghosts don't spawn.
 	occupant.ckey = null
 
@@ -376,16 +388,16 @@
 
 
 /obj/machinery/cryopod/affect_grab(var/mob/user, var/mob/target)
-	put_inside(target, user)
+	try_put_inside(target, user)
 	return TRUE
 
 /obj/machinery/cryopod/MouseDrop_T(var/mob/living/L, mob/living/user)
 	if(istype(L) && istype(user))
-		put_inside(L, user)
+		try_put_inside(L, user)
 
-/obj/machinery/cryopod/proc/put_inside(var/mob/living/affecting, var/mob/living/user)
+/obj/machinery/cryopod/proc/try_put_inside(var/mob/living/affecting, var/mob/living/user)
 	if(occupant)
-		user << "<span class='notice'>\The [src] is in use.</span>"
+		to_chat(user, "<span class='notice'>\The [src] is in use.</span>")
 		return
 
 	if(!ismob(affecting) || !Adjacent(affecting) || !Adjacent(user))
@@ -428,6 +440,8 @@
 		//Despawning occurs when process() is called with an occupant without a client.
 		src.add_fingerprint(user)
 
+
+
 /obj/machinery/cryopod/verb/eject()
 	set name = "Eject Pod"
 	set category = "Object"
@@ -438,6 +452,9 @@
 	//Eject any items that aren't meant to be in the pod.
 	var/list/items = src.contents
 	if(occupant)
+		if(usr != occupant && !occupant.client && occupant.stat != DEAD)
+			to_chat(usr, SPAN_WARNING("It's locked inside!"))
+			return
 		items -= occupant
 	if(announce)
 		items -= announce
@@ -460,12 +477,12 @@
 		return
 
 	if(src.occupant)
-		usr << "<span class='notice'><B>\The [src] is in use.</B></span>"
+		to_chat(usr, "<span class='notice'><B>\The [src] is in use.</B></span>")
 		return
 
 	for(var/mob/living/carbon/slime/M in range(1,usr))
 		if(M.Victim == usr)
-			usr << "You're too busy getting your life sucked out of you."
+			to_chat(usr, "You're too busy getting your life sucked out of you.")
 			return
 
 	visible_message("[usr] starts climbing into \the [src].")
@@ -476,7 +493,7 @@
 			return
 
 		if(src.occupant)
-			usr << "<span class='notice'><B>\The [src] is in use.</B></span>"
+			to_chat(usr, "<span class='notice'><B>\The [src] is in use.</B></span>")
 			return
 
 		usr.stop_pulling()
@@ -486,6 +503,10 @@
 
 	return
 
+/obj/machinery/cryopod/relaymove(var/mob/user)
+	..()
+	eject()
+
 /obj/machinery/cryopod/proc/go_out()
 
 	if(!occupant)
@@ -493,12 +514,21 @@
 
 	set_occupant(null)
 
+	spawn(30)
+		state("Please remember to check inside the cryopod if any belongings are missing.")
+		playsound(loc, "robot_talk_light", 100, 0, 0)
 
-/obj/machinery/cryopod/proc/set_occupant(var/mob/living/new_occupant)
+//Notifications is set false when someone spawns in here
+/obj/machinery/cryopod/proc/set_occupant(var/mob/living/new_occupant, var/notifications = TRUE)
 	name = initial(name)
 	if(new_occupant)
 		occupant = new_occupant
-		name = "[name] ([occupant])"
+		if (occupant.name)
+			name = "[name] ([occupant.name])"
+		else
+			//Name isn't set during spawning, but real_name is. This is used for people spawning in cryopods
+			name = "[name] ([occupant.real_name])"
+
 		time_entered = world.time
 		if(ishuman(occupant) && applies_stasis)
 			var/mob/living/carbon/human/H = occupant
@@ -506,12 +536,19 @@
 		new_occupant.forceMove(src)
 		icon_state = occupied_icon_state
 
-		occupant << SPAN_NOTICE("[on_enter_occupant_message]")
-		occupant << SPAN_NOTICE("<b>If you ghost, log out or close your client now, your character will shortly be permanently removed from the round.</b>")
+
+		if (notifications)
+			to_chat(occupant, SPAN_NOTICE("[on_enter_occupant_message]"))
+			to_chat(occupant, SPAN_NOTICE("<b>If you ghost, log out or close your client now, your character will shortly be permanently removed from the round.</b>"))
+		if (occupant.in_perfect_health() && notifications)
+			to_chat(occupant, SPAN_NOTICE("<b>Your respawn time will be reduced by 20 minutes, allowing you to respawn as a crewmember much more quickly.</b>"))
+		else if (notifications)
+			to_chat(occupant, SPAN_DANGER("<b>Because you are not in perfect health, going into cryosleep will not reduce your crew respawn time. \
+			If you wish to respawn as a different crewmember, you should treat your injuries at medical first</b>"))
 
 	else
 		icon_state = base_icon_state
-		if(occupant)
+		if(!QDELETED(occupant))
 			occupant.forceMove(get_turf(src))
 			occupant.reset_view(null)
 			if(ishuman(occupant) && applies_stasis)

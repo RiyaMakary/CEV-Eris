@@ -3,7 +3,8 @@
 	name = "APLU \"Ripley\""
 	icon_state = "ripley"
 	initial_icon = "ripley"
-	step_in = 6
+	step_in = 4
+	max_equip = 5
 	max_temperature = 20000
 	health = 300
 	wreckage = /obj/effect/decal/mecha_wreckage/ripley
@@ -17,7 +18,7 @@
 			T.Entered(A)
 		step_rand(A)
 	cargo.Cut()
-	..()
+	. = ..()
 
 /obj/mecha/working/ripley/firefighter
 	desc = "Standart APLU chassis was refitted with additional thermal protection and cistern."
@@ -27,7 +28,7 @@
 	max_temperature = 65000
 	health = 350
 	lights_power = 8
-	damage_absorption = list("fire"=0.5,"bullet"=0.8,"bomb"=0.5)
+	damage_absorption = list("brute"=0.8,"fire"=0.5,"bullet"=0.8,"energy"=1,"bomb"=0.5)
 	wreckage = /obj/effect/decal/mecha_wreckage/ripley/firefighter
 
 /obj/mecha/working/ripley/deathripley
@@ -38,11 +39,12 @@
 	opacity=0
 	lights_power = 60
 	wreckage = /obj/effect/decal/mecha_wreckage/ripley/deathripley
-	step_energy_drain = 0
 
 /obj/mecha/working/ripley/deathripley/New()
 	..()
 	var/obj/item/mecha_parts/mecha_equipment/ME = new /obj/item/mecha_parts/mecha_equipment/tool/safety_clamp
+	ME.attach(src)
+	ME = new /obj/item/mecha_parts/mecha_equipment/thruster
 	ME.attach(src)
 	return
 

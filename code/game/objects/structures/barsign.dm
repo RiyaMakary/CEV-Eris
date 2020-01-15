@@ -16,13 +16,13 @@
 	..()
 	switch(icon_state)
 		if("Off")
-			user << "It appears to be switched off."
+			to_chat(user, "It appears to be switched off.")
 		if("narsiebistro")
-			user << "It shows a picture of a large black and red being. Spooky!"
+			to_chat(user, "It shows a picture of a large black and red being. Spooky!")
 		if("on", "empty")
-			user << "The lights are on, but there's no picture."
+			to_chat(user, "The lights are on, but there's no picture.")
 		else
-			user << "It says '[icon_state]'"
+			to_chat(user, "It says '[icon_state]'")
 
 /obj/structure/sign/double/barsign/New()
 	..()
@@ -32,16 +32,16 @@
 	if(cult)
 		return ..()
 
-	var/obj/item/weapon/card/id/card = I.GetID()
+	var/obj/item/weapon/card/id/card = I.GetIdCard()
 	if(istype(card))
 		if(access_bar in card.GetAccess())
 			var/sign_type = input(user, "What would you like to change the barsign to?") as null|anything in get_valid_states(0)
 			if(!sign_type)
 				return
 			icon_state = sign_type
-			user << SPAN_NOTICE("You change the barsign.")
+			to_chat(user, SPAN_NOTICE("You change the barsign."))
 		else
-			user << SPAN_WARNING("Access denied.")
+			to_chat(user, SPAN_WARNING("Access denied."))
 		return
 
 	return ..()

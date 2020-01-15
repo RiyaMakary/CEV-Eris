@@ -52,7 +52,7 @@
 /obj/machinery/atmospherics/omni/mixer/Destroy()
 	inputs.Cut()
 	output = null
-	..()
+	. = ..()
 
 /obj/machinery/atmospherics/omni/mixer/sort_ports()
 	for(var/datum/omni_port/P in ports)
@@ -97,7 +97,7 @@
 
 	return 0
 
-/obj/machinery/atmospherics/omni/mixer/process()
+/obj/machinery/atmospherics/omni/mixer/Process()
 	if(!..())
 		return 0
 
@@ -123,14 +123,14 @@
 
 	return 1
 
-/obj/machinery/atmospherics/omni/mixer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
+/obj/machinery/atmospherics/omni/mixer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
 	usr.set_machine(src)
 
 	var/list/data = new()
 
 	data = build_uidata()
 
-	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 
 	if (!ui)
 		ui = new(user, src, ui_key, "omni_mixer.tmpl", "Omni Mixer Control", 360, 330)
@@ -200,7 +200,7 @@
 
 	playsound(loc, 'sound/machines/machine_switch.ogg', 100, 1)
 	update_icon()
-	nanomanager.update_uis(src)
+	SSnano.update_uis(src)
 	return
 
 /obj/machinery/atmospherics/omni/mixer/proc/switch_mode(var/port = NORTH, var/mode = ATM_NONE)

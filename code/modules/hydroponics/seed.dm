@@ -36,6 +36,7 @@
 	set_trait(TRAIT_STINGS,               0)            // Can cause damage/inject reagents when thrown or handled.
 	set_trait(TRAIT_YIELD,                0)            // Amount of product.
 	set_trait(TRAIT_SPREAD,               0)            // 0 limits plant to tray, 1 = creepers, 2 = vines.
+	set_trait(TRAIT_WALL_HUGGER,          0)            // If 1, plant grows on walls as well as floors. Only useful if Spread is set
 	set_trait(TRAIT_MATURATION,           0)            // Time taken before the plant is mature.
 	set_trait(TRAIT_PRODUCTION,           0)            // Time before harvesting can be undertaken again.
 	set_trait(TRAIT_TELEPORTING,          0)            // Uses the bluespace tomato effect.
@@ -45,6 +46,7 @@
 	set_trait(TRAIT_PLANT_ICON,           0)            // Icon to use for the plant growing in the tray.
 	set_trait(TRAIT_PRODUCT_COLOUR,       0)            // Colour to apply to product icon.
 	set_trait(TRAIT_BIOLUM_COLOUR,        0)            // The colour of the plant's radiance.
+	set_trait(TRAIT_CHEM_SPRAYER,         0)			// The ability to spray its chemicals on movement.
 	set_trait(TRAIT_POTENCY,              1)            // General purpose plant strength value.
 	set_trait(TRAIT_REQUIRES_NUTRIENTS,   1)            // The plant can starve.
 	set_trait(TRAIT_REQUIRES_WATER,       1)            // The plant can become dehydrated.
@@ -114,22 +116,22 @@
 
 
 	if(!target_limb)
-		target_limb = pick(BP_ALL)
+		target_limb = pick(BP_ALL_LIMBS)
 	var/obj/item/organ/external/affecting = target.get_organ(target_limb)
 	var/damage = 0
 
 	if(get_trait(TRAIT_CARNIVOROUS))
 		if(get_trait(TRAIT_CARNIVOROUS) == 2)
 			if(affecting)
-				target << SPAN_DANGER("\The [fruit]'s thorns pierce your [affecting.name] greedily!")
+				to_chat(target, SPAN_DANGER("\The [fruit]'s thorns pierce your [affecting.name] greedily!"))
 			else
-				target << SPAN_DANGER("\The [fruit]'s thorns pierce your flesh greedily!")
+				to_chat(target, SPAN_DANGER("\The [fruit]'s thorns pierce your flesh greedily!"))
 			damage = get_trait(TRAIT_POTENCY)/2
 		else
 			if(affecting)
-				target << SPAN_DANGER("\The [fruit]'s thorns dig deeply into your [affecting.name]!")
+				to_chat(target, SPAN_DANGER("\The [fruit]'s thorns dig deeply into your [affecting.name]!"))
 			else
-				target << SPAN_DANGER("\The [fruit]'s thorns dig deeply into your flesh!")
+				to_chat(target, SPAN_DANGER("\The [fruit]'s thorns dig deeply into your flesh!"))
 			damage = get_trait(TRAIT_POTENCY)/5
 	else
 		return
@@ -148,7 +150,7 @@
 		return
 	if(chems && chems.len)
 
-		var/body_coverage = HEAD|FACE|EYES|UPPER_TORSO|LOWER_TORSO|LEGS|FEET|ARMS|HANDS
+		var/body_coverage = HEAD|FACE|EYES|UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
 
 		for(var/obj/item/clothing/clothes in target)
 			if(target.l_hand == clothes|| target.r_hand == clothes)
@@ -157,7 +159,7 @@
 
 		if(!body_coverage)
 			return
-		target << SPAN_DANGER("You are stung by \the [fruit]!")
+		to_chat(target, SPAN_DANGER("You are stung by \the [fruit]!"))
 		for(var/rid in chems)
 			var/injecting = min(5,max(1,get_trait(TRAIT_POTENCY)/5))
 			target.reagents.add_reagent(rid,injecting)
@@ -181,7 +183,7 @@
 		for(var/mob/living/M in T.contents)
 			if(!M.reagents)
 				continue
-			var/body_coverage = HEAD|FACE|EYES|UPPER_TORSO|LOWER_TORSO|LEGS|FEET|ARMS|HANDS
+			var/body_coverage = HEAD|FACE|EYES|UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
 			for(var/obj/item/clothing/clothes in M)
 				if(M.l_hand == clothes || M.r_hand == clothes)
 					continue
@@ -330,7 +332,8 @@
 
 		var/list/turfs = list()
 		if(inner_teleport_radius > 0)
-			for(var/turf/T in trange(outer_teleport_radius, get_turf(target)))
+			var/turf/TLoc = get_turf(target)
+			for(var/turf/T in trange(outer_teleport_radius, TLoc))
 				if(get_dist(target,T) >= inner_teleport_radius)
 					turfs |= T
 
@@ -489,7 +492,7 @@
 		set_trait(TRAIT_SPREAD,2)
 	else if(vine_prob < 10)
 		set_trait(TRAIT_SPREAD,1)
-
+		set_trait(TRAIT_WALL_HUGGER, 1)
 	if(prob(5))
 		set_trait(TRAIT_BIOLUM,1)
 		set_trait(TRAIT_BIOLUM_COLOUR,get_random_colour(0,75,190))
@@ -653,7 +656,7 @@
 			P.values["mob_product"] = has_mob_product
 			traits_to_copy = list(TRAIT_REQUIRES_NUTRIENTS,TRAIT_REQUIRES_WATER,TRAIT_ALTER_TEMP)
 		if(GENE_VIGOUR)
-			traits_to_copy = list(TRAIT_PRODUCTION,TRAIT_MATURATION,TRAIT_YIELD,TRAIT_SPREAD)
+			traits_to_copy = list(TRAIT_PRODUCTION,TRAIT_MATURATION,TRAIT_YIELD,TRAIT_SPREAD,TRAIT_WALL_HUGGER)
 		if(GENE_DIET)
 			P.values["[TRAIT_CONSUME_GASSES]"] = consume_gasses
 			traits_to_copy = list(TRAIT_CARNIVOROUS,TRAIT_PARASITE,TRAIT_NUTRIENT_CONSUMPTION,TRAIT_WATER_CONSUMPTION)
@@ -664,7 +667,7 @@
 		if(GENE_STRUCTURE)
 			traits_to_copy = list(TRAIT_PLANT_ICON,TRAIT_PRODUCT_ICON,TRAIT_HARVEST_REPEAT)
 		if(GENE_FRUIT)
-			traits_to_copy = list(TRAIT_STINGS,TRAIT_EXPLOSIVE,TRAIT_FLESH_COLOUR,TRAIT_JUICY)
+			traits_to_copy = list(TRAIT_STINGS,TRAIT_EXPLOSIVE,TRAIT_FLESH_COLOUR,TRAIT_JUICY,TRAIT_CHEM_SPRAYER)
 		if(GENE_SPECIAL)
 			traits_to_copy = list(TRAIT_TELEPORTING)
 
@@ -673,15 +676,15 @@
 	return (P ? P : 0)
 
 //Place the plant products at the feet of the user.
-/datum/seed/proc/harvest(var/mob/user,var/yield_mod,var/harvest_sample,var/force_amount)
+/datum/seed/proc/harvest(var/mob/living/user,var/yield_mod,var/harvest_sample,var/force_amount)
 
 	if(!user)
 		return
 
 	if(!force_amount && get_trait(TRAIT_YIELD) == 0 && !harvest_sample)
-		if(istype(user)) user << SPAN_DANGER("You fail to harvest anything useful.")
+		if(istype(user)) to_chat(user, SPAN_DANGER("You fail to harvest anything useful."))
 	else
-		if(istype(user)) user << "You [harvest_sample ? "take a sample" : "harvest"] from the [display_name]."
+		if(istype(user)) to_chat(user, "You [harvest_sample ? "take a sample" : "harvest"] from the [display_name].")
 
 		//This may be a new line. Update the global if it is.
 		if(name == "new line" || !(name in plant_controller.seeds))
@@ -705,6 +708,9 @@
 					total_yield = get_trait(TRAIT_YIELD)
 				else
 					total_yield = get_trait(TRAIT_YIELD) + rand(yield_mod)
+				if(prob(user.stats.getStat(STAT_BIO)))
+					total_yield += 1
+					to_chat(user, SPAN_NOTICE("You have managed to harvest more!"))
 				total_yield = max(1,total_yield)
 
 		for(var/i = 0;i<total_yield;i++)

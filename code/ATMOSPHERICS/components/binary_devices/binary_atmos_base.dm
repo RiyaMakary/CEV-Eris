@@ -2,12 +2,10 @@ obj/machinery/atmospherics/binary
 	dir = SOUTH
 	initialize_directions = SOUTH|NORTH
 	use_power = 1
+	layer = GAS_PUMP_LAYER
 
 	var/datum/gas_mixture/air1
 	var/datum/gas_mixture/air2
-
-	var/obj/machinery/atmospherics/node1
-	var/obj/machinery/atmospherics/node2
 
 	var/datum/pipe_network/network1
 	var/datum/pipe_network/network2
@@ -57,9 +55,9 @@ obj/machinery/atmospherics/binary
 		node1 = null
 		node2 = null
 
-		..()
+		. = ..()
 
-	initialize()
+	atmos_init()
 		if(node1 && node2) return
 
 		var/node2_connect = dir

@@ -15,6 +15,7 @@
 	var/list/obscured = list()
 	var/list/turfs = list()
 	var/list/seenby = list()
+	var/dirty = FALSE
 	var/visible = 0
 	var/changed = 0
 	var/updating = 0
@@ -101,7 +102,9 @@
 		var/turf/t = turf
 		if(obscuredTurfs[t])
 			if(!t.obfuscations[obfuscation.type])
-				t.obfuscations[obfuscation.type] = image(obfuscation.icon, t, obfuscation.icon_state, OBFUSCATION_LAYER)
+				var/image/I = image(obfuscation.icon, t, obfuscation.icon_state, BYOND_LIGHTING_LAYER+0.1)
+				I.plane = t.get_relative_plane(BYOND_LIGHTING_PLANE)
+				t.obfuscations[obfuscation.type] = I
 
 			obscured += t.obfuscations[obfuscation.type]
 			for(var/eye in seenby)
@@ -140,7 +143,9 @@
 	for(var/turf in obscuredTurfs)
 		var/turf/t = turf
 		if(!t.obfuscations[obfuscation.type])
-			t.obfuscations[obfuscation.type] = image(obfuscation.icon, t, obfuscation.icon_state, OBFUSCATION_LAYER)
+			var/image/I = image(obfuscation.icon, t, obfuscation.icon_state, BYOND_LIGHTING_LAYER+0.1)
+			I.plane = t.get_relative_plane(BYOND_LIGHTING_PLANE)
+			t.obfuscations[obfuscation.type] = I
 		obscured += t.obfuscations[obfuscation.type]
 
 /proc/seen_turfs_in_range(var/source, var/range)

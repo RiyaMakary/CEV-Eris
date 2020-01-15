@@ -1,14 +1,14 @@
 //node1, air1, network1 correspond to input
 //node2, air2, network2 correspond to output
 
-#define ADIABATIC_EXPONENT 0.667 //Actually adiabatic exponent - 1.
-
 /obj/machinery/atmospherics/binary/circulator
 	name = "circulator"
 	desc = "A gas circulator turbine and heat exchanger."
-	icon = 'icons/obj/pipes.dmi'
-	icon_state = "circ-off"
-	anchored = 0
+	icon = 	'icons/obj/machines/thermoelectric.dmi'
+	icon_state = "circ-unassembled"
+
+	density = TRUE
+	anchored = FALSE
 
 	var/kinetic_efficiency = 0.06 //combined kinetic and kinetic-to-electric efficiency
 	var/volume_ratio = 0.2
@@ -21,8 +21,7 @@
 	var/last_stored_energy_transferred = 0
 	var/volume_capacity_used = 0
 	var/stored_energy = 0
-
-	density = 1
+	var/temperature_overlay
 
 /obj/machinery/atmospherics/binary/circulator/New()
 	..()
@@ -31,6 +30,8 @@
 
 /obj/machinery/atmospherics/binary/circulator/proc/return_transfer_air()
 	var/datum/gas_mixture/removed
+	recent_moles_transferred = 0
+
 	if(anchored && !(stat&BROKEN) && network1)
 		var/input_starting_pressure = air1.return_pressure()
 		var/output_starting_pressure = air2.return_pressure()
@@ -56,18 +57,16 @@
 				network1.update = 1
 
 				last_worldtime_transfer = world.time
-		else
-			recent_moles_transferred = 0
 
-		update_icon()
-		return removed
+	update_icon()
+	return removed
 
 /obj/machinery/atmospherics/binary/circulator/proc/return_stored_energy()
 	last_stored_energy_transferred = stored_energy
 	stored_energy = 0
 	return last_stored_energy_transferred
 
-/obj/machinery/atmospherics/binary/circulator/process()
+/obj/machinery/atmospherics/binary/circulator/Process()
 	..()
 
 	if(last_worldtime_transfer < world.time - 50)
@@ -75,39 +74,42 @@
 		update_icon()
 
 /obj/machinery/atmospherics/binary/circulator/update_icon()
-	if(stat & (BROKEN|NOPOWER) || !anchored)
-		icon_state = "circ-p"
-	else if(last_pressure_delta > 0 && recent_moles_transferred > 0)
-		if(last_pressure_delta > 5*ONE_ATMOSPHERE)
-			icon_state = "circ-run"
+	icon_state = anchored ? "circ-assembled" : "circ-unassembled"
+	overlays.Cut()
+	if (stat & (BROKEN|NOPOWER) || !anchored)
+		return
+	if (last_pressure_delta > 0 && recent_moles_transferred > 0)
+		if (temperature_overlay)
+			overlays += temperature_overlay
+		if (last_pressure_delta > 5*ONE_ATMOSPHERE)
+			overlays += "circ-run"
 		else
-			icon_state = "circ-slow"
+			overlays += "circ-slow"
 	else
-		icon_state = "circ-off"
+		overlays += "circ-off"
 
-	return 1
-
-/obj/machinery/atmospherics/binary/circulator/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if(istype(W, /obj/item/weapon/wrench))
-		playsound(src.loc, 'sound/items/Ratchet.ogg', 75, 1)
-		anchored = !anchored
-		user.visible_message("[user.name] [anchored ? "secures" : "unsecures"] the bolts holding [src.name] to the floor.", \
-					"You [anchored ? "secure" : "unsecure"] the bolts holding [src] to the floor.", \
-					"You hear a ratchet")
+/obj/machinery/atmospherics/binary/circulator/attackby(obj/item/I, mob/user)
+	if(QUALITY_BOLT_TURNING in I.tool_qualities)
+		if(I.use_tool(user, src, WORKTIME_FAST, QUALITY_BOLT_TURNING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+			anchored = !anchored
+			user.visible_message("[user.name] [anchored ? "secures" : "unsecures"] the bolts holding [src.name] to the floor.", \
+						"You [anchored ? "secure" : "unsecure"] the bolts holding [src] to the floor.", \
+						"You hear a ratchet")
 
 		if(anchored)
+			temperature_overlay = null
 			if(dir & (NORTH|SOUTH))
 				initialize_directions = NORTH|SOUTH
 			else if(dir & (EAST|WEST))
 				initialize_directions = EAST|WEST
 
-			initialize()
+			atmos_init()
 			build_network()
 			if (node1)
-				node1.initialize()
+				node1.atmos_init()
 				node1.build_network()
 			if (node2)
-				node2.initialize()
+				node2.atmos_init()
 				node2.build_network()
 		else
 			if(node1)
@@ -119,6 +121,7 @@
 
 			node1 = null
 			node2 = null
+		update_icon()
 
 	else
 		..()
@@ -145,3 +148,7 @@
 
 	src.set_dir(turn(src.dir, -90))
 	desc = initial(desc) + " Its outlet port is to the [dir2text(dir)]."
+
+/obj/machinery/atmospherics/binary/circulator/anchored
+	icon_state = "circ-assembled"
+	anchored = TRUE

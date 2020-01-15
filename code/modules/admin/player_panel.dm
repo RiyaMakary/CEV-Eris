@@ -81,7 +81,8 @@
 					body += "<a href='?src=\ref[src];traitor="+ref+"'>TP</a> - "
 					body += "<a href='?src=\ref[usr];priv_msg=\ref"+ref+"'>PM</a> - "
 					body += "<a href='?src=\ref[src];subtlemessage="+ref+"'>SM</a> - "
-					body += "<a href='?src=\ref[src];adminplayerobservejump="+ref+"'>JMP</a><br>"
+					body += "<a href='?src=\ref[src];viewlogs="+ref+"'>LOGS</a> - "
+					body += "<a href='?src=\ref[src];adminobservejump="+ref+"'>JMP</a><br>"
 					if(antagonist > 0)
 						body += "<font size='2'><a href='?src=\ref[src];check_antagonist=1'><font color='red'><b>Antagonist</b></font></a></font>";
 
@@ -194,7 +195,7 @@
 			<tr id='title_tr'>
 				<td align='center'>
 					<font size='5'><b>Player panel</b></font><br>
-					Hover over a line to see more information - <a href='?src=\ref[src];check_antagonist=1'>Check antagonists</a>
+					Hover over a line to see more information - <a href='?src=\ref[src];check_antagonist=1'>Storyteller Panel</a>
 					<p>
 				</td>
 			</tr>
@@ -245,7 +246,7 @@
 					else if(ispAI(M))
 						M_job = "pAI"
 					else if(isrobot(M))
-						M_job = "Cyborg"
+						M_job = "Robot"
 					else
 						M_job = "Silicon-based"
 
@@ -319,27 +320,9 @@
 	usr << browse(dat, "window=players;size=600x480")
 
 
-/datum/admins/proc/check_antagonists()
-	if (ticker && ticker.current_state >= GAME_STATE_PLAYING)
-		var/dat = "<html><head><title>Round Status</title></head><body><h1><B>Round Status</B></h1>"
-		dat += "Current Storyteller: <B>[ticker.storyteller.name]</B><BR>"
-		dat += "Round Duration: <B>[round(world.time / 36000)]:[add_zero(world.time / 600 % 60, 2)]:[world.time / 100 % 6][world.time / 100 % 10]</B><BR>"
-		dat += "<B>Emergency shuttle</B><BR>"
-		if (!emergency_shuttle.online())
-			dat += "<a href='?src=\ref[src];call_shuttle=1'>Call Shuttle</a><br>"
-		else
-			if (emergency_shuttle.waiting_to_leave())
-				var/timeleft = emergency_shuttle.estimate_prepare_time()
-				dat += "EPD: <a href='?src=\ref[src];edit_shuttle_time=1'>[(timeleft / 60) % 60]:[add_zero(num2text(timeleft % 60), 2)]</a><BR>"
-				dat += "<a href='?src=\ref[src];call_shuttle=2'>Send Back</a><br>"
-
-		dat += "<a href='?src=\ref[src];delay_round_end=1'>[ticker.delay_end ? "End Round Normally" : "Delay Round End"]</a><br>"
-		dat += "<hr>"
-		if(ticker.storyteller)
-			dat += ticker.storyteller.antagonist_report()
-		else
-			dat += "<b><font color='red'>Storyteller not found.</font></b>"
-		dat += "</body></html>"
-		usr << browse(dat, "window=roundstatus;size=400x500")
+/datum/admins/proc/storyteller_panel()
+	if(get_storyteller())
+		get_storyteller().storyteller_panel()
 	else
-		alert("The game hasn't started yet!")
+		to_chat(usr, SPAN_WARNING("There is no storyteller."))
+

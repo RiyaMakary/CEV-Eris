@@ -1,10 +1,13 @@
 /obj/machinery/door/window
 	name = "interior door"
 	desc = "A strong door."
+	layer = ABOVE_WINDOW_LAYER
+	open_layer = ABOVE_WINDOW_LAYER
+	closed_layer = ABOVE_WINDOW_LAYER
 	icon = 'icons/obj/doors/windoor.dmi'
 	icon_state = "left"
 	var/base_state = "left"
-	min_force = 4
+	resistance = RESISTANCE_FRAGILE
 	hitsound = 'sound/effects/Glasshit.ogg'
 	maxhealth = 100 //If you change this, consiter changing ../door/window/brigdoor/ health at the bottom of this .dm file
 	health = 100
@@ -54,7 +57,7 @@
 /obj/machinery/door/window/Destroy()
 	density = 0
 	update_nearby_tiles()
-	..()
+	. = ..()
 
 /obj/machinery/door/window/Bumped(atom/movable/AM as mob|obj)
 	if (!( ismob(AM) ))
@@ -73,8 +76,6 @@
 					close()
 		return
 	var/mob/M = AM // we've returned by here if M is not a mob
-	if (!( ticker ))
-		return
 	if (src.operating)
 		return
 	if (src.density && (!issmall(M) || ishuman(M)) && src.allowed(AM))
@@ -105,8 +106,6 @@
 
 /obj/machinery/door/window/open()
 	if (src.operating == 1) //doors can still open when emag-disabled
-		return 0
-	if (!ticker)
 		return 0
 	if(!src.operating) //in case of emag
 		src.operating = 1
@@ -148,9 +147,6 @@
 	if (src.health <= 0)
 		shatter()
 		return
-
-/obj/machinery/door/window/attack_ai(mob/user as mob)
-	return src.attack_hand(user)
 
 /obj/machinery/door/window/attack_hand(mob/user as mob)
 
@@ -195,11 +191,10 @@
 		return 1
 
 	//If it's emagged, crowbar can pry electronics out.
-	if (src.operating == -1 && istype(I, /obj/item/weapon/crowbar))
-		playsound(src.loc, 'sound/items/Crowbar.ogg', 100, 1)
+	if (src.operating == -1 && (QUALITY_PRYING in I.tool_qualities))
 		user.visible_message("[user] removes the electronics from the windoor.", "You start to remove electronics from the windoor.")
-		if (do_after(user,40,src))
-			user << SPAN_NOTICE("You removed the windoor electronics!")
+		if(I.use_tool(user, src, WORKTIME_NORMAL, QUALITY_PRYING, FAILCHANCE_EASY, required_stat = STAT_MEC))
+			to_chat(user, SPAN_NOTICE("You removed the windoor electronics!"))
 
 			var/obj/structure/windoor_assembly/wa = new/obj/structure/windoor_assembly(src.loc)
 			if (istype(src, /obj/machinery/door/window/brigdoor))
@@ -252,8 +247,28 @@
 		else
 			close()
 
-	else if (src.density)
-		flick(text("[]deny", src.base_state), src)
+	else
+
+		if (src.density)
+			flick(text("[]deny", src.base_state), src)
+			if (usr.a_intent == I_HURT)
+
+				if (ishuman(usr))
+					var/mob/living/carbon/human/H = usr
+					if(H.species.can_shred(H))
+						attack_generic(H,25)
+						return
+				playsound(src.loc, 'sound/effects/glassknock.ogg', 100, 1, 10, 10)
+				user.do_attack_animation(src)
+				usr.visible_message(SPAN_DANGER("\The [usr] bangs against \the [src]!"),
+									SPAN_DANGER("You bang against \the [src]!"),
+									"You hear a banging sound.")
+			else
+				playsound(src.loc, 'sound/effects/glassknock.ogg', 80, 1, 5, 5)
+				usr.visible_message("[usr.name] knocks on the [src.name].",
+									"You knock on the [src.name].",
+									"You hear a knocking sound.")
+			user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 
 	return
 

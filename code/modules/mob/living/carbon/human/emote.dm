@@ -18,6 +18,9 @@
 
 	if(src.stat == 2.0 && (act != "deathgasp"))
 		return
+
+	var/cloud_emote = ""
+
 	switch(act)
 		if ("airguitar")
 			if (!src.restrained())
@@ -72,7 +75,7 @@
 
 			if (src.client)
 				if (client.prefs.muted & MUTE_IC)
-					src << "\red You cannot send IC messages (muted)."
+					to_chat(src, "\red You cannot send IC messages (muted).")
 					return
 				if (src.client.handle_spam_prevention(message,MUTE_IC))
 					return
@@ -81,6 +84,17 @@
 			if(!(message))
 				return
 			return custom_emote(m_type, message)
+
+		if("pain")
+			if(!message)
+				if(miming)
+					message = "appears to be in pain!"
+					m_type = 1 // Can't we get defines for these?
+				else
+					message = "twists in pain."
+					m_type = 1
+
+			cloud_emote = "cloud-pain"
 
 		if ("salute")
 			if (!src.buckled)
@@ -205,6 +219,7 @@
 				else
 					message = "makes a weak noise."
 					m_type = 2
+			cloud_emote = "cloud-gasp"
 
 		if ("deathgasp")
 			message = "[species.death_message]"
@@ -540,16 +555,17 @@
 				else
 					message = "makes a very loud noise."
 					m_type = 2
+			cloud_emote = "cloud-scream"
 
 		if ("help")
-			src << {"blink, blink_r, blush, bow-(none)/mob, burp, choke, chuckle, clap, collapse, cough,
+			to_chat(src, {"blink, blink_r, blush, bow-(none)/mob, burp, choke, chuckle, clap, collapse, cough,
 cry, custom, deathgasp, drool, eyebrow, frown, gasp, giggle, groan, grumble, handshake, hug-(none)/mob, glare-(none)/mob,
 grin, laugh, look-(none)/mob, moan, mumble, nod, pale, point-atom, raise, salute, shake, shiver, shrug,
 sigh, signal-#1-10, smile, sneeze, sniff, snore, stare-(none)/mob, tremble, twitch, twitch_s, whimper,
-wink, yawn, swish, sway/wag, fastsway/qwag, stopsway/swag"}
+wink, yawn, swish, sway/wag, fastsway/qwag, stopsway/swag"})
 
 		else
-			src << "\blue Unusable emote '[act]'. Say *help for a list."
+			to_chat(src, "\blue Unusable emote '[act]'. Say *help for a list.")
 
 
 
@@ -557,12 +573,20 @@ wink, yawn, swish, sway/wag, fastsway/qwag, stopsway/swag"}
 
 	if (message)
 		log_emote("[name]/[key] : [message]")
-		custom_emote(m_type,message)
+		custom_emote(m_type, message)
+
+	if(cloud_emote)
+		var/image/emote_bubble = image('icons/mob/emote.dmi', src, cloud_emote, ABOVE_MOB_LAYER)
+		flick_overlay(emote_bubble, clients, 30)
+		QDEL_IN(emote_bubble, 3 SECONDS)
 
 
 /mob/living/carbon/human/verb/pose()
 	set name = "Set Pose"
 	set desc = "Sets a description which will be shown when someone examines you."
 	set category = "IC"
+
+	if(suppress_communication)
+		return FALSE
 
 	pose =  sanitize(input(usr, "This is [src]. [get_visible_gender() == MALE ? "He" : get_visible_gender() == FEMALE ? "She" : "They"] [get_visible_gender() == NEUTER ? "are" : "is"]...", "Pose", null)  as text)

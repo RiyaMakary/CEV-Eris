@@ -16,8 +16,8 @@
 	underlays += image('icons/obj/stationobjs.dmi', icon_state = "telecomp-wires")
 	return
 
-/obj/machinery/computer/teleporter/initialize()
-	..()
+/obj/machinery/computer/teleporter/Initialize()
+	. = ..()
 	var/obj/machinery/teleport/station/station
 	for(var/dir in list(NORTH,EAST,SOUTH,WEST))
 		station = locate(/obj/machinery/teleport/station, get_step(src, dir))
@@ -57,8 +57,8 @@
 
 
 		if(istype(L, /obj/landmark/) && istype(L.loc, /turf))
-			usr << "You insert the coordinates into the machine."
-			usr << "A message flashes across the screen reminding the traveller that the nuclear authentication disk is to remain on the station at all times."
+			to_chat(usr, "You insert the coordinates into the machine.")
+			to_chat(usr, "A message flashes across the screen reminding the traveller that the nuclear authentication disk is to remain on the station at all times.")
 			user.drop_item()
 			qdel(I)
 
@@ -100,7 +100,7 @@
 		var/turf/T = get_turf(R)
 		if (!T)
 			continue
-		if(!(T.z in config.player_levels))
+		if(!isPlayerLevel(T.z))
 			continue
 		var/tmpname = T.loc.name
 		if(areaindex[tmpname])
@@ -181,7 +181,7 @@
 /obj/machinery/teleport/hub/New()
 	..()
 	underlays.Cut()
-	underlays += image('icons/obj/stationobjs.dmi', icon_state = "tele-wires")
+	underlays += "tele-wires"
 
 /obj/machinery/teleport/hub/Bumped(M as mob|obj)
 	spawn()
@@ -227,7 +227,7 @@
 	if (isliving(M))
 		var/mob/living/MM = M
 		if(MM.check_contents_for(/obj/item/weapon/disk/nuclear))
-			MM << SPAN_WARNING("Something you are carrying seems to be unable to pass through the portal. Better drop it if you want to go through.")
+			to_chat(MM, SPAN_WARNING("Something you are carrying seems to be unable to pass through the portal. Better drop it if you want to go through."))
 			return
 	var/disky = 0
 	for (var/atom/O in M.contents) //I'm pretty sure this accounts for the maximum amount of container in container stacking. --NeoFite
@@ -254,7 +254,7 @@
 	if (isliving(M))
 		var/mob/living/MM = M
 		if(MM.check_contents_for(/obj/item/weapon/storage/backpack/holding))
-			MM << SPAN_WARNING("The Bluespace interface on your Bag of Holding interferes with the teleport!")
+			to_chat(MM, SPAN_WARNING("The Bluespace interface on your Bag of Holding interferes with the teleport!"))
 			precision = rand(1,100)
 	if (istype(M, /obj/item/weapon/storage/backpack/holding))
 		precision = rand(1,100)
@@ -316,7 +316,7 @@
 /obj/machinery/teleport/station/New()
 	..()
 	overlays.Cut()
-	overlays += image('icons/obj/stationobjs.dmi', icon_state = "controller-wires")
+	overlays += "controller-wires"
 
 /obj/machinery/teleport/station/attackby(var/obj/item/weapon/W)
 	src.attack_hand()
@@ -396,9 +396,9 @@
 	src.range--
 	return
 
-/obj/effect/laser/Move()
+/obj/effect/laser/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	src.range--
-	return
+	return ..()
 
 /atom/proc/laserhit(L as obj)
 	return 1

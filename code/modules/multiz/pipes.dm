@@ -13,9 +13,6 @@ obj/machinery/atmospherics/pipe/zpipe
 		dir = SOUTH
 		initialize_directions = SOUTH
 
-		var/obj/machinery/atmospherics/node1	//connection on the same Z
-		var/obj/machinery/atmospherics/node2	//connection on the other Z
-
 		var/minimum_temperature_difference = 300
 		var/thermal_conductivity = 0 //WALL_HEAT_TRANSFER_COEFFICIENT No
 
@@ -23,8 +20,12 @@ obj/machinery/atmospherics/pipe/zpipe
 		var/fatigue_pressure = 55*ONE_ATMOSPHERE
 		alert_pressure = 55*ONE_ATMOSPHERE
 
+		var/travel_verbname = "UNDEFINED"
+		var/travel_direction_verb = "UNDEFINED"
+		var/travel_direction_name = "UNDEFINED"
+		var/travel_direction = "UNDEFINED"
 
-		level = 1
+		level = BELOW_PLATING_LEVEL
 
 obj/machinery/atmospherics/pipe/zpipe/New()
 	..()
@@ -51,7 +52,7 @@ obj/machinery/atmospherics/pipe/zpipe/New()
 		invisibility = i ? 101 : 0
 	update_icon()
 
-obj/machinery/atmospherics/pipe/up/process()
+obj/machinery/atmospherics/pipe/up/Process()
 	if(!parent) //This should cut back on the overhead calling build_network thousands of times per cycle
 		..()
 	else
@@ -91,7 +92,7 @@ obj/machinery/atmospherics/pipe/zpipe/Destroy()
 		node1.disconnect(src)
 	if(node2)
 		node2.disconnect(src)
-	..()
+	return ..()
 
 obj/machinery/atmospherics/pipe/zpipe/pipeline_expansion()
 	return list(node1, node2)
@@ -120,8 +121,12 @@ obj/machinery/atmospherics/pipe/zpipe/up
 
 		name = "upwards pipe"
 		desc = "A pipe segment to connect upwards."
+		travel_verbname = "Ventcrawl Upwards"
+		travel_direction_verb = "ascend"
+		travel_direction_name = "up"
+		travel_direction = UP
 
-obj/machinery/atmospherics/pipe/zpipe/up/initialize()
+obj/machinery/atmospherics/pipe/zpipe/up/atmos_init()
 	normalize_dir()
 	var/node1_dir
 
@@ -159,7 +164,12 @@ obj/machinery/atmospherics/pipe/zpipe/down
 		name = "downwards pipe"
 		desc = "A pipe segment to connect downwards."
 
-obj/machinery/atmospherics/pipe/zpipe/down/initialize()
+		travel_verbname = "Ventcrawl Downwards"
+		travel_direction_verb = "descend"
+		travel_direction_name = "down"
+		travel_direction = DOWN
+
+obj/machinery/atmospherics/pipe/zpipe/down/atmos_init()
 	normalize_dir()
 	var/node1_dir
 

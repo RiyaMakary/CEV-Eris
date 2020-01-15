@@ -3,7 +3,7 @@
 	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "rd_key"
 	icon_screen = "mecha"
-	light_color = "#a97faa"
+	light_color = COLOR_LIGHTING_PURPLE_MACHINERY
 	req_access = list(access_robotics)
 	circuit = /obj/item/weapon/circuitboard/mecha_control
 	var/list/located = list()
@@ -42,19 +42,19 @@
 	Topic(href, href_list)
 		if(..())
 			return
-		var/datum/topic_input/filter = new /datum/topic_input(href,href_list)
+		var/datum/topic_input/m_filter = new /datum/topic_input(href,href_list)
 		if(href_list["send_message"])
-			var/obj/item/mecha_parts/mecha_tracking/MT = filter.getObj("send_message")
+			var/obj/item/mecha_parts/mecha_tracking/MT = m_filter.getObj("send_message")
 			var/message = sanitize(input(usr,"Input message","Transmit message") as text)
 			var/obj/mecha/M = MT.in_mecha()
 			if(message && M)
 				M.occupant_message(message)
 			return
 		if(href_list["shock"])
-			var/obj/item/mecha_parts/mecha_tracking/MT = filter.getObj("shock")
+			var/obj/item/mecha_parts/mecha_tracking/MT = m_filter.getObj("shock")
 			MT.shock()
 		if(href_list["get_log"])
-			var/obj/item/mecha_parts/mecha_tracking/MT = filter.getObj("get_log")
+			var/obj/item/mecha_parts/mecha_tracking/MT = m_filter.getObj("get_log")
 			stored_data = MT.get_mecha_log()
 			screen = 1
 		if(href_list["return"])
@@ -65,11 +65,12 @@
 
 
 /obj/item/mecha_parts/mecha_tracking
-	name = "Exosuit tracking beacon"
+	name = "exosuit tracking beacon"
 	desc = "Device used to transmit exosuit data."
 	icon = 'icons/obj/device.dmi'
 	icon_state = "motion2"
 	origin_tech = list(TECH_DATA = 2, TECH_MAGNET = 2)
+	matter = list(MATERIAL_STEEL = 5)
 
 	proc/get_mecha_info()
 		if(!in_mecha())

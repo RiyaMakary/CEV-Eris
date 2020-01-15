@@ -15,6 +15,8 @@
 	return "([last_harm_points] injure points)"
 
 /datum/objective/harm/update_completion()
+	if (failed)
+		return FALSE
 	if(completed)
 		return
 	var/harm_points = 0
@@ -40,7 +42,8 @@
 				harm_points += 2
 
 		var/obj/item/organ/external/head/head = H.get_organ(BP_HEAD)
-		if(head.disfigured)
+
+		if(head && head.disfigured) // If you cut off the head, it's not quite "harm"
 			harm_points += 1
 
 		if(harm_points >= 4)

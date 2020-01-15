@@ -8,7 +8,7 @@
 
 	if(src.client)
 		if(src.client.prefs.muted&MUTE_DEADCHAT)
-			src << "\red You cannot talk in deadchat (muted)."
+			to_chat(src, "\red You cannot talk in deadchat (muted).")
 			return
 
 		if(src.client.handle_spam_prevention(message, MUTE_DEADCHAT))
@@ -21,7 +21,7 @@
 	if(!client)
 		return
 
-	if(speaker && !speaker.client && is_preference_enabled(/datum/client_preference/ghost_ears) && !(speaker in view(src)))
+	if(speaker && !speaker.client && get_preference_value(/datum/client_preference/ghost_ears) == GLOB.PREF_ALL_SPEECH && !(speaker in view(src)))
 			//Does the speaker have a client?
 			// It's either random stuff that observers won't care about (Experiment 97B says, 'EHEHEHEHEHEHEHE')
 			//Or someone snoring.  So we make it where they won't hear it.
@@ -42,7 +42,7 @@
 
 	if(src.client)
 		if(src.client.prefs.muted&MUTE_DEADCHAT)
-			src << "\red You cannot emote in deadchat (muted)."
+			to_chat(src, "\red You cannot emote in deadchat (muted).")
 			return
 
 		if(src.client.handle_spam_prevention(message, MUTE_DEADCHAT))

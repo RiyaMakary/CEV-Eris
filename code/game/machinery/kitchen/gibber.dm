@@ -6,6 +6,7 @@
 	icon_state = "grinder"
 	density = 1
 	anchored = 1
+	layer = BELOW_OBJ_LAYER
 	req_access = list(access_kitchen,access_morgue)
 
 	var/operating = 0 //Is it on?
@@ -13,6 +14,9 @@
 	var/mob/living/occupant // Mob who has been put inside
 	var/gib_time = 40        // Time from starting until meat appears
 	var/gib_throw_dir = WEST // Direction to spit meat and gibs in.
+
+	var/hack_require = 6 //for hacking with multitool
+	var/hack_stage = 0
 
 	use_power = 1
 	idle_power_usage = 2
@@ -70,23 +74,44 @@
 	if(stat & (NOPOWER|BROKEN))
 		return
 	if(operating)
-		user << SPAN_DANGER("The gibber is locked and running, wait for it to finish.")
+		to_chat(user, SPAN_DANGER("The gibber is locked and running, wait for it to finish."))
 		return
 	else
 		src.startgibbing(user)
 
+/obj/machinery/gibber/attackby(obj/item/I, mob/user)
+	..()
+	if(QUALITY_PULSING in I.tool_qualities)
+		user.visible_message(
+		SPAN_WARNING("[user] picks in wires of the [src.name] with a multitool"), \
+		SPAN_WARNING("[pick("Picking wires in [src.name] lock", "Hacking [src.name] security systems", "Pulsing in locker controller")].")
+		)
+		if(I.use_tool(user, src, WORKTIME_LONG, QUALITY_PULSING, FAILCHANCE_HARD, required_stat = STAT_MEC))
+			if(hack_stage < hack_require)
+				playsound(loc, 'sound/items/glitch.ogg', 60, 1, -3)
+				hack_stage++
+				to_chat(user, SPAN_NOTICE("Multitool blinks <b>([hack_stage]/[hack_require])</b> on screen."))
+			else if(hack_stage >= hack_require)
+				emagged = !emagged
+				src.update_icon()
+				user.visible_message(
+				SPAN_WARNING("[user] [emagged?"disable":"enable"] the safety guard of [name] with a multitool,"), \
+				SPAN_WARNING("You [emagged? "disable" : "enable"] the safety guard of [name] with multitool")
+				)
+				return
+
 /obj/machinery/gibber/examine()
 	..()
-	usr << "The safety guard is [emagged ? SPAN_DANGER("disabled") : "enabled"]."
+	to_chat(usr, "The safety guard is [emagged ? SPAN_DANGER("disabled") : "enabled"].")
 
 /obj/machinery/gibber/emag_act(var/remaining_charges, var/mob/user)
 	emagged = !emagged
-	user <<  SPAN_DANGER("You [emagged ? "disable" : "enable"] the gibber safety guard.")
+	to_chat(user, SPAN_DANGER("You [emagged ? "disable" : "enable"] the gibber safety guard."))
 	return 1
 
 /obj/machinery/gibber/affect_grab(var/mob/user, var/mob/target, var/state)
 	if(state < GRAB_NECK)
-		user << SPAN_DANGER("You need a better grip to do that!")
+		to_chat(user, SPAN_DANGER("You need a better grip to do that!"))
 		return FALSE
 	move_into_gibber(user, target)
 	return TRUE
@@ -99,24 +124,24 @@
 /obj/machinery/gibber/proc/move_into_gibber(var/mob/user,var/mob/living/victim)
 
 	if(src.occupant)
-		user << SPAN_DANGER("The gibber is full, empty it first!")
+		to_chat(user, SPAN_DANGER("The gibber is full, empty it first!"))
 		return
 
 	if(operating)
-		user << SPAN_DANGER("The gibber is locked and running, wait for it to finish.")
+		to_chat(user, SPAN_DANGER("The gibber is locked and running, wait for it to finish."))
 		return
 
 	if(!(iscarbon(victim)) && !(isanimal(victim)) )
-		user << SPAN_DANGER("This is not suitable for the gibber!")
+		to_chat(user, SPAN_DANGER("This is not suitable for the gibber!"))
 		return
 
 	if(ishuman(victim) && !emagged)
-		user << SPAN_DANGER("The gibber safety guard is engaged!")
+		to_chat(user, SPAN_DANGER("The gibber safety guard is engaged!"))
 		return
 
 
 	if(victim.abiotic(1))
-		user << SPAN_DANGER("Subject may not have abiotic items on.")
+		to_chat(user, SPAN_DANGER("Subject may not have abiotic items on."))
 		return
 
 	user.visible_message(SPAN_DANGER("[user] starts to put [victim] into the gibber!"))

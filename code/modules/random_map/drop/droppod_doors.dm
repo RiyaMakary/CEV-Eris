@@ -9,9 +9,12 @@
 	layer = TURF_LAYER + 0.1
 	var/deploying
 	var/deployed
+	var/turf/origin_turf
 
-/obj/structure/droppod_door/New(var/newloc, var/autoopen)
+/obj/structure/droppod_door/New(var/newloc, var/autoopen, var/origin)
 	..(newloc)
+
+	origin_turf = origin
 	if(autoopen)
 		spawn(100)
 			deploy()
@@ -27,23 +30,22 @@
 
 /obj/structure/droppod_door/attack_hand(var/mob/user)
 	if(deploying) return
-	user << SPAN_DANGER("You prime the explosive bolts. Better get clear!")
+	to_chat(user, SPAN_DANGER("You prime the explosive bolts. Better get clear!"))
 	sleep(30)
 	deploy()
 
 /obj/structure/droppod_door/proc/deploy()
 	if(deployed)
 		return
+	//Make all pod doors burst open simultaneously
+
 
 	deployed = 1
+	if (origin_turf)
+		for (var/obj/structure/droppod_door/DD in orange(4, origin_turf))
+			DD.deploy()
 	visible_message(SPAN_DANGER("The explosive bolts on \the [src] detonate, throwing it open!"))
 	playsound(src.loc, 'sound/effects/bang.ogg', 50, 1, 5)
-
-	// This is shit but it will do for the sake of testing.
-	for(var/obj/structure/droppod_door/D in orange(1,src))
-		if(D.deployed)
-			continue
-		D.deploy()
 
 	// Overwrite turfs.
 	var/turf/origin = get_turf(src)
@@ -65,9 +67,9 @@
 
 	// Hurl the mobs away.
 	for(var/mob/living/M in T)
-		M.throw_at(get_edge_target_turf(T,src.dir),rand(0,3),50)
+		M.throw_at(get_edge_target_turf(T,src.dir),rand(1,5),50)
 	for(var/mob/living/M in origin)
-		M.throw_at(get_edge_target_turf(origin,src.dir),rand(0,3),50)
+		M.throw_at(get_edge_target_turf(origin,src.dir),rand(1,5),50)
 
 	// Create a decorative ramp bottom and flatten out our current ramp.
 	density = 0
@@ -76,6 +78,6 @@
 	var/obj/structure/droppod_door/door_bottom = new(T)
 	door_bottom.deployed = 1
 	door_bottom.density = 0
-	door_bottom.opacity = 0
+	door_bottom.set_opacity(FALSE)
 	door_bottom.dir = src.dir
 	door_bottom.icon_state = "rampbottom"

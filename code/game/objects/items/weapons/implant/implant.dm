@@ -7,8 +7,9 @@
 	icon = 'icons/obj/device.dmi'
 	icon_state = "implant"
 	w_class = ITEM_SIZE_TINY
+	matter = list(MATERIAL_STEEL = 1, MATERIAL_GLASS = 1)
 	var/implanted = FALSE
-	var/mob/wearer = null
+	var/mob/living/carbon/human/wearer = null
 	var/obj/item/organ/external/part = null
 	var/implant_color = "b"
 	var/allow_reagents = FALSE
@@ -16,32 +17,55 @@
 	var/is_legal = TRUE
 	var/list/allowed_organs = list()
 	var/position_flag = 0
+	var/external = FALSE
+	var/cruciform_resist = FALSE
+
+/obj/item/weapon/implant/attackby(obj/item/weapon/I as obj, mob/user as mob)
+	..()
+	if (istype(I, /obj/item/weapon/implanter))
+		var/obj/item/weapon/implanter/M = I
+		if(is_external())
+			return
+		if(!M.implant && user.unEquip(src, M))
+			M.implant = src
+			M.update_icon()
 
 
 /obj/item/weapon/implant/proc/trigger(emote, mob/living/source)
 /obj/item/weapon/implant/proc/activate()
+	return TRUE
+
 /obj/item/weapon/implant/proc/deactivate()
+	return TRUE
+
 /obj/item/weapon/implant/proc/malfunction(var/severity)
 
 /obj/item/weapon/implant/proc/is_external()
-	return istype(src, /obj/item/weapon/implant/external)
+	return external
 
 //return TRUE for implanter icon update.
-/obj/item/weapon/implant/proc/install(var/mob/living/carbon/human/target, var/organ, var/mob/user)
-	var/obj/item/organ/external/affected = target.organs_by_name[organ]
-	if(!affected)
-		if(allowed_organs.len)
-			organ = pick(allowed_organs)
-		else
-			organ = BP_CHEST
-	affected = target.organs_by_name[organ]
+/obj/item/weapon/implant/proc/install(mob/living/target, organ, mob/user)
+	var/obj/item/organ/external/affected
+	if (ishuman(target))
+		var/mob/living/carbon/human/H = target
+		affected = H.organs_by_name[organ]
+		if(!affected)
+			if(allowed_organs.len)
+				organ = pick(allowed_organs)
+			else
+				organ = BP_CHEST
+		affected = H.organs_by_name[organ]
 
-	if(!affected)
-		user << SPAN_WARNING("[target] miss that body part!.")
-		return
+		if(!affected)
+			to_chat(user, SPAN_WARNING("[H] is missing that body part!."))
+			return
 
-	if(allowed_organs && allowed_organs.len && !(organ in allowed_organs))
-		user << SPAN_WARNING("[src] cannot be implanted in this limb.")
+		if(allowed_organs && allowed_organs.len && !(organ in allowed_organs))
+			to_chat(user, SPAN_WARNING("[src] cannot be implanted in this limb."))
+			return
+
+	if(!can_install(target, affected))
+		to_chat(user, SPAN_WARNING("You can't install [src]."))
 		return
 
 	forceMove(target)
@@ -50,15 +74,19 @@
 	if(affected)
 		affected.implants += src
 		part = affected
-	if(ishuman(wearer))
-		var/mob/living/carbon/human/H = wearer
-		H.update_implants()
+		SSnano.update_uis(affected) // Update surgery UI window, if any
+
 	on_install(target, affected)
+	wearer.update_implants()
+	return TRUE
+
+/obj/item/weapon/implant/proc/can_install(var/mob/living/target, var/obj/item/organ/external/E)
 	return TRUE
 
 /obj/item/weapon/implant/proc/on_install(var/mob/living/target, var/obj/item/organ/external/E)
 
 /obj/item/weapon/implant/proc/uninstall()
+	on_uninstall()
 	forceMove(get_turf(wearer))
 	part.implants.Remove(src)
 	part = null
@@ -68,13 +96,15 @@
 		H.update_implants()
 	wearer = null
 
+/obj/item/weapon/implant/proc/on_uninstall()
+
 /obj/item/weapon/implant/proc/get_data()
 	return "No information available"
 
 /obj/item/weapon/implant/proc/hear(message, mob/source)
 
 /obj/item/weapon/implant/proc/meltdown()	//breaks it down, making implant unrecongizible
-	wearer << "<span class='warning'>You feel something melting inside [part ? "your [part.name]" : "you"]!</span>"
+	to_chat(wearer, "<span class='warning'>You feel something melting inside [part ? "your [part.name]" : "you"]!</span>")
 	if (part)
 		part.take_damage(burn = 15, used_weapon = "Electronics meltdown")
 	else
@@ -85,7 +115,13 @@
 	icon_state = "implant_melted"
 	malfunction = MALFUNCTION_PERMANENT
 
-/obj/item/weapon/implant/proc/get_mob_overlay(var/gender, var/body_build)
+/obj/item/weapon/implant/proc/restore()
+	name = initial(name)
+	desc = initial(desc)
+	icon_state = initial(icon_state)
+	malfunction = initial(malfunction)
+
+/obj/item/weapon/implant/proc/get_mob_overlay(var/gender)
 	return null
 
 /obj/item/weapon/implant/Destroy()
@@ -96,3 +132,5 @@
 /obj/item/weapon/implant/explosive/emp_act(severity)
 	malfunction(severity)
 
+/obj/item/weapon/implant/proc/get_scanner_name()
+	return name

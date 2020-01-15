@@ -25,20 +25,9 @@
 	toggleable = 0
 	disruptive = 0
 
+
 	var/device_type
 	var/obj/item/device
-
-/obj/item/rig_module/device/plasmacutter
-	name = "hardsuit plasma cutter"
-	desc = "A lethal-looking industrial cutter."
-	icon_state = "plasmacutter"
-	interface_name = "plasma cutter"
-	interface_desc = "A self-sustaining plasma arc capable of cutting through walls."
-	suit_overlay_active = "plasmacutter"
-	suit_overlay_inactive = "plasmacutter"
-	use_power_cost = 0.5
-
-	device_type = /obj/item/weapon/pickaxe/plasmacutter
 
 /obj/item/rig_module/device/healthscanner
 	name = "health scanner module"
@@ -47,7 +36,8 @@
 	interface_name = "health scanner"
 	interface_desc = "Shows an informative health readout when used on a subject."
 
-	device_type = /obj/item/device/healthanalyzer
+
+	device_type = /obj/item/device/scanner/health
 
 /obj/item/rig_module/device/drill
 	name = "hardsuit drill mount"
@@ -59,7 +49,8 @@
 	suit_overlay_inactive = "mounted-drill"
 	use_power_cost = 0.1
 
-	device_type = /obj/item/weapon/pickaxe/diamonddrill
+
+	device_type = /obj/item/weapon/tool/pickaxe/diamonddrill/rig
 
 /obj/item/rig_module/device/anomaly_scanner
 	name = "hardsuit anomaly scanner"
@@ -72,6 +63,7 @@
 	selectable = 0
 	device_type = /obj/item/device/ano_scanner
 
+
 /obj/item/rig_module/device/orescanner
 	name = "ore scanner module"
 	desc = "A clunky old ore scanner."
@@ -81,7 +73,8 @@
 	engage_string = "Begin Scan"
 	usable = 1
 	selectable = 0
-	device_type = /obj/item/weapon/mining_scanner
+	device_type = /obj/item/device/scanner/mining
+
 
 /obj/item/rig_module/device/rcd
 	name = "RCD mount"
@@ -126,6 +119,7 @@
 	toggleable = 0
 	disruptive = 0
 
+
 	engage_string = "Inject"
 
 	interface_name = "integrated chemical dispenser"
@@ -161,11 +155,11 @@
 
 /obj/item/rig_module/chem_dispenser/accepts_item(var/obj/item/input_item, var/mob/living/user)
 
-	if(!input_item.is_open_container())
+	if(!input_item.is_drainable())
 		return 0
 
 	if(!input_item.reagents || !input_item.reagents.total_volume)
-		user << "\The [input_item] is empty."
+		to_chat(user, "\The [input_item] is empty.")
 		return 0
 
 	// Magical chemical filtration system, do not question it.
@@ -187,9 +181,9 @@
 				break
 
 	if(total_transferred)
-		user << "<font color='blue'>You transfer [total_transferred] units into the suit reservoir.</font>"
+		to_chat(user, "<font color='blue'>You transfer [total_transferred] units into the suit reservoir.</font>")
 	else
-		user << SPAN_DANGER("None of the reagents seem suitable.")
+		to_chat(user, SPAN_DANGER("None of the reagents seem suitable."))
 	return 1
 
 /obj/item/rig_module/chem_dispenser/engage(atom/target)
@@ -200,7 +194,7 @@
 	var/mob/living/carbon/human/H = holder.wearer
 
 	if(!charge_selected)
-		H << SPAN_DANGER("You have not selected a chemical type.")
+		to_chat(H, SPAN_DANGER("You have not selected a chemical type."))
 		return 0
 
 	var/datum/rig_charge/charge = charges[charge_selected]
@@ -210,7 +204,7 @@
 
 	var/chems_to_use = 10
 	if(charge.charges <= 0)
-		H << SPAN_DANGER("Insufficient chems!")
+		to_chat(H, SPAN_DANGER("Insufficient chems!"))
 		return 0
 	else if(charge.charges < chems_to_use)
 		chems_to_use = charge.charges
@@ -225,8 +219,8 @@
 		target_mob = H
 
 	if(target_mob != H)
-		H << SPAN_DANGER("You inject [target_mob] with [chems_to_use] unit\s of [charge.display_name].")
-	target_mob << "<span class='danger'>You feel a rushing in your veins as [chems_to_use] unit\s of [charge.display_name] [chems_to_use == 1 ? "is" : "are"] injected.</span>"
+		to_chat(H, SPAN_DANGER("You inject [target_mob] with [chems_to_use] unit\s of [charge.display_name]."))
+	to_chat(target_mob, "<span class='danger'>You feel a rushing in your veins as [chems_to_use] unit\s of [charge.display_name] [chems_to_use == 1 ? "is" : "are"] injected.</span>")
 	target_mob.reagents.add_reagent(charge.display_name, chems_to_use)
 
 	charge.charges -= chems_to_use
@@ -271,6 +265,7 @@
 	toggleable = 0
 	disruptive = 0
 
+
 	engage_string = "Configure Synthesiser"
 
 	interface_name = "voice synthesiser"
@@ -301,17 +296,17 @@
 		if("Enable")
 			active = 1
 			voice_holder.active = 1
-			usr << "<font color='blue'>You enable the speech synthesiser.</font>"
+			to_chat(usr, "<font color='blue'>You enable the speech synthesiser.</font>")
 		if("Disable")
 			active = 0
 			voice_holder.active = 0
-			usr << "<font color='blue'>You disable the speech synthesiser.</font>"
+			to_chat(usr, "<font color='blue'>You disable the speech synthesiser.</font>")
 		if("Set Name")
 			var/raw_choice = sanitize(input(usr, "Please enter a new name.")  as text|null, MAX_NAME_LEN)
 			if(!raw_choice)
 				return 0
 			voice_holder.voice = raw_choice
-			usr << "<font color='blue'>You are now mimicking <B>[voice_holder.voice]</B>.</font>"
+			to_chat(usr, "<font color='blue'>You are now mimicking <B>[voice_holder.voice]</B>.</font>")
 	return 1
 
 /obj/item/rig_module/maneuvering_jets
@@ -323,6 +318,7 @@
 	toggleable = 1
 	selectable = 0
 	disruptive = 0
+
 
 	suit_overlay_active = "maneuvering_active"
 	suit_overlay_inactive = null //"maneuvering_inactive"
@@ -367,18 +363,84 @@
 		jets.toggle()
 	return 1
 
-/obj/item/rig_module/maneuvering_jets/New()
-	..()
+/obj/item/rig_module/maneuvering_jets/Initialize()
+	. = ..()
 	jets = new(src)
 
+//Some slightly complex setup here to make hardsuit jetpacks work right
 /obj/item/rig_module/maneuvering_jets/installed()
 	..()
+	//Holder is the rig core module, the thing the user is wearing
 	jets.holder = holder
-	jets.ion_trail.set_up(holder)
 
-/obj/item/rig_module/maneuvering_jets/removed()
+	//We set the jetpack's gastank to the core's internal airtank.
+	//So the jetpack isn't really a tank but more of a pressure valve for another tank
+	jets.gastank = holder.air_supply
+
+	//Sets up the trail fx to track movement of the core module, and thusly the user
+	jets.trail.set_up(holder)
+
+	//Tells the trail that its jetpack isn't the core module, but the jets
+	jets.trail.jetpack = jets
+
+/obj/item/rig_module/maneuvering_jets/uninstalled()
 	..()
 	jets.holder = null
-	jets.ion_trail.set_up(jets)
+	jets.trail.set_up(jets)
 
-/obj/item/rig_module/foam_sprayer
+/obj/item/rig_module/autodoc
+	name = "autodoc module"
+	desc = "A complex surgery system for almost all your needs."
+	use_power_cost = 10
+	active = 1
+	usable = 1
+
+	interface_name = "Autodoc"
+	interface_desc = "Module with set of instruments that is capable to preform surgery on user"
+	var/datum/autodoc/autodoc_processor
+	var/autodoc_type = /datum/autodoc
+	var/turf/wearer_loc = null
+
+/obj/item/rig_module/autodoc/Initialize()
+	. = ..()
+	autodoc_processor = new autodoc_type(src)
+	autodoc_processor.damage_heal_amount = 20
+
+/obj/item/rig_module/autodoc/Destroy()
+	QDEL_NULL(autodoc_processor)
+	return ..()
+
+/obj/item/rig_module/autodoc/engage()
+	if(!..())
+		return 0
+	if(autodoc_processor.active)
+		autodoc_processor.stop()
+	autodoc_processor.set_patient(holder.wearer)
+	ui_interact(usr)
+	return 1
+/obj/item/rig_module/autodoc/Topic(href, href_list)
+	return autodoc_processor.Topic(href, href_list)
+/obj/item/rig_module/autodoc/Process()
+	if(..())
+		autodoc_processor.stop()
+	if(autodoc_processor.active)
+		if(wearer_loc == null)
+			wearer_loc = get_turf(holder.wearer)
+		if(wearer_loc != get_turf(holder.wearer))
+			autodoc_processor.fail()
+		passive_power_cost = 5
+		engage_string = "Abort operations"
+	else
+		engage_string = "Interact"
+		passive_power_cost = 0
+		wearer_loc = null
+
+/obj/item/rig_module/autodoc/ui_interact(mob/user, ui_key, datum/nanoui/ui, force_open, datum/nano_ui/master_ui, datum/topic_state/state = GLOB.deep_inventory_state)
+	autodoc_processor.ui_interact(user, ui_key, ui, force_open, state = GLOB.deep_inventory_state)
+/obj/item/rig_module/autodoc/activate()
+	return
+/obj/item/rig_module/autodoc/deactivate()
+	return
+
+/obj/item/rig_module/autodoc/commercial
+	autodoc_type = /datum/autodoc/capitalist_autodoc

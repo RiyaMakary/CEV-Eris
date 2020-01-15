@@ -26,6 +26,9 @@ var/list/wireColours = list("red", "blue", "green", "darkred", "orange", "brown"
 	var/window_x = 370
 	var/window_y = 470
 
+	var/list/descriptions // Descriptions of wires (datum/wire_description) for use with examining.
+	var/list/wire_log = list() // A log for admin use of what happened to these wires.
+
 /datum/wires/New(var/atom/holder)
 	..()
 	src.holder = holder
@@ -36,6 +39,7 @@ var/list/wireColours = list("red", "blue", "green", "darkred", "orange", "brown"
 	// Generate new wires
 	if(random)
 		GenerateWires()
+
 	// Get the same wires
 	else
 		// We don't have any wires to copy yet, generate some and then copy it.
@@ -68,6 +72,24 @@ var/list/wireColours = list("red", "blue", "green", "darkred", "orange", "brown"
 		src.wires[colour] = index
 		//wires = shuffle(wires)
 
+/datum/wires/proc/examine(index, mob/user)
+	. = "You aren't sure what this wire does."
+
+	var/datum/wire_description/wd = get_description(index)
+	if(!wd)
+		return
+	//TODO: Port bay wires fully and integrate eris' skill system
+	//if(wd.skill_level && !user.skill_check(SKILL_ELECTRICAL, wd.skill_level))
+		//return
+	return wd.description
+
+/datum/wires/proc/get_description(index)
+	for(var/datum/wire_description/desc in descriptions)
+		if(desc.index == index)
+			return desc
+
+/datum/wires/proc/add_log_entry(mob/user, message)
+	wire_log += "\[[time_stamp()]\] [user.name] ([user.ckey]) [message]"
 
 /datum/wires/proc/Interact(var/mob/living/user)
 
@@ -116,24 +138,38 @@ var/list/wireColours = list("red", "blue", "green", "darkred", "orange", "brown"
 			var/obj/item/I = L.get_active_hand()
 			holder.add_hiddenprint(L)
 			if(href_list["cut"]) // Toggles the cut/mend status
-				if(istype(I, /obj/item/weapon/wirecutters))
-					var/colour = href_list["cut"]
-					CutWireColour(colour)
+				if (!istype(I))
+					return
+				var/tool_type = null
+				if(QUALITY_CUTTING in I.tool_qualities)
+					tool_type = QUALITY_CUTTING
+				if(QUALITY_WIRE_CUTTING in I.tool_qualities)
+					tool_type = QUALITY_WIRE_CUTTING
+				if(tool_type)
+					if(I.use_tool(L, holder, WORKTIME_INSTANT, tool_type, FAILCHANCE_ZERO))
+						var/colour = href_list["cut"]
+						add_log_entry(L, "has [IsColourCut(colour) ? "mended" : "cut"] the <font color='[colour]'>[capitalize(colour)]</font> wire")
+						CutWireColour(colour)
 				else
-					L << "<span class='error'>You need wirecutters!</span>"
+					to_chat(L, SPAN_WARNING("You need something that can cut!"))
 
 			else if(href_list["pulse"])
-				if(istype(I, /obj/item/device/multitool))
-					var/colour = href_list["pulse"]
-					PulseColour(colour)
+				if (!istype(I))
+					return
+				if(I.get_tool_type(usr, list(QUALITY_PULSING), holder))
+					if(I.use_tool(L, holder, WORKTIME_INSTANT, QUALITY_PULSING, FAILCHANCE_ZERO))
+						var/colour = href_list["pulse"]
+						add_log_entry(L, "has pulsed the <font color='[colour]'>[capitalize(colour)]</font> wire")
+						PulseColour(colour)
 				else
-					L << "<span class='error'>You need a multitool!</span>"
+					to_chat(L, SPAN_WARNING("You need a multitool!"))
 
 			else if(href_list["attach"])
 				var/colour = href_list["attach"]
 				// Detach
 				if(IsAttached(colour))
 					var/obj/item/O = Detach(colour)
+					add_log_entry(L, "has detached [O] from the <font color='[colour]'>[capitalize(colour)]</font> wire")
 					if(O)
 						L.put_in_hands(O)
 
@@ -141,9 +177,10 @@ var/list/wireColours = list("red", "blue", "green", "darkred", "orange", "brown"
 				else
 					if(istype(I, /obj/item/device/assembly/signaler))
 						L.drop_item()
+						add_log_entry(L, "has attached [I] to the <font color='[colour]'>[capitalize(colour)]</font> wire")
 						Attach(colour, I)
 					else
-						L << "<span class='error'>You need a remote signaller!</span>"
+						to_chat(L, SPAN_WARNING("You need a remote signaller!"))
 
 
 
@@ -202,7 +239,6 @@ var/const/POWER = 8
 /datum/wires/proc/PulseIndex(var/index)
 	if(IsIndexCut(index))
 		return
-	playsound(holder.loc, 'sound/items/multitool_pulse.ogg', 100, 1)
 	UpdatePulsed(index)
 
 /datum/wires/proc/GetIndex(var/colour)

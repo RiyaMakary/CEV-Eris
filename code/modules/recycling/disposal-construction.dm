@@ -9,8 +9,8 @@
 	icon_state = "conpipe-s"
 	anchored = 0
 	density = 0
-	matter = list(DEFAULT_WALL_MATERIAL = 1850)
-	level = 2
+	matter = list(MATERIAL_STEEL = 6)
+	level = ABOVE_PLATING_LEVEL
 	var/sortType = list()
 	var/pipe_type = 0
 	var/sort_mode = 0
@@ -101,7 +101,7 @@
 	// hide called by levelupdate if turf intact status changes
 	// change visibility status and force update of icon
 /obj/structure/disposalconstruct/hide(var/intact)
-	invisibility = (intact && level == 1) ? 101 : 0	// hide if floor is intact
+	invisibility = (intact && level == BELOW_PLATING_LEVEL) ? 101 : 0	// hide if floor is intact
 	update()
 
 
@@ -115,7 +115,7 @@
 		return
 
 	if(anchored)
-		usr << "You must unfasten the pipe before rotating it."
+		to_chat(usr, "You must unfasten the pipe before rotating it.")
 		return
 
 	set_dir(turn(dir, -90))
@@ -129,7 +129,7 @@
 		return
 
 	if(anchored)
-		usr << "You must unfasten the pipe before flipping it."
+		to_chat(usr, "You must unfasten the pipe before flipping it.")
 		return
 
 	set_dir(turn(dir, 180))
@@ -226,59 +226,62 @@
 
 	var/turf/T = src.loc
 	if(!T.is_plating())
-		user << "You can only attach the [nice_type] if the floor plating is removed."
+		to_chat(user, "You can only attach the [nice_type] if the floor plating is removed.")
 		return
 
 	var/obj/structure/disposalpipe/CP = locate() in T
 
-	if(istype(I, /obj/item/weapon/wrench))
-		if(anchored)
-			anchored = 0
-			if(is_pipe)
-				level = 2
-				density = 0
-			else
-				density = 1
-			user << "You detach the [nice_type] from the underfloor."
-		else
+	var/list/usable_qualities = list(QUALITY_BOLT_TURNING)
+	if(anchored)
+		usable_qualities.Add(QUALITY_WELDING)
+
+	var/tool_type = I.get_tool_type(user, usable_qualities, src)
+	switch(tool_type)
+
+		if(QUALITY_BOLT_TURNING)
 			if(pipe_type in list(PIPE_TYPE_BIN, PIPE_TYPE_OUTLET, PIPE_TYPE_INTAKE))
 				if(CP) // There's something there
 					if(!istype(CP,/obj/structure/disposalpipe/trunk))
-						user << "The [nice_type] requires a trunk underneath it in order to work."
+						to_chat(user, "The [nice_type] requires a trunk underneath it in order to work.")
 						return
 				else // Nothing under, fuck.
-					user << "The [nice_type] requires a trunk underneath it in order to work."
+					to_chat(user, "The [nice_type] requires a trunk underneath it in order to work.")
 					return
-			else
-				if(CP)
-					update()
-					var/pdir = CP.pipe_dir
-					if(istype(CP, /obj/structure/disposalpipe/broken))
-						pdir = CP.dir
-					if(pdir & pipe_dir)
-						user << "There is already a [nice_type] at that location."
-						return
 
-			anchored = 1
-			if(is_pipe)
-				level = 1 // We don't want disposal bins to disappear under the floors
-				density = 0
-			else
-				density = 1 // We don't want disposal bins or outlets to go density 0
-			user << "You attach the [nice_type] to the underfloor."
-		playsound(src.loc, 'sound/items/Ratchet.ogg', 100, 1)
-		update()
+			if(CP)
+				update()
+				var/pdir = CP.pipe_dir
+				if(istype(CP, /obj/structure/disposalpipe/broken))
+					pdir = CP.dir
+				if(pdir & pipe_dir)
+					to_chat(user, "There is already a [nice_type] at that location.")
+					return
 
-	else if(istype(I, /obj/item/weapon/weldingtool))
-		if(anchored)
-			var/obj/item/weapon/weldingtool/W = I
-			if(W.remove_fuel(0,user))
-				playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
-				user << "Welding the [nice_type] in place."
-				if(do_after(user, 20, src))
-					if(!src || !W.isOn())
-						return
-					user << "The [nice_type] has been welded in place!"
+			if(I.use_tool(user, src, WORKTIME_FAST, tool_type, FAILCHANCE_VERY_EASY, required_stat = STAT_MEC))
+				if(anchored)
+					anchored = 0
+					if(is_pipe)
+						level = ABOVE_PLATING_LEVEL
+						density = 0
+					else
+						density = 1
+					to_chat(user, "You detach the [nice_type] from the underfloor.")
+					return
+				else
+					anchored = 1
+					if(is_pipe)
+						level = BELOW_PLATING_LEVEL // We don't want disposal bins to disappear under the floors
+						density = 0
+					else
+						density = 1 // We don't want disposal bins or outlets to go density 0
+					to_chat(user, "You attach the [nice_type] to the underfloor.")
+					return
+			return
+
+		if(QUALITY_WELDING)
+			if(anchored)
+				if(I.use_tool(user, src, WORKTIME_FAST, tool_type, FAILCHANCE_VERY_EASY))
+					to_chat(user, "The [nice_type] has been welded in place!")
 					update() // TODO: Make this neat
 					if(is_pipe) // Pipe
 						var/pipetype = dpipetype()
@@ -318,11 +321,9 @@
 
 					qdel(src)
 					return
-			else
-				user << "You need more welding fuel to complete this task."
-				return
-		else
-			user << "You need to attach it to the plating first!"
+			return
+
+		if(ABORT_CHECK)
 			return
 
 /obj/structure/disposalconstruct/hides_under_flooring()

@@ -4,7 +4,7 @@
 	icon = 'icons/obj/items.dmi'
 	icon_state = "jar"
 	w_class = ITEM_SIZE_SMALL
-	matter = list("glass" = 200)
+	matter = list(MATERIAL_GLASS = 3)
 	flags = NOBLUDGEON
 	var/list/accept_mobs = list(/mob/living/simple_animal/lizard, /mob/living/simple_animal/mouse)
 	var/contains = 0 // 0 = nothing, 1 = money, 2 = animal, 3 = spiderling
@@ -22,7 +22,7 @@
 			if(istype(A, D))
 				accept = 1
 		if(!accept)
-			user << "[A] doesn't fit into \the [src]."
+			to_chat(user, "[A] doesn't fit into \the [src].")
 			return
 		var/mob/L = A
 		user.visible_message(SPAN_NOTICE("[user] scoops [L] into \the [src]."), SPAN_NOTICE("You scoop [L] into \the [src]."))
@@ -34,7 +34,7 @@
 		var/obj/effect/spider/spiderling/S = A
 		user.visible_message(SPAN_NOTICE("[user] scoops [S] into \the [src]."), SPAN_NOTICE("You scoop [S] into \the [src]."))
 		S.forceMove(src)
-		processing_objects.Remove(S) // No growing inside jars
+		STOP_PROCESSING(SSobj, S) // No growing inside jars
 		contains = 3
 		update_icon()
 		return
@@ -44,7 +44,7 @@
 		if(1)
 			for(var/obj/O in src)
 				O.loc = user.loc
-			user << SPAN_NOTICE("You take money out of \the [src].")
+			to_chat(user, SPAN_NOTICE("You take money out of \the [src]."))
 			contains = 0
 			update_icon()
 			return
@@ -65,7 +65,7 @@
 					SPAN_NOTICE("[user] releases [S] from \the [src]."),
 					SPAN_NOTICE("You release [S] from \the [src].")
 				)
-				processing_objects.Add(S) // They can grow after being let out though
+				START_PROCESSING(SSobj, S) // They can grow after being let out though
 			contains = 0
 			update_icon()
 			return

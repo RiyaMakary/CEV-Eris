@@ -30,6 +30,8 @@
 	var/powered = 0		//set if vehicle is powered and should use fuel when moving
 	var/move_delay = 1	//set this to limit the speed of the vehicle
 
+	var/passenger_allowed = 1
+
 	var/obj/item/weapon/cell/large/cell
 	var/charge_use = 5	//set this to adjust the amount of power the vehicle uses per move
 
@@ -46,7 +48,7 @@
 	..()
 	//spawn the cell you want in each vehicle
 
-/obj/vehicle/Move()
+/obj/vehicle/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	if(world.time > l_move_time + move_delay)
 		var/old_loc = get_turf(src)
 		if(on && powered && cell.charge < charge_use)
@@ -54,9 +56,9 @@
 
 		var/init_anc = anchored
 		anchored = 0
-		if(!..())
+		if(!(. = ..()))
 			anchored = init_anc
-			return 0
+			return
 
 		set_dir(get_dir(old_loc, loc))
 		anchored = init_anc
@@ -67,47 +69,72 @@
 		//Dummy loads do not have to be moved as they are just an overlay
 		//See load_object() proc in cargo_trains.dm for an example
 		if(load && !istype(load, /datum/vehicle_dummy_load))
-			load.forceMove(loc)
+			load.forceMove(loc, glide_size_override=DELAY2GLIDESIZE(move_delay))
 			load.set_dir(dir)
 
 		return 1
 	else
 		return 0
 
-/obj/vehicle/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if(istype(W, /obj/item/weapon/hand_labeler))
-		return
-	if(istype(W, /obj/item/weapon/screwdriver))
-		if(!locked)
-			open = !open
-			update_icon()
-			user << "<span class='notice'>Maintenance panel is now [open ? "opened" : "closed"].</span>"
-	else if(istype(W, /obj/item/weapon/crowbar) && cell && open)
-		remove_cell(user)
+/obj/vehicle/attackby(obj/item/I, mob/user)
 
-	else if(istype(W, /obj/item/weapon/cell/large) && !cell && open)
-		insert_cell(W, user)
-	else if(istype(W, /obj/item/weapon/weldingtool))
-		var/obj/item/weapon/weldingtool/T = W
-		if(T.welding)
-			if(health < maxhealth)
-				if(open)
-					health = min(maxhealth, health+10)
-					user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
-					user.visible_message("\red [user] repairs [src]!","\blue You repair [src]!")
+	var/list/usable_qualities = list(QUALITY_PRYING, QUALITY_SCREW_DRIVING)
+	if(open)
+		usable_qualities.Add(QUALITY_WIRE_CUTTING)
+	if(open && health < maxhealth)
+		usable_qualities.Add(QUALITY_WELDING)
+
+
+	var/tool_type = I.get_tool_type(user, usable_qualities, src)
+	switch(tool_type)
+
+		if(QUALITY_PRYING)
+			if(I.use_tool(user, src, WORKTIME_NORMAL, tool_type, FAILCHANCE_EASY,  required_stat = STAT_MEC))
+				remove_cell(user)
+			return
+
+		if(QUALITY_SCREW_DRIVING)
+			var/used_sound = open ? 'sound/machines/Custom_screwdriveropen.ogg' :  'sound/machines/Custom_screwdriverclose.ogg'
+			if(I.use_tool(user, src, WORKTIME_NEAR_INSTANT, tool_type, FAILCHANCE_EASY,  required_stat = STAT_MEC, instant_finish_tier = 30, forced_sound = used_sound))
+				if(!locked)
+					open = !open
+					update_icon()
+					to_chat(user, SPAN_NOTICE("You [open ? "open" : "close"] the maintenance hatch of \the [src] with [I]."))
 				else
-					user << SPAN_NOTICE("Unable to repair with the maintenance panel closed.")
-			else
-				user << SPAN_NOTICE("[src] does not need a repair.")
-		else
-			user << SPAN_NOTICE("Unable to repair while [src] is off.")
-	else if(hasvar(W,"force") && hasvar(W,"damtype"))
+					to_chat(user, SPAN_NOTICE("You fail to unsrew the cover, looks like its locked from the inside."))
+				return
+
+		if(QUALITY_WIRE_CUTTING)
+			if(open)
+				if(I.use_tool(user, src, WORKTIME_NEAR_INSTANT, tool_type, FAILCHANCE_EASY,  required_stat = STAT_MEC))
+					passenger_allowed = !passenger_allowed
+					user.visible_message(
+						SPAN_NOTICE("[user] [passenger_allowed ? "cuts" : "mends"] a cable in [src]."),
+						SPAN_NOTICE("You [passenger_allowed ? "cut" : "mend"] the load limiter cable.")
+					)
+			return
+
+		if(QUALITY_WELDING)
+			if(I.use_tool(user, src, WORKTIME_NORMAL, tool_type, FAILCHANCE_EASY,  required_stat = STAT_MEC))
+				health = min(maxhealth, health+10)
+				user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
+				user.visible_message("\red [user] repairs [src]!","\blue You repair [src]!")
+			return
+
+		if(ABORT_CHECK)
+			return
+
+	if(istype(I, /obj/item/weapon/hand_labeler))
+		return
+	else if(istype(I, /obj/item/weapon/cell/large) && !cell && open)
+		insert_cell(I, user)
+	else if(hasvar(I,"force") && hasvar(I,"damtype"))
 		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
-		switch(W.damtype)
+		switch(I.damtype)
 			if("fire")
-				health -= W.force * fire_dam_coeff
+				health -= I.force * fire_dam_coeff
 			if("brute")
-				health -= W.force * brute_dam_coeff
+				health -= I.force * brute_dam_coeff
 		..()
 		healthcheck()
 	else
@@ -140,7 +167,7 @@
 	var/was_on = on
 	stat |= EMPED
 
-	PoolOrNew(/obj/effect/overlay/pulse, src.loc)
+	new /obj/effect/overlay/pulse(loc)
 
 	if(on)
 		turn_off()
@@ -179,15 +206,16 @@
 		emagged = 1
 		if(locked)
 			locked = 0
-			user << SPAN_WARNING("You bypass [src]'s controls.")
+			to_chat(user, SPAN_WARNING("You bypass [src]'s controls."))
 		return 1
 
 /obj/vehicle/proc/explode()
 	src.visible_message(SPAN_DANGER("\The [src] blows apart!"))
 	var/turf/Tsec = get_turf(src)
 
-	PoolOrNew(/obj/item/stack/rods, Tsec)
-	PoolOrNew(/obj/item/stack/rods, Tsec)
+	for (var/i in 1 to 2)
+		new /obj/item/stack/rods(Tsec)
+
 	new /obj/item/stack/cable_coil/cut(Tsec)
 
 	if(cell)
@@ -237,13 +265,13 @@
 	C.forceMove(src)
 	src.cell = C
 	powercheck()
-	usr << SPAN_NOTICE("You install [C] in [src].")
+	to_chat(usr, SPAN_NOTICE("You install [C] in [src]."))
 
 /obj/vehicle/proc/remove_cell(var/mob/living/carbon/human/H)
 	if(!cell)
 		return
 
-	usr << SPAN_NOTICE("You remove [cell] from [src].")
+	to_chat(usr, SPAN_NOTICE("You remove [cell] from [src]."))
 	cell.forceMove(get_turf(H))
 	H.put_in_hands(cell)
 	cell = null

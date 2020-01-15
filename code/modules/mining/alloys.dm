@@ -11,7 +11,7 @@
 /datum/alloy/plasteel
 	metaltag = "plasteel"
 	requires = list(
-		"platinum" = 1,
+		"plasma" = 1,
 		"carbon" = 2,
 		"hematite" = 2
 		)
@@ -19,7 +19,7 @@
 	product = /obj/item/stack/material/plasteel
 
 /datum/alloy/steel
-	metaltag = DEFAULT_WALL_MATERIAL
+	metaltag = MATERIAL_STEEL
 	requires = list(
 		"carbon" = 1,
 		"hematite" = 1
@@ -27,9 +27,9 @@
 	product = /obj/item/stack/material/steel
 
 /datum/alloy/borosilicate
-	metaltag = "borosilicate glass"
+	metaltag = MATERIAL_PLASMAGLASS
 	requires = list(
-		"platinum" = 1,
+		"plasma" = 1,
 		"sand" = 2
 		)
 	product = /obj/item/stack/material/glass/plasmaglass

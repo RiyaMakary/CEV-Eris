@@ -4,7 +4,7 @@
 	name = "pod launch control console"
 	desc = "A control console for launching pods. Some people prefer firing Mechas."
 	icon_screen = "mass_driver"
-	light_color = "#00b000"
+	light_color = COLOR_LIGHTING_GREEN_MACHINERY
 	circuit = /obj/item/weapon/circuitboard/pod
 	var/id = 1.0
 	var/obj/machinery/mass_driver/connected = null
@@ -29,7 +29,7 @@
 		return
 
 	if(!( connected ))
-		viewers(null, null) << "Cannot locate mass driver connector. Cancelling firing sequence!"
+		to_chat(viewers(null, null), "Cannot locate mass driver connector. Cancelling firing sequence!")
 		return
 
 	for(var/obj/machinery/door/blast/M in world)
@@ -52,11 +52,11 @@
 
 /*
 /obj/machinery/computer/pod/attackby(I as obj, user as mob)
-	if(istype(I, /obj/item/weapon/screwdriver))
+	if(istype(I, /obj/item/weapon/tool/screwdriver))
 		playsound(loc, 'sound/items/Screwdriver.ogg', 50, 1)
 		if(do_after(user, 20))
 			if(stat & BROKEN)
-				user << SPAN_NOTICE("The broken glass falls out.")
+				to_chat(user, SPAN_NOTICE("The broken glass falls out."))
 				var/obj/structure/computerframe/A = new /obj/structure/computerframe( loc )
 				new /obj/item/weapon/material/shard( loc )
 
@@ -80,7 +80,7 @@
 				A.anchored = 1
 				qdel(src)
 			else
-				user << SPAN_NOTICE("You disconnect the monitor.")
+				to_chat(user, SPAN_NOTICE("You disconnect the monitor."))
 				var/obj/structure/computerframe/A = new /obj/structure/computerframe( loc )
 
 				//generate appropriate circuitboard. Accounts for /pod/old computer types
@@ -108,10 +108,7 @@
 */
 
 
-/obj/machinery/computer/pod/attack_ai(var/mob/user as mob)
-	return attack_hand(user)
-
-/obj/machinery/computer/pod/attack_hand(var/mob/user as mob)
+/obj/machinery/computer/pod/attack_hand(mob/user)
 	if(..())
 		return
 
@@ -143,7 +140,7 @@
 	return
 
 
-/obj/machinery/computer/pod/process()
+/obj/machinery/computer/pod/Process()
 	if(!..())
 		return
 	if(timing)
@@ -170,7 +167,7 @@
 		if(href_list["alarm"])
 			alarm()
 		if(href_list["drive"])
-			for(var/obj/machinery/mass_driver/M in machines)
+			for(var/obj/machinery/mass_driver/M in SSmachines.machinery)
 				if(M.id == id)
 					M.power = connected.power
 					M.drive()
@@ -210,7 +207,7 @@
 
 /obj/machinery/computer/pod/old/syndicate/attack_hand(var/mob/user as mob)
 	if(!allowed(user))
-		user << SPAN_WARNING("Access Denied")
+		to_chat(user, SPAN_WARNING("Access Denied"))
 		return
 	else
 		..()

@@ -9,6 +9,7 @@
 	attack_verb = list("patted", "tapped")
 	force_divisor = 0.25 // 15 when wielded with hardness 60 (steel)
 	thrown_force_divisor = 0.25 // 5 when thrown with weight 20 (steel)
+	structure_damage_factor = STRUCTURE_DAMAGE_BLADE
 
 /obj/item/weapon/material/butterfly/update_force()
 	if(active)
@@ -19,6 +20,7 @@
 		hitsound = 'sound/weapons/bladeslice.ogg'
 		icon_state += "_open"
 		w_class = ITEM_SIZE_NORMAL
+		tool_qualities = list(QUALITY_CUTTING = 20, QUALITY_WIRE_CUTTING = 10, QUALITY_SCREW_DRIVING = 5)
 		attack_verb = list("attacked", "slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
 	else
 		force = WEAPON_FORCE_WEAK
@@ -27,6 +29,7 @@
 		hitsound = initial(hitsound)
 		icon_state = initial(icon_state)
 		w_class = initial(w_class)
+		tool_qualities = null
 		attack_verb = initial(attack_verb)
 
 /obj/item/weapon/material/butterfly/switchblade
@@ -38,55 +41,9 @@
 /obj/item/weapon/material/butterfly/attack_self(mob/user)
 	active = !active
 	if(active)
-		user << SPAN_NOTICE("You flip out \the [src].")
+		to_chat(user, SPAN_NOTICE("You flip out \the [src]."))
 		playsound(user, 'sound/weapons/flipblade.ogg', 15, 1)
 	else
-		user << SPAN_NOTICE("\The [src] can now be concealed.")
+		to_chat(user, SPAN_NOTICE("\The [src] can now be concealed."))
 	update_force()
 	add_fingerprint(user)
-
-/*
- * Kitchen knives
- */
-/obj/item/weapon/material/knife
-	name = "kitchen knife"
-	icon = 'icons/obj/kitchen.dmi'
-	icon_state = "knife"
-	desc = "A general purpose Chef's Knife made by SpaceCook Incorporated. Guaranteed to stay sharp for years to come."
-	flags = CONDUCT
-	sharp = 1
-	edge = 1
-	force_divisor = 0.3 // 18 when wielded with hardness 60 (steel)
-	matter = list(DEFAULT_WALL_MATERIAL = 12000)
-	origin_tech = "materials=1"
-	attack_verb = list("slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
-	unbreakable = 1
-	slot_flags = SLOT_BELT
-
-/obj/item/weapon/material/knife/hook
-	name = "meat hook"
-	desc = "A sharp, metal hook what sticks into things."
-	icon_state = "hook_knife"
-	item_state = "hook_knife"
-
-/obj/item/weapon/material/knife/ritual
-	name = "ritual knife"
-	desc = "The unearthly energies that once powered this blade are now dormant."
-	icon = 'icons/obj/wizard.dmi'
-	icon_state = "render"
-	applies_material_colour = 0
-
-/obj/item/weapon/material/knife/butch
-	name = "butcher's cleaver"
-	icon_state = "butch"
-	desc = "A huge thing used for chopping and chopping up meat. This includes clowns and clown-by-products."
-	force_divisor = 0.4 // 24 when wielded with hardness 60 (steel)
-	attack_verb = list("cleaved", "slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
-
-/obj/item/weapon/material/knife/neotritual
-	name = "NeoTheology ritual knife"
-	desc = "Cyberchristians priests use this for ending followers agony. When nothing can help, and only new body can bring salvation, use this."
-	icon = 'icons/obj/weapons.dmi'
-	icon_state = "neot-knife"
-	item_state = "knife"
-	applies_material_colour = 0

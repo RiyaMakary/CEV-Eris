@@ -34,7 +34,7 @@ var/intercom_range_display_status = 0
 	icon = 'icons/turf/areas.dmi'
 	icon_state = "yellow"
 
-/obj/effect/debugging/marker/Move()
+/obj/effect/debugging/marker/Move(NewLoc, Dir = 0, step_x = 0, step_y = 0, var/glide_size_override = 0)
 	return 0
 
 /client/proc/do_not_use_these()
@@ -67,10 +67,6 @@ var/intercom_range_display_status = 0
 /client/proc/sec_camera_report()
 	set category = "Mapping"
 	set name = "Camera Report"
-
-	if(!master_controller)
-		alert(usr,"Master_controller not found.","Sec Camera Report")
-		return 0
 
 	var/list/obj/machinery/camera/CL = list()
 
@@ -145,7 +141,7 @@ var/list/debug_verbs = list (
 	,/datum/admins/proc/show_traitor_panel
 	,/client/proc/print_jobban_old
 	,/client/proc/print_jobban_old_filter
-	,/client/proc/forceEvent
+	//,/client/proc/forceEvent //Todo: Replace
 	,/client/proc/break_all_air_groups
 	,/client/proc/regroup_all_air_groups
 	,/client/proc/kill_pipe_processing
@@ -154,7 +150,6 @@ var/list/debug_verbs = list (
 	,/client/proc/disable_movement
 	,/client/proc/Zone_Info
 	,/client/proc/Test_ZAS_Connection
-	,/client/proc/ZoneTick
 	,/client/proc/rebootAirMaster
 	,/client/proc/hide_debug_verbs
 	,/client/proc/testZAScolors
@@ -198,7 +193,7 @@ ADMIN_VERB_ADD(/client/proc/enable_debug_verbs, R_DEBUG, FALSE)
 	var/icon/yellow = new('icons/misc/debug_group.dmi', "yellow")
 
 	for(var/turf/T in Z.contents)
-		images += image(yellow, T, "zasdebug", TURF_LAYER)
+		images += image(yellow, T, "zasdebug", LIGHTING_LAYER)
 		testZAScolors_turfs += T
 	for(var/connection_edge/zone/edge in Z.edges)
 		var/zone/connected = edge.get_connected_zone(Z)
@@ -217,7 +212,7 @@ ADMIN_VERB_ADD(/client/proc/enable_debug_verbs, R_DEBUG, FALSE)
 	var/turf/simulated/location = get_turf(usr)
 
 	if(!istype(location, /turf/simulated)) // We're in space, let's not cause runtimes.
-		usr << "\red this debug tool cannot be used from space"
+		to_chat(usr, "\red this debug tool cannot be used from space")
 		return
 
 	var/icon/red = new('icons/misc/debug_group.dmi', "red")		//created here so we don't have to make thousands of these.
@@ -225,22 +220,22 @@ ADMIN_VERB_ADD(/client/proc/enable_debug_verbs, R_DEBUG, FALSE)
 	var/icon/blue = new('icons/misc/debug_group.dmi', "blue")
 
 	if(!usedZAScolors)
-		usr << "ZAS Test Colors"
-		usr << "Green = Zone you are standing in"
-		usr << "Blue = Connected zone to the zone you are standing in"
-		usr << "Yellow = A zone that is connected but not one adjacent to your connected zone"
-		usr << "Red = Not connected"
+		to_chat(usr, "ZAS Test Colors")
+		to_chat(usr, "Green = Zone you are standing in")
+		to_chat(usr, "Blue = Connected zone to the zone you are standing in")
+		to_chat(usr, "Yellow = A zone that is connected but not one adjacent to your connected zone")
+		to_chat(usr, "Red = Not connected")
 		usedZAScolors = 1
 
 	testZAScolors_zones += location.zone
 	for(var/turf/T in location.zone.contents)
-		images += image(green, T,"zasdebug", TURF_LAYER)
+		images += image(green, T, "zasdebug", LIGHTING_LAYER)
 		testZAScolors_turfs += T
 	for(var/connection_edge/zone/edge in location.zone.edges)
 		var/zone/Z = edge.get_connected_zone(location.zone)
 		testZAScolors_zones += Z
 		for(var/turf/T in Z.contents)
-			images += image(blue, T,"zasdebug",TURF_LAYER)
+			images += image(blue, T, "zasdebug", LIGHTING_LAYER)
 			testZAScolors_turfs += T
 		for(var/connection_edge/zone/z_edge in Z.edges)
 			var/zone/connected = z_edge.get_connected_zone(Z)
@@ -251,7 +246,7 @@ ADMIN_VERB_ADD(/client/proc/enable_debug_verbs, R_DEBUG, FALSE)
 	for(var/turf/T in trange(25, location))
 		if(T in testZAScolors_turfs)
 			continue
-		images += image(red, T, "zasdebug", TURF_LAYER)
+		images += image(red, T, "zasdebug", LIGHTING_LAYER)
 		testZAScolors_turfs += T
 
 /client/proc/testZAScolors_remove()
@@ -271,13 +266,7 @@ ADMIN_VERB_ADD(/client/proc/enable_debug_verbs, R_DEBUG, FALSE)
 	set name = "Reboot ZAS"
 
 	if(alert("This will destroy and remake all zone geometry on the whole map.","Reboot ZAS","Reboot ZAS","Nevermind") == "Reboot ZAS")
-		var/datum/controller/air_system/old_air = air_master
-		for(var/zone/zone in old_air.zones)
-			zone.c_invalidate()
-		qdel(old_air)
-		air_master = new
-		air_master.Setup()
-		spawn air_master.Start()
+		SSair.reboot()
 
 
 /client/proc/count_objects_on_z_level()
@@ -320,7 +309,7 @@ ADMIN_VERB_ADD(/client/proc/enable_debug_verbs, R_DEBUG, FALSE)
 				line += " no.[i+10+j]@\[[temp_atom.x], [temp_atom.y], [temp_atom.z]\]; "
 		world << line*/
 
-	world << "There are [count] objects of type [type_path] on z-level [num_level]"
+	to_chat(world, "There are [count] objects of type [type_path] on z-level [num_level]")
 
 
 /client/proc/count_objects_all()
@@ -347,7 +336,7 @@ ADMIN_VERB_ADD(/client/proc/enable_debug_verbs, R_DEBUG, FALSE)
 				line += " no.[i+10+j]@\[[temp_atom.x], [temp_atom.y], [temp_atom.z]\]; "
 		world << line*/
 
-	world << "There are [count] objects of type [type_path] in the game world"
+	to_chat(world, "There are [count] objects of type [type_path] in the game world")
 
 
 
@@ -358,7 +347,7 @@ var/global/prevent_airgroup_regroup = 0
 	set name = "Break All Airgroups"
 
 	/*prevent_airgroup_regroup = 1
-	for(var/datum/air_group/AG in air_master.air_groups)
+	for(var/datum/air_group/AG in SSair.air_groups)
 		AG.suspend_group_processing()
 	message_admins("[src.ckey] used 'Break All Airgroups'")*/
 
@@ -366,10 +355,10 @@ var/global/prevent_airgroup_regroup = 0
 	set category = "Mapping"
 	set name = "Regroup All Airgroups Attempt"
 
-	usr << "\red Proc disabled."
+	to_chat(usr, "\red Proc disabled.")
 
 	/*prevent_airgroup_regroup = 0
-	for(var/datum/air_group/AG in air_master.air_groups)
+	for(var/datum/air_group/AG in SSair.air_groups)
 		AG.check_regroup()
 	message_admins("[src.ckey] used 'Regroup All Airgroups Attempt'")*/
 
@@ -377,7 +366,7 @@ var/global/prevent_airgroup_regroup = 0
 	set category = "Mapping"
 	set name = "Kill pipe processing"
 
-	usr << "\red Proc disabled."
+	to_chat(usr, "\red Proc disabled.")
 
 	/*pipe_processing_killed = !pipe_processing_killed
 	if(pipe_processing_killed)
@@ -389,7 +378,7 @@ var/global/prevent_airgroup_regroup = 0
 	set category = "Mapping"
 	set name = "Kill air processing"
 
-	usr << "\red Proc disabled."
+	to_chat(usr, "\red Proc disabled.")
 
 	/*air_processing_killed = !air_processing_killed
 	if(air_processing_killed)
@@ -403,7 +392,7 @@ var/global/say_disabled = 0
 	set category = "Mapping"
 	set name = "Disable all communication verbs"
 
-	usr << "\red Proc disabled."
+	to_chat(usr, "\red Proc disabled.")
 
 	/*say_disabled = !say_disabled
 	if(say_disabled)
@@ -418,7 +407,7 @@ var/global/movement_disabled_exception //This is the client that calls the proc,
 	set category = "Mapping"
 	set name = "Disable all movement"
 
-	usr << "\red Proc disabled."
+	to_chat(usr, "\red Proc disabled.")
 
 	/*movement_disabled = !movement_disabled
 	if(movement_disabled)

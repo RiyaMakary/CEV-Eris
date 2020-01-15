@@ -1,6 +1,6 @@
 //Please use mob or src (not usr) in these procs. This way they can be called in the same fashion as procs.
-/client/verb/wiki()
-	set name = "wiki"
+/client/verb/wikiurl()
+	set name = "wikiurl"
 	set desc = "Visit the wiki."
 	set hidden = 1
 	if( config.wikiurl )
@@ -8,20 +8,33 @@
 			return
 		src << link(config.wikiurl)
 	else
-		src << SPAN_WARNING("The wiki URL is not set in the server configuration.")
+		to_chat(src, SPAN_WARNING("The wiki URL is not set in the server configuration."))
 	return
 
-/client/verb/forum()
-	set name = "forum"
-	set desc = "Visit the forum."
+/client/verb/discordurl()
+	set name = "discordurl"
+	set desc = "Visit the Discordia Github."
 	set hidden = 1
-	if( config.forumurl )
-		if(alert("This will open the forum in your browser. Are you sure?",,"Yes","No")=="No")
+	if( config.discordurl )
+		if(alert("This will open the Discordia Discord  invite in your browser. Are you sure?",,"Yes","No")=="No")
 			return
-		src << link(config.forumurl)
+		src << link(config.discordurl)
 	else
-		src << SPAN_WARNING("The forum URL is not set in the server configuration.")
+		to_chat(src, SPAN_WARNING("The Discordia Discord invite is not set in the server configuration."))
 	return
+
+/client/verb/githuburl()
+	set name = "githuburl"
+	set desc = "Visit the Discordia Github."
+	set hidden = 1
+	if( config.githuburl )
+		if(alert("This will open the Discordia Github page in your browser. Are you sure?",,"Yes","No")=="No")
+			return
+		src << link(config.githuburl)
+	else
+		to_chat(src, SPAN_WARNING("The Discordia Github is not set in the server configuration."))
+	return
+
 
 #define RULES_FILE "config/rules.html"
 /client/verb/rules()
@@ -38,9 +51,11 @@
 	var/admin = {"<font color='purple'>
 Admin:
 \tF5 = Aghost (admin-ghost)
-\tF6 = player-panel-new
+\tF6 = player-panel
 \tF7 = admin-pm
 \tF8 = Invisimin
+Admin Ghost:
+\tShift + Ctrl + Click = View Variables
 </font>"}
 
 	var/hotkey_mode = {"<font color='purple'>
@@ -145,10 +160,10 @@ Any-Mode: (hotkey doesn't need to be on)
 </font>"}
 
 	if(isrobot(src.mob))
-		src << robot_hotkey_mode
-		src << robot_other
+		to_chat(src, robot_hotkey_mode)
+		to_chat(src, robot_other)
 	else
-		src << hotkey_mode
-		src << other
+		to_chat(src, hotkey_mode)
+		to_chat(src, other)
 	if(holder)
-		src << admin
+		to_chat(src, admin)

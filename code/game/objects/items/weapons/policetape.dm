@@ -89,7 +89,7 @@ var/list/tape_roll_applications = list()
 /obj/item/tape/research
 	name = "research tape"
 	desc = "A length of research tape. Better not cross it."
-	req_one_access = list(access_research)
+	req_one_access = list(access_moebius)
 	color = COLOR_PURPLE
 
 /obj/item/taperoll/medical
@@ -101,7 +101,7 @@ var/list/tape_roll_applications = list()
 /obj/item/tape/medical
 	name = "medical tape"
 	desc = "A length of medical tape. Better not cross it."
-	req_one_access = list(access_medical)
+	req_one_access = list(access_moebius)
 	color = COLOR_GREEN
 
 /obj/item/taperoll/update_icon()
@@ -119,7 +119,7 @@ var/list/tape_roll_applications = list()
 	update_icon()
 	return ..()
 
-/obj/item/taperoll/pickup(mob/user)
+/obj/item/taperoll/pre_pickup(mob/user)
 	update_icon()
 	return ..()
 
@@ -130,14 +130,14 @@ var/list/tape_roll_applications = list()
 /obj/item/taperoll/attack_self(mob/user as mob)
 	if(!start)
 		start = get_turf(src)
-		usr << SPAN_NOTICE("You place the first end of \the [src].")
+		to_chat(usr, SPAN_NOTICE("You place the first end of \the [src]."))
 		update_icon()
 	else
 		end = get_turf(src)
 		if(start.y != end.y && start.x != end.x || start.z != end.z)
 			start = null
 			update_icon()
-			usr << SPAN_NOTICE("\The [src] can only be laid horizontally or vertically.")
+			to_chat(usr, SPAN_NOTICE("\The [src] can only be laid horizontally or vertically."))
 			return
 
 		if(start == end)
@@ -155,7 +155,7 @@ var/list/tape_roll_applications = list()
 			if(!possible_dirs)
 				start = null
 				update_icon()
-				usr << SPAN_NOTICE("You can't place \the [src] here.")
+				to_chat(usr, SPAN_NOTICE("You can't place \the [src] here."))
 				return
 			if(possible_dirs & (NORTH|SOUTH))
 				var/obj/item/tape/TP = new tape_type(start)
@@ -171,7 +171,7 @@ var/list/tape_roll_applications = list()
 				TP.update_icon()
 			start = null
 			update_icon()
-			usr << SPAN_NOTICE("You finish placing \the [src].")
+			to_chat(usr, SPAN_NOTICE("You finish placing \the [src]."))
 			return
 
 		var/turf/cur = start
@@ -198,7 +198,7 @@ var/list/tape_roll_applications = list()
 		if (!can_place)
 			start = null
 			update_icon()
-			usr << SPAN_WARNING("You can't run \the [src] through that!")
+			to_chat(usr, SPAN_WARNING("You can't run \the [src] through that!"))
 			return
 
 		cur = start
@@ -236,7 +236,7 @@ var/list/tape_roll_applications = list()
 			cur = get_step_towards(cur,end)
 		start = null
 		update_icon()
-		usr << SPAN_NOTICE("You finish placing \the [src].")
+		to_chat(usr, SPAN_NOTICE("You finish placing \the [src]."))
 		return
 
 /obj/item/taperoll/afterattack(var/atom/A, mob/user as mob, proximity)
@@ -249,7 +249,9 @@ var/list/tape_roll_applications = list()
 		P.loc = locate(T.x,T.y,T.z)
 		P.update_icon()
 		P.layer = 3.2
-		user << SPAN_NOTICE("You finish placing \the [src].")
+		P.original_plane = plane
+		P.update_plane()
+		to_chat(user, SPAN_NOTICE("You finish placing \the [src]."))
 
 	if (istype(A, /turf/simulated/floor) ||istype(A, /turf/unsimulated/floor))
 		var/turf/F = A
@@ -279,7 +281,7 @@ var/list/tape_roll_applications = list()
 		var/mob/M = mover
 		add_fingerprint(M)
 		if (!allowed(M))	//only select few learn art of not crumpling the tape
-			M << SPAN_WARNING("You are not supposed to go past [src]...")
+			to_chat(M, SPAN_WARNING("You are not supposed to go past [src]..."))
 			if(M.a_intent == I_HELP)
 				return 0
 			crumple()
@@ -334,7 +336,7 @@ var/list/tape_roll_applications = list()
 
 /obj/item/tape/proc/breaktape(obj/item/weapon/W as obj, mob/user as mob)
 	if(user.a_intent == I_HELP && ((!can_puncture(W) && src.allowed(user))))
-		user << "You can't break \the [src] with that!"
+		to_chat(user, "You can't break \the [src] with that!")
 		return
 	user.show_viewers(SPAN_NOTICE("\The [user] breaks \the [src]!"))
 

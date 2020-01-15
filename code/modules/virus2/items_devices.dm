@@ -6,6 +6,7 @@
 	icon_state = "health"
 	w_class = ITEM_SIZE_SMALL
 	item_state = "electronic"
+	matter = list(MATERIAL_PLASTIC = 1, MATERIAL_GLASS = 1)
 	flags = CONDUCT
 
 /obj/item/device/antibody_scanner/attack(mob/M as mob, mob/user as mob)
@@ -31,7 +32,7 @@
 		report("Antibodies detected: [antigens2string(C.antibodies)]", user)
 
 /obj/item/device/antibody_scanner/proc/report(var/text, mob/user as mob)
-	user << "\blue \icon[src] \The [src] beeps, \"[text]\""
+	to_chat(user, "\blue \icon[src] \The [src] beeps, \"[text]\"")
 
 ///////////////VIRUS DISH///////////////
 
@@ -59,7 +60,7 @@
 		return
 	..()
 	if(prob(50))
-		user << SPAN_DANGER("\The [src] shatters!")
+		to_chat(user, SPAN_DANGER("\The [src] shatters!"))
 		if(virus2.infectionchance > 0)
 			for(var/mob/living/carbon/target in view(1, get_turf(src)))
 				if(airborne_can_reach(get_turf(src), get_turf(target)))
@@ -69,7 +70,7 @@
 /obj/item/weapon/virusdish/examine(mob/user)
 	..()
 	if(basic_info)
-		user << "[basic_info] : <a href='?src=\ref[src];info=1'>More Information</a>"
+		to_chat(user, "[basic_info] : <a href='?src=\ref[src];info=1'>More Information</a>")
 
 /obj/item/weapon/virusdish/Topic(href, href_list)
 	. = ..()
@@ -90,15 +91,15 @@
 		return ..()
 
 	if(prob(50))
-		user << "\The [src] shatters!"
+		to_chat(user, "\The [src] shatters!")
 		qdel(src)
 
 ///////////////GNA DISK///////////////
 
 /obj/item/weapon/diseasedisk
 	name = "blank GNA disk"
-	icon = 'icons/obj/cloning.dmi'
-	icon_state = "datadisk0"
+	icon = 'icons/obj/discs.dmi'
+	icon_state = "purple"
 	w_class = ITEM_SIZE_TINY
 	var/datum/disease2/effectholder/effect = null
 	var/list/species = null

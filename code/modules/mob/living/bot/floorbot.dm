@@ -57,7 +57,7 @@
 	if(!emagged)
 		emagged = 1
 		if(user)
-			user << SPAN_NOTICE("The [src] buzzes and beeps.")
+			to_chat(user, SPAN_NOTICE("The [src] buzzes and beeps."))
 			playsound(loc, "robot_talk_heavy", 100, 0, 0)
 		return 1
 
@@ -266,7 +266,7 @@
 				if(building == 1)
 					I = new /obj/item/stack/tile/floor(src)
 				else
-					I = PoolOrNew(/obj/item/stack/rods, src)
+					I = new /obj/item/stack/rods(src)
 				A.attackby(I, src)
 		target = null
 		repairing = 0
@@ -309,7 +309,7 @@
 		update_icons()
 	else if(istype(A, /obj/item/stack/material) && amount + 4 <= maxAmount)
 		var/obj/item/stack/material/M = A
-		if(M.get_material_name() == DEFAULT_WALL_MATERIAL)
+		if(M.get_material_name() == MATERIAL_STEEL)
 			visible_message(SPAN_NOTICE("\The [src] begins to make tiles."))
 			var/message = pick("Hard work pays off.", "I don't like all this standing around.", "My masterpiece!")
 			say(message)
@@ -353,19 +353,18 @@
 		..()
 		return
 	if(contents.len >= 1)
-		user << SPAN_NOTICE("They wont fit in as there is already stuff inside.")
+		to_chat(user, SPAN_NOTICE("They wont fit in as there is already stuff inside."))
 		return
-	if(user.s_active)
-		user.s_active.close(user)
+	close_all()
 	if(T.use(10))
 		var/obj/item/weapon/toolbox_tiles/B = new /obj/item/weapon/toolbox_tiles
 		user.put_in_hands(B)
-		user << SPAN_NOTICE("You add the tiles into the empty toolbox. They protrude from the top.")
+		to_chat(user, SPAN_NOTICE("You add the tiles into the empty toolbox. They protrude from the top."))
 		playsound(src.loc, 'sound/effects/insert.ogg', 50, 1)
 		user.drop_from_inventory(src)
 		qdel(src)
 	else
-		user << SPAN_WARNING("You need 10 floor tiles for a floorbot.")
+		to_chat(user, SPAN_WARNING("You need 10 floor tiles for a floorbot."))
 	return
 
 /obj/item/weapon/toolbox_tiles
@@ -387,7 +386,7 @@
 		var/obj/item/weapon/toolbox_tiles_sensor/B = new /obj/item/weapon/toolbox_tiles_sensor()
 		B.created_name = created_name
 		user.put_in_hands(B)
-		user << SPAN_NOTICE("You add the sensor to the toolbox and tiles!")
+		to_chat(user, SPAN_NOTICE("You add the sensor to the toolbox and tiles!"))
 		playsound(src.loc, 'sound/effects/insert.ogg', 50, 1)
 		user.drop_from_inventory(src)
 		qdel(src)
@@ -418,7 +417,7 @@
 		var/turf/T = get_turf(user.loc)
 		var/mob/living/bot/floorbot/A = new /mob/living/bot/floorbot(T)
 		A.name = created_name
-		user << SPAN_NOTICE("You add the robot arm to the odd looking toolbox assembly! Boop beep!")
+		to_chat(user, SPAN_NOTICE("You add the robot arm to the odd looking toolbox assembly! Boop beep!"))
 		playsound(src.loc, 'sound/effects/insert.ogg', 50, 1)
 		user.drop_from_inventory(src)
 		qdel(src)

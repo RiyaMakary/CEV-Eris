@@ -7,9 +7,10 @@
 	flags = CONDUCT
 	force = WEAPON_FORCE_NORMAL
 	throwforce = WEAPON_FORCE_WEAK
-	w_class = ITEM_SIZE_LARGE
-	matter = list(DEFAULT_WALL_MATERIAL = 50)
+	w_class = ITEM_SIZE_BULKY
+	matter = list(MATERIAL_PLASTIC = 5)
 	attack_verb = list("bludgeoned", "whacked", "disciplined", "thrashed")
+	tool_qualities = list(QUALITY_PRYING = 10)
 
 /obj/item/weapon/cane/concealed
 	var/concealed_blade
@@ -31,8 +32,6 @@
 		user.drop_from_inventory(src)
 		user.put_in_hands(concealed_blade)
 		user.put_in_hands(src)
-		user.update_inv_l_hand(0)
-		user.update_inv_r_hand()
 		concealed_blade = null
 	else
 		..()

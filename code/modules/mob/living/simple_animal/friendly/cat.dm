@@ -12,8 +12,6 @@
 	response_help  = "pets"
 	response_disarm = "gently pushes aside"
 	response_harm   = "kicks"
-	var/turns_since_scan = 0
-	var/mob/living/simple_animal/mouse/movement_target
 	var/mob/flee_target
 	min_oxy = 16 //Require atleast 16kPA oxygen
 	minbodytemp = 223		//Below -50 Degrees Celcius
@@ -22,42 +20,29 @@
 	mob_size = MOB_SMALL
 	possession_candidate = 1
 
-/mob/living/simple_animal/cat/Life()
-	//MICE!
-	if((src.loc) && isturf(src.loc))
-		if(!stat && !resting && !buckled)
-			for(var/mob/living/simple_animal/mouse/M in loc)
-				if(!M.stat)
-					M.splat()
-					visible_emote(pick(\
-						"bites \the [M]!",
-						"toys with \the [M].",
-						"chomps on \the [M]!"\
-					))
-					movement_target = null
-					stop_automated_movement = 0
-					break
+	scan_range = 3//less aggressive about stealing food
+	metabolic_factor = 0.75
+	var/mob/living/simple_animal/mouse/mousetarget = null
+	seek_speed = 5
+	pass_flags = PASSTABLE
 
+/mob/living/simple_animal/cat/Life()
 	..()
 
-	for(var/mob/living/simple_animal/mouse/snack in oview(src,5))
-		if(snack.stat < DEAD && prob(15))
-			var/msg2 = (pick("hisses and spits!","mrowls fiercely!","eyes [snack] hungrily."))
-			visible_emote("<span class='name'>[src]</span> [msg2].")
-		break
-
-	if(incapacitated())
-		return
-
-	turns_since_scan++
-	if (turns_since_scan > 5)
+	if (turns_since_move > 5 || (flee_target || mousetarget))
 		walk_to(src,0)
-		turns_since_scan = 0
+		turns_since_move = 0
 
 		if (flee_target) //fleeing takes precendence
 			handle_flee_target()
 		else
 			handle_movement_target()
+
+	if (!movement_target)
+		walk_to(src,0)
+
+	spawn(2)
+		attack_mice()
 
 	if(prob(2)) //spooky
 		var/mob/observer/ghost/spook = locate() in range(src,5)
@@ -80,14 +65,32 @@
 	if( !movement_target || !(movement_target.loc in oview(src, 4)) )
 		movement_target = null
 		stop_automated_movement = 0
-		for(var/mob/living/simple_animal/mouse/snack in oview(src)) //search for a new target
-			if(isturf(snack.loc) && !snack.stat)
-				movement_target = snack
-				break
 
 	if(movement_target)
 		stop_automated_movement = 1
-		walk_to(src,movement_target,0,3)
+		walk_to(src,movement_target,0,seek_move_delay)
+
+/mob/living/simple_animal/cat/proc/attack_mice()
+	if((loc) && isturf(loc))
+		if(!incapacitated())
+			for(var/mob/living/simple_animal/mouse/M in oview(src,1))
+				if(M.stat != DEAD)
+					M.splat()
+					visible_emote(pick("bites \the [M]!","toys with \the [M].","chomps on \the [M]!"))
+					movement_target = null
+					stop_automated_movement = 0
+					if (prob(75))
+						break//usually only kill one mouse per proc
+
+/mob/living/simple_animal/cat/beg(var/atom/thing, var/atom/holder)
+	visible_emote("licks its lips and hungrily glares at [holder]'s [thing.name]")
+
+/mob/living/simple_animal/cat/Released()
+	//A thrown cat will immediately attack mice near where it lands
+	handle_movement_target()
+	spawn(3)
+		attack_mice()
+	..()
 
 /mob/living/simple_animal/cat/proc/handle_flee_target()
 	//see if we should stop fleeing
@@ -103,7 +106,7 @@
 /mob/living/simple_animal/cat/proc/set_flee_target(atom/A)
 	if(A)
 		flee_target = A
-		turns_since_scan = 5
+		turns_since_move = 5
 
 /mob/living/simple_animal/cat/attackby(var/obj/item/O, var/mob/user)
 	. = ..()
@@ -138,6 +141,10 @@
 	else
 		return ..()
 
+//Cats always land on their feet
+/mob/living/simple_animal/cat/get_fall_damage()
+	return 0
+
 //Basic friend AI
 /mob/living/simple_animal/cat/fluff
 	var/mob/living/carbon/human/friend
@@ -146,7 +153,7 @@
 /mob/living/simple_animal/cat/fluff/handle_movement_target()
 	if (friend)
 		var/follow_dist = 5
-		if (friend.stat >= DEAD || friend.health <= config.health_threshold_softcrit) //danger
+		if (friend.stat >= DEAD || friend.health <= HEALTH_THRESHOLD_SOFTCRIT) //danger
 			follow_dist = 1
 		else if (friend.stat || friend.health <= 50) //danger or just sleeping
 			follow_dist = 2
@@ -162,7 +169,7 @@
 				//walk to friend
 				stop_automated_movement = 1
 				movement_target = friend
-				walk_to(src, movement_target, near_dist, 4)
+				walk_to(src, movement_target, near_dist, seek_move_delay)
 
 		//already following and close enough, stop
 		else if (current_dist <= near_dist)
@@ -180,7 +187,7 @@
 	if (stat || !friend)
 		return
 	if (get_dist(src, friend) <= 1)
-		if (friend.stat >= DEAD || friend.health <= config.health_threshold_softcrit)
+		if (friend.stat >= DEAD || friend.health <= HEALTH_THRESHOLD_SOFTCRIT)
 			if (prob((friend.stat < DEAD)? 50 : 15))
 				var/verb = pick("meows", "mews", "mrowls")
 				visible_emote(pick("[verb] in distress.", "[verb] anxiously."))
@@ -215,7 +222,7 @@
 			say("Meow!")
 			return
 
-	usr << SPAN_NOTICE("[src] ignores you.")
+	to_chat(usr, SPAN_NOTICE("[src] ignores you."))
 	return
 
 

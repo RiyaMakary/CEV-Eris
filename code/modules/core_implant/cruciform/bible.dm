@@ -1,12 +1,10 @@
 /obj/item/weapon/book/ritual/cruciform
-	name = "Cyberchristian prayer book"
-	desc = "Contains holy litany and chants."
+	name = "NeoTheology ritual book"
+	desc = "Contains holy litany and religious prayers."
 	icon_state = "bible"
+	price_tag = 300
 
-/obj/item/weapon/book/ritual/cruciform/New()
-	rituals = cruciform_base_rituals + cruciform_priest_rituals
-
-
+/*
 /obj/item/weapon/book/ritual/cruciform/ritual(var/datum/ritual/R)
 	var/data = ""
 	data += "<div style='margin-bottom:10px;'>"
@@ -14,12 +12,15 @@
 	data += "<a href='[href(R)]'>[R.get_display_phrase()]</a><br>"
 	data += "<i>[R.desc]</i></div>"
 	return data
+*/
 
+/*/obj/item/weapon/book/ritual/cruciform/inquisitor
+	name = "Inquisitor ritual book"
+	desc = "Contains holy litany and prayers only for the Inquisitor."
+	icon_state = "biblep"*/
 
-/obj/item/weapon/book/ritual/cruciform/inquisitor
-	name = "Inquisitor prayer book"
-	desc = "Contains holy litany and chants of inquisitor."
-	icon_state = "bible"
-
-/obj/item/weapon/book/ritual/cruciform/inquisitor/New()
-	rituals = inquisitor_rituals
+/obj/item/weapon/book/ritual/cruciform/priest
+	name = "clergy ritual book"
+	desc = "Contains holy litany and prayers only for the Clergy."
+	icon_state = "biblep"
+	price_tag = 500

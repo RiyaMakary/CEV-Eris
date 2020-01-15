@@ -6,7 +6,7 @@
 	step_in = 5
 	health = 500
 	deflect_chance = 25
-	damage_absorption = list("brute"=0.5,"fire"=0.7,"bullet"=0.45,"laser"=0.6,"energy"=0.7,"bomb"=0.7)
+	damage_absorption = list("brute"=0.5,"fire"=0.7,"bullet"=0.45,"energy"=0.7,"bomb"=0.7)
 	max_temperature = 60000
 	infra_luminosity = 3
 	var/zoom = 0
@@ -78,12 +78,12 @@
 
 /obj/mecha/combat/marauder/Destroy()
 	qdel(smoke_system)
-	..()
+	. = ..()
 
 /obj/mecha/combat/marauder/relaymove(mob/user,direction)
 	if(user != src.occupant) //While not "realistic", this piece is player friendly.
 		user.loc = get_turf(src)
-		user << "You climb out from [src]"
+		to_chat(user, "You climb out from [src]")
 		return 0
 	if(!can_move)
 		return 0
@@ -105,10 +105,12 @@
 	var/tmp_step_energy_drain = step_energy_drain
 	var/move_result = 0
 	if(internal_damage&MECHA_INT_CONTROL_LOST)
+		set_glide_size(DELAY2GLIDESIZE(step_in))
 		move_result = mechsteprand()
 	else if(src.dir!=direction)
 		move_result = mechturn(direction)
 	else
+		set_glide_size(DELAY2GLIDESIZE(step_in))
 		move_result	= mechstep(direction)
 	if(move_result)
 		if(istype(src.loc, /turf/space))

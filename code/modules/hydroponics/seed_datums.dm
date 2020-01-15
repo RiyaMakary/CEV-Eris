@@ -62,11 +62,12 @@
 	seed_name = "glowberry"
 	display_name = "glowberry bush"
 	mutants = null
-	chems = list("nutriment" = list(1,10), "uranium" = list(3,5))
+	chems = list("nutriment" = list(1,10), MATERIAL_URANIUM = list(3,5))
 
 /datum/seed/berry/glow/New()
 	..()
 	set_trait(TRAIT_SPREAD,1)
+	set_trait(TRAIT_WALL_HUGGER,1)
 	set_trait(TRAIT_BIOLUM,1)
 	set_trait(TRAIT_BIOLUM_COLOUR,"#006622")
 	set_trait(TRAIT_MATURATION,5)
@@ -350,6 +351,7 @@
 /datum/seed/mushroom/mold/New()
 	..()
 	set_trait(TRAIT_SPREAD,1)
+	set_trait(TRAIT_WALL_HUGGER,1)
 	set_trait(TRAIT_MATURATION,10)
 	set_trait(TRAIT_YIELD,-1)
 	set_trait(TRAIT_PRODUCT_ICON,"mushroom5")
@@ -484,7 +486,8 @@
 /datum/seed/mushroom/glowshroom/New()
 	..()
 	set_trait(TRAIT_SPREAD,1)
-	set_trait(TRAIT_MATURATION,15)
+	set_trait(TRAIT_WALL_HUGGER,1)
+	set_trait(TRAIT_MATURATION,12)
 	set_trait(TRAIT_YIELD,3)
 	set_trait(TRAIT_POTENCY,30)
 	set_trait(TRAIT_BIOLUM,1)
@@ -511,6 +514,96 @@
 	set_trait(TRAIT_PRODUCT_COLOUR,"#E6E6E6")
 	set_trait(TRAIT_PLANT_COLOUR,"#E6E6E6")
 	set_trait(TRAIT_PLANT_ICON,"mushroom10")
+
+
+/datum/seed/mushroom/maintshroom
+	name = "fungoartiglieria"
+	seed_name = "Fungo di Artiglieria mushroom"
+	display_name = "Fungo di Artiglieria"
+	mutants = null
+
+/datum/seed/mushroom/maintshroom/New()
+	..()
+	set_trait(TRAIT_MATURATION,6)
+	set_trait(TRAIT_PRODUCTION,6)
+	set_trait(TRAIT_YIELD,10)
+	set_trait(TRAIT_POTENCY,12)//
+	set_trait(TRAIT_REQUIRES_NUTRIENTS, FALSE)
+	set_trait(TRAIT_REQUIRES_WATER, FALSE)
+	set_trait(TRAIT_PRODUCT_ICON,"mushroom3")
+	set_trait(TRAIT_WALL_HUGGER,1)
+
+	set_trait(TRAIT_PLANT_ICON,"fungoartiglieria")
+	set_trait(TRAIT_SPREAD, 2)
+	set_trait(TRAIT_CHEMS, 1)
+	set_trait(TRAIT_CHEM_SPRAYER, TRUE)
+
+	chems = list()
+	var/list/possible_chems = list(
+		"woodpulp",
+		"bicaridine",
+		"hyperzine",
+		"cryoxadone",
+		"blood",
+		"water",
+		"potassium",
+		"plasticide",
+		"mutationtoxin",
+		"amutationtoxin",
+		"inaprovaline",
+		"space_drugs",
+		"paroxetine",
+		"mercury",
+		"sugar",
+		"radium",
+		"ryetalyn",
+		"alkysine",
+		"thermite",
+		"tramadol",
+		"cryptobiolin",
+		"dermaline",
+		"dexalin",
+		"synaptizine",
+		"impedrezene",
+		"hyronalin",
+		"peridaxon",
+		"toxin",
+		"rezadone",
+		"ethylredoxrazine",
+		"slimejelly",
+		"cyanide",
+		"mindbreaker",
+		"stoxin",
+		"acetone",
+		"hydrazine",
+		"blattedin",
+		"honey",
+		"frostoil",
+		"capsaicin",
+		"banana",
+		"mutagen",
+		"chloralhydrate"
+		)
+
+
+
+	var/new_chem = pick(possible_chems)
+	chems[new_chem] = list(rand(1,5),rand(5,10))
+
+	//Set the maintshroom to the hue of the chem
+	var/datum/reagent/chem = chemical_reagents_list[new_chem]
+	var/color = chem.color
+
+	//Color Wizardry
+	//We will take the color's hue completely
+	//We will cap its saturation to a low value, giving more of a pastel shade
+	//We will hard set the brightness to max
+	var/list/HSV = ReadHSV(RGBtoHSV(color))
+	color = set_HSV(color, list(null, min(HSV[2],100), 255))
+
+	if (chem)
+		set_trait(TRAIT_PLANT_COLOUR,color)
+		set_trait(TRAIT_PRODUCT_COLOUR,color)
 
 //Flowers/varieties
 /datum/seed/flower
@@ -994,7 +1087,7 @@
 	set_trait(TRAIT_PRODUCTION,6)
 	set_trait(TRAIT_YIELD,4)
 	set_trait(TRAIT_POTENCY,10)
-	set_trait(TRAIT_SPREAD,2)
+	set_trait(TRAIT_SPREAD,3)
 	set_trait(TRAIT_PRODUCT_ICON,"treefruit")
 	set_trait(TRAIT_PRODUCT_COLOUR,"#96D278")
 	set_trait(TRAIT_PLANT_COLOUR,"#6F7A63")
@@ -1163,5 +1256,24 @@
 	set_trait(TRAIT_PLANT_COLOUR,"#3D1934")
 	set_trait(TRAIT_PRODUCTION,1)
 	set_trait(TRAIT_YIELD,-1)
-	set_trait(TRAIT_SPREAD,2)
+	set_trait(TRAIT_SPREAD,3)
 	set_trait(TRAIT_POTENCY,50)
+
+
+// Hivemind wireweeds
+/datum/seed/wires
+	name = "wires"
+	seed_name = "strange wires"
+	display_name = "strange wires"
+	seed_noun = "wires"
+	force_layer = 3
+	chems = list("fuel" = list(1,5))
+
+/datum/seed/wires/New()
+	..()
+	set_trait(TRAIT_IMMUTABLE,1)
+	set_trait(TRAIT_PLANT_COLOUR,null)
+	set_trait(TRAIT_YIELD,-1)
+	set_trait(TRAIT_SPREAD,3)
+	set_trait(TRAIT_POTENCY,50)
+	set_trait(TRAIT_INVASIVE,1)

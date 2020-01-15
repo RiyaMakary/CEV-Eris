@@ -1,4 +1,4 @@
-#define UPGRADE_COOLDOWN	40
+#define UPGRADE_COOLDOWN	50
 #define UPGRADE_KILL_TIMER	100
 
 ///Process_Grab()
@@ -28,7 +28,7 @@
 	layer = 21
 	abstract = 1
 	item_state = "nothing"
-	w_class = ITEM_SIZE_NO_CONTAINER
+	w_class = ITEM_SIZE_COLOSSAL
 
 /obj/proc/affect_grab(var/mob/user, var/mob/target, var/state)
 	return FALSE
@@ -89,8 +89,8 @@
 //		else
 //			hud.screen_loc = src.screen_loc
 
-/obj/item/weapon/grab/process()
-	if(gcDestroyed) // GC is trying to delete us, we'll kill our processing so we can cleanly GC
+/obj/item/weapon/grab/Process()
+	if(gc_destroyed) // GC is trying to delete us, we'll kill our processing so we can cleanly GC
 		return PROCESS_KILL
 
 	if(!confirm())
@@ -163,12 +163,12 @@
 	last_hit_zone = target_zone
 
 	switch(target_zone)
-		if(O_MOUTH)
+		if(BP_MOUTH)
 			if(announce)
 				user.visible_message(SPAN_WARNING("\The [user] covers [target]'s mouth!"))
 			if(target.silent < 3)
 				target.silent = 3
-		if(O_EYES)
+		if(BP_EYES)
 			if(announce)
 				assailant.visible_message(SPAN_WARNING("[assailant] covers [affecting]'s eyes!"))
 			if(affecting.eye_blind < 3)
@@ -184,7 +184,9 @@
 	if(!affecting)
 		return
 	if(affecting.buckled)
-		animate(affecting, pixel_x = 0, pixel_y = 0, 4, 1, LINEAR_EASING)
+		var/obj/O = affecting.buckled
+		if (istype(O))
+			O.post_buckle_mob(affecting) //A hack to fix offsets on altars and tables
 		return
 	if(affecting.lying && state != GRAB_KILL)
 		animate(affecting, pixel_x = 0, pixel_y = 0, 5, 1, LINEAR_EASING)
@@ -229,9 +231,9 @@
 		return
 	if(state == GRAB_UPGRADING)
 		return
-	if(!assailant.canClick())
+	if(!assailant.can_click())
 		return
-	if(world.time < (last_action + UPGRADE_COOLDOWN))
+	if(world.time < (last_action + max(0, UPGRADE_COOLDOWN - (round(assailant.stats.getStat(STAT_ROB) ** 0.8)))))
 		return
 	if(!assailant.canmove || assailant.lying)
 		qdel(src)
@@ -244,8 +246,14 @@
 			return
 		if(!affecting.lying)
 			assailant.visible_message(SPAN_WARNING("[assailant] has grabbed [affecting] aggressively!"))
+			affecting.attack_log += "\[[time_stamp()]\] <font color='orange'>Has been grabbed by [assailant.name] ([assailant.ckey])</font>"
+			assailant.attack_log += "\[[time_stamp()]\] <font color='red'>Grabbed [affecting.name] ([affecting.ckey])</font>"
+			msg_admin_attack("[assailant] grabbed a [affecting].")
 		else
 			assailant.visible_message(SPAN_WARNING("[assailant] pins [affecting] down to the ground!"))
+			affecting.attack_log += "\[[time_stamp()]\] <font color='orange'>Has been pinned by [assailant.name] ([assailant.ckey])</font>"
+			assailant.attack_log += "\[[time_stamp()]\] <font color='red'>Pinned [affecting.name] ([affecting.ckey])</font>"
+			msg_admin_attack("[assailant] pinned down [affecting].")
 			apply_pinning(affecting, assailant)
 
 		state = GRAB_AGGRESSIVE
@@ -254,7 +262,7 @@
 
 	else if(state < GRAB_NECK)
 		if(isslime(affecting))
-			assailant << SPAN_NOTICE("You squeeze [affecting], but nothing interesting happens.")
+			to_chat(assailant, SPAN_NOTICE("You squeeze [affecting], but nothing interesting happens."))
 			return
 
 		assailant.visible_message(SPAN_WARNING("[assailant] grabs [affecting] neck!"))
@@ -315,7 +323,10 @@
 			switch(assailant.a_intent)
 				if(I_HELP)
 					if(force_down)
-						assailant << SPAN_WARNING("You are no longer pinning [affecting] to the ground.")
+						to_chat(assailant, SPAN_WARNING("You are no longer pinning [affecting] to the ground."))
+						affecting.attack_log += "\[[time_stamp()]\] <font color='orange'>No longer pinned down by [assailant.name] ([assailant.ckey])</font>"
+						assailant.attack_log += "\[[time_stamp()]\] <font color='red'>Released from pin [affecting.name] ([affecting.ckey])</font>"
+						msg_admin_attack("[key_name(assailant)] Released from pin [key_name(affecting)]")
 						force_down = 0
 						return
 					inspect_organ(affecting, assailant, hit_zone)
@@ -324,7 +335,7 @@
 					jointlock(affecting, assailant, hit_zone)
 
 				if(I_HURT)
-					if(hit_zone == O_EYES)
+					if(hit_zone == BP_EYES)
 						attack_eye(affecting, assailant)
 					else if(hit_zone == BP_HEAD)
 						headbut(affecting, assailant)
@@ -346,6 +357,9 @@
 /obj/item/weapon/grab/proc/reset_kill_state()
 	if(state == GRAB_KILL)
 		assailant.visible_message(SPAN_WARNING("[assailant] lost \his tight grip on [affecting]'s neck!"))
+		affecting.attack_log += "\[[time_stamp()]\] <font color='orange'>No longer gripped by [assailant.name] ([assailant.ckey] neck.)</font>"
+		assailant.attack_log += "\[[time_stamp()]\] <font color='red'>Lost his grip on [affecting.name] ([affecting.ckey] neck.)</font>"
+		msg_admin_attack("[key_name(assailant)] lost his tight grip on [key_name(affecting)] neck.")
 		hud.icon_state = "kill"
 		state = GRAB_NECK
 
@@ -354,8 +368,13 @@
 
 /obj/item/weapon/grab/Destroy()
 	if(affecting)
-		animate(affecting, pixel_x = 0, pixel_y = 0, 4, 1, LINEAR_EASING)
-		affecting.layer = 4
+		if(affecting.buckled)
+			var/obj/O = affecting.buckled
+			if (istype(O))
+				O.post_buckle_mob(affecting) //A hack to fix offsets on altars and tables
+		else
+			animate(affecting, pixel_x = 0, pixel_y = 0, 4, 1, LINEAR_EASING)
+		affecting.reset_plane_and_layer()
 		affecting.grabbed_by -= src
 		affecting = null
 	if(assailant)
@@ -366,3 +385,8 @@
 	hud = null
 	destroying = 1 // stops us calling qdel(src) on dropped()
 	return ..()
+
+
+//A stub for bay grab system. This is supposed to check a var on the associated grab datum
+/obj/item/weapon/grab/proc/force_stand()
+	return FALSE

@@ -51,6 +51,7 @@
 		module_state_3:loc = module
 		module_state_3 = null
 		//inv3.icon_state = "inv3"
+	update_robot_modules_display()
 	updateicon()
 
 /mob/living/silicon/robot/proc/uneq_all()
@@ -237,32 +238,61 @@
 	if(!(locate(O) in src.module.modules) && O != src.module.emag)
 		return
 	if(activated(O))
-		src << SPAN_NOTICE("Already activated")
+		to_chat(src, SPAN_NOTICE("Already activated"))
 		return
 	if(!module_state_1)
+		if (O.pre_equip(src, slot_robot_equip_1))
+			return
+
 		module_state_1 = O
-		O.layer = 20
+		O.layer = ABOVE_HUD_LAYER
+		O.set_plane(ABOVE_HUD_PLANE)
 		O.screen_loc = find_inv_position(1)
 		contents += O
 		if(istype(module_state_1,/obj/item/borg/sight))
 			sight_mode |= module_state_1:sight_mode
+		O.equipped(src, slot_robot_equip_1)
+
 	else if(!module_state_2)
+		if (O.pre_equip(src, slot_robot_equip_2))
+			return
 		module_state_2 = O
-		O.layer = 20
+		O.layer = ABOVE_HUD_LAYER
+		O.set_plane(ABOVE_HUD_PLANE)
 		O.screen_loc = find_inv_position(2)
 		contents += O
 		if(istype(module_state_2,/obj/item/borg/sight))
 			sight_mode |= module_state_2:sight_mode
+		O.equipped(src, slot_robot_equip_2)
+
 	else if(!module_state_3)
+		if (O.pre_equip(src, slot_robot_equip_3))
+			return
 		module_state_3 = O
-		O.layer = 20
+		O.layer = ABOVE_HUD_LAYER
+		O.set_plane(ABOVE_HUD_PLANE)
 		O.screen_loc = find_inv_position(3)
 		contents += O
 		if(istype(module_state_3,/obj/item/borg/sight))
 			sight_mode |= module_state_3:sight_mode
+		O.equipped(src, slot_robot_equip_3)
 	else
-		src << SPAN_NOTICE("You need to disable a module first!")
+		to_chat(src, SPAN_NOTICE("You need to disable a module first!"))
 
-/mob/living/silicon/robot/put_in_hands(var/obj/item/W) // No hands.
-	W.loc = get_turf(src)
-	return 1
+
+//Attempt to grip the item in a gripper.
+//Parent call will drop it on the floor if gripper can't hold it
+/mob/living/silicon/robot/put_in_hands(var/obj/item/W)
+	var/obj/item/weapon/gripper/G = locate() in list(module_state_1, module_state_2, module_state_3)
+	if (G && G.grip_item(W, src, 1))
+		return 1
+	else
+		return ..(W)
+
+
+/mob/living/silicon/robot/canUnEquip(obj/item/I) //Force overrides NODROP for things like wizarditis and admin undress.
+	if(!I || !I.loc)
+		return TRUE
+	if (istype(I.loc, /obj/item/weapon/gripper)) //Robots are allowed to drop the things in their gripper
+		return TRUE
+	return ..(I) //This will be false for things directly equipped

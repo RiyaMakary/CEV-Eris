@@ -27,6 +27,7 @@
 	var/list/target_types = list()
 
 	var/maximum_search_range = 7
+	var/give_up_cooldown = 0
 
 /mob/living/bot/cleanbot/New()
 	..()
@@ -35,8 +36,7 @@
 	listener = new /obj/cleanbot_listener(src)
 	listener.cleanbot = src
 
-	if(radio_controller)
-		radio_controller.add_object(listener, beacon_freq, filter = RADIO_NAVBEACONS)
+	SSradio.add_object(listener, beacon_freq, filter = RADIO_NAVBEACONS)
 
 /mob/living/bot/cleanbot/proc/handle_target()
 	if(loc == target.loc)
@@ -47,7 +47,6 @@
 //		spawn(0)
 		path = AStar(loc, target.loc, /turf/proc/CardinalTurfsWithAccess, /turf/proc/Distance, 0, 30, id = botcard)
 		if(!path)
-			visible_message("[src] can't reach the target and is giving up.")
 			target = null
 			path = list()
 		return
@@ -90,6 +89,7 @@
 		return
 
 	var/found_spot
+	var/target_in_view = FALSE
 	search_loop:
 		for(var/i=0, i <= maximum_search_range, i++)
 			for(var/obj/effect/decal/cleanable/D in view(i, src))
@@ -103,14 +103,19 @@
 						if (found_spot)
 							break search_loop
 						else
+							target_in_view = TRUE
 							target = null
 							continue // no need to check the other types
+
+	if(!found_spot && target_in_view && world.time > give_up_cooldown)
+		visible_message("[src] can't reach the target and is giving up.")
+		give_up_cooldown = world.time + 300
 
 
 	if(!found_spot && !target) // No targets in range
 		if(!patrol_path || !patrol_path.len)
 			if(!signal_sent || signal_sent > world.time + 200) // Waited enough or didn't send yet
-				var/datum/radio_frequency/frequency = radio_controller.return_frequency(beacon_freq)
+				var/datum/radio_frequency/frequency = SSradio.return_frequency(beacon_freq)
 				if(!frequency)
 					return
 
@@ -160,9 +165,6 @@
 	update_icons()
 	var/cleantime = istype(D, /obj/effect/decal/cleanable/dirt) ? 10 : 50
 	if(do_after(src, cleantime, progress = 0))
-		if(istype(loc, /turf/simulated))
-			var/turf/simulated/f = loc
-			f.dirt = 0
 		if(!D)
 			return
 		qdel(D)
@@ -241,17 +243,17 @@
 				beacon_freq = freq
 		if("screw")
 			screwloose = !screwloose
-			usr << SPAN_NOTICE("You twiddle the screw.")
+			to_chat(usr, SPAN_NOTICE("You twiddle the screw."))
 		if("oddbutton")
 			oddbutton = !oddbutton
-			usr << SPAN_NOTICE("You press the weird button.")
+			to_chat(usr, SPAN_NOTICE("You press the weird button."))
 	attack_hand(usr)
 
 /mob/living/bot/cleanbot/emag_act(var/remaining_uses, var/mob/user)
 	. = ..()
 	if(!screwloose || !oddbutton)
 		if(user)
-			user << SPAN_NOTICE("The [src] buzzes and beeps.")
+			to_chat(user, SPAN_NOTICE("The [src] buzzes and beeps."))
 			playsound(loc, "robot_talk_light", 100, 0, 0)
 		oddbutton = 1
 		screwloose = 1
@@ -266,6 +268,7 @@
 	target_types += /obj/effect/decal/cleanable/liquid_fuel
 	target_types += /obj/effect/decal/cleanable/mucus
 	target_types += /obj/effect/decal/cleanable/dirt
+	target_types += /obj/effect/decal/cleanable/rubble
 
 	if(blood)
 		target_types += /obj/effect/decal/cleanable/blood
@@ -311,7 +314,7 @@
 		var/turf/T = get_turf(loc)
 		var/mob/living/bot/cleanbot/A = new /mob/living/bot/cleanbot(T)
 		A.name = created_name
-		user << SPAN_NOTICE("You add the robot arm to the bucket and sensor assembly. Beep boop!")
+		to_chat(user, SPAN_NOTICE("You add the robot arm to the bucket and sensor assembly. Beep boop!"))
 		playsound(src.loc, 'sound/effects/insert.ogg', 50, 1)
 		user.drop_from_inventory(src)
 		qdel(src)

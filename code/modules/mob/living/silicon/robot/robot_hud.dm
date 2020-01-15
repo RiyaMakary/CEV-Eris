@@ -97,9 +97,9 @@
 	var/datum/hud/cyborg/HUDdatum = global.HUDdatums[H.defaultHUD]
 	//Добавляем Элементы ХУДа (украшения)
 	for (var/list/whistle in HUDdatum.HUDfrippery)
-		var/obj/screen/frippery/perdelka = new (whistle["icon_state"],whistle["loc"], whistle["dir"],H)
-		perdelka.icon = HUDdatum.icon
-		H.HUDfrippery += perdelka
+		var/obj/screen/frippery/F = new (whistle["icon_state"],whistle["loc"], whistle["dir"],H)
+		F.icon = HUDdatum.icon
+		H.HUDfrippery += F
 	return
 
 
@@ -110,7 +110,7 @@
 	//Добавляем технические элементы(damage,flash,pain... оверлеи)
 	for (var/techobject in HUDdatum.HUDoverlays)
 		var/HUDtype = HUDdatum.HUDoverlays[techobject]["type"]
-		var/obj/screen/HUD = new HUDtype(techobject, HUDdatum.HUDoverlays[techobject]["loc"], H)
+		var/obj/screen/HUD = new HUDtype(_name = techobject, _parentmob = H)// _screen_loc = HUDdatum.HUDoverlays[techobject]["loc"]
 		if(HUDdatum.HUDoverlays[techobject]["icon"])//Анализ на овверайд icon
 			HUD.icon = HUDdatum.HUDoverlays[techobject]["icon"]
 		else
@@ -150,11 +150,11 @@
 		//r.client.screen += robot_inventory	//"store" icon
 
 		if(!r.module)
-			usr << SPAN_DANGER("No module selected")
+			to_chat(usr, SPAN_DANGER("No module selected"))
 			return
 
 		if(!r.module.modules)
-			usr << SPAN_DANGER("Selected module has no modules to select")
+			to_chat(usr, SPAN_DANGER("Selected module has no modules to select"))
 			return
 
 		if(!r.robot_modules_background)

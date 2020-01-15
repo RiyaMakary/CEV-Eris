@@ -3,26 +3,32 @@
 		return 0
 	..(prob_slip)
 
-/mob/living/silicon/robot/Process_Spacemove()
-	if(module)
-		for(var/obj/item/weapon/tank/jetpack/J in module.modules)
-			if(J && istype(J, /obj/item/weapon/tank/jetpack))
-				if(J.allow_thrust(0.01))	return 1
-	if(..())	return 1
-	return 0
+/mob/living/silicon/robot/allow_spacemove()
 
- //No longer needed, but I'll leave it here incase we plan to re-use it.
+	//Do we have a working jetpack?
+	var/obj/item/weapon/tank/jetpack/thrust = get_jetpack()
+
+	if(thrust)
+		if(thrust.allow_thrust(JETPACK_MOVE_COST, src))
+			if (thrust.stabilization_on)
+				return TRUE
+			return -1
+
+	//If no working jetpack then use the other checks
+	if (is_component_functioning("actuator"))
+		return ..()
+
+
+
 /mob/living/silicon/robot/movement_delay()
-	var/tally = 0 //Incase I need to add stuff other than "speed" later
+	var/tally = ..()
+	tally += speed //This var is a placeholder
+	if(module_active && istype(module_active,/obj/item/borg/combat/mobility)) //And so is this silly check
+		tally-=1
+	tally /= speed_factor
+	return tally
 
-	tally = speed
 
-	if(module_active && istype(module_active,/obj/item/borg/combat/mobility))
-		tally-=3
-
-	return tally+config.robot_delay
-
-// NEW: Use power while moving.
 /mob/living/silicon/robot/SelfMove(turf/n, direct)
 	if (!is_component_functioning("actuator"))
 		return 0

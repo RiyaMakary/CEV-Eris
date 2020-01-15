@@ -15,6 +15,7 @@
 	thrown_force_divisor = 0.25 // 5 when thrown with weight 20 (steel)
 	var/loaded      //Descriptive string for currently loaded food object.
 	var/scoop_food = 1
+	structure_damage_factor = STRUCTURE_DAMAGE_WEAK
 
 /obj/item/weapon/material/kitchen/utensil/New()
 	..()
@@ -28,7 +29,7 @@
 		return ..()
 
 	if(user.a_intent != I_HELP)
-		if(user.targeted_organ in list(BP_HEAD, O_EYES))
+		if(user.targeted_organ in list(BP_HEAD, BP_EYES))
 			if((CLUMSY in user.mutations) && prob(50))
 				M = user
 			return eyestab(M,user)
@@ -50,7 +51,7 @@
 		overlays.Cut()
 		return
 	else
-		user << SPAN_WARNING("You don't have anything on \the [src].")	//if we have help intent and no food scooped up DON'T STAB OURSELVES WITH THE FORK
+		to_chat(user, SPAN_WARNING("You don't have anything on \the [src]."))	//if we have help intent and no food scooped up DON'T STAB OURSELVES WITH THE FORK
 		return
 
 /obj/item/weapon/material/kitchen/utensil/fork
@@ -59,7 +60,7 @@
 	icon_state = "fork"
 
 /obj/item/weapon/material/kitchen/utensil/fork/plastic
-	default_material = "plastic"
+	default_material = MATERIAL_PLASTIC
 
 /obj/item/weapon/material/kitchen/utensil/spoon
 	name = "spoon"
@@ -71,38 +72,7 @@
 	force_divisor = 0.1 //2 when wielded with weight 20 (steel)
 
 /obj/item/weapon/material/kitchen/utensil/spoon/plastic
-	default_material = "plastic"
-
-/*
- * Knives
- */
-/obj/item/weapon/material/kitchen/utensil/knife
-	name = "knife"
-	desc = "A knife for eating with. Can cut through any food."
-	icon_state = "knife"
-	force_divisor = 0.1 // 6 when wielded with hardness 60 (steel)
-	scoop_food = 0
-
-// Identical to the tactical knife but nowhere near as stabby.
-// Kind of like the toy esword compared to the real thing.
-/obj/item/weapon/material/kitchen/utensil/knife/boot
-	name = "boot knife"
-	desc = "A small fixed-blade knife for putting inside a boot."
-	icon = 'icons/obj/weapons.dmi'
-	icon_state = "tacknife"
-	item_state = "knife"
-	applies_material_colour = 0
-	unbreakable = 1
-
-/obj/item/weapon/material/kitchen/utensil/knife/attack(target as mob, mob/living/user as mob)
-	if ((CLUMSY in user.mutations) && prob(50))
-		user << SPAN_WARNING("You accidentally cut yourself with \the [src].")
-		user.take_organ_damage(20)
-		return
-	return ..()
-
-/obj/item/weapon/material/kitchen/utensil/knife/plastic
-	default_material = "plastic"
+	default_material = MATERIAL_PLASTIC
 
 /*
  * Rolling Pins
@@ -119,7 +89,7 @@
 
 /obj/item/weapon/material/kitchen/rollingpin/attack(mob/living/M as mob, mob/living/user as mob)
 	if ((CLUMSY in user.mutations) && prob(50))
-		user << SPAN_WARNING("\The [src] slips out of your hand and hits your head.")
+		to_chat(user, SPAN_WARNING("\The [src] slips out of your hand and hits your head."))
 		user.drop_from_inventory(src)
 		user.take_organ_damage(10)
 		user.Paralyse(2)

@@ -2,7 +2,7 @@
 	name = "acid gland"
 	parent_organ = BP_HEAD
 	icon_state = "xgibtorso"
-	organ_tag = O_ACID
+	organ_tag = BP_ACID
 	owner_verbs = list(
 		/obj/item/organ/internal/xenos/acidgland/proc/neurotoxin,
 		/obj/item/organ/internal/xenos/acidgland/proc/corrosive_acid
@@ -23,7 +23,7 @@
 		return
 
 	if(owner.stat || owner.paralysis || owner.stunned || owner.weakened || owner.lying || owner.restrained() || owner.buckled)
-		owner << "You cannot spit neurotoxin in your current state."
+		to_chat(owner, "You cannot spit neurotoxin in your current state.")
 		return
 
 	owner.visible_message(
@@ -46,7 +46,7 @@
 	A.current = U
 	A.yo = U.y - T.y
 	A.xo = U.x - T.x
-	A.process()
+	A.Process()
 
 //If they right click to corrode, an error will flash if its an invalid target./N
 /obj/item/organ/internal/xenos/acidgland/proc/corrosive_acid(O as obj|turf in oview(1, owner))
@@ -55,7 +55,7 @@
 	set category = "Abilities"
 
 	if(!O in oview(1, owner))
-		owner << "<span class='alium'>[O] is too far away.</span>"
+		to_chat(owner, "<span class='alium'>[O] is too far away.</span>")
 		return
 
 	// OBJ CHECK
@@ -75,7 +75,7 @@
 				cannot_melt = TRUE
 
 	if(cannot_melt)
-		owner << "<span class='alium'>You cannot dissolve this object.</span>"
+		to_chat(owner, "<span class='alium'>You cannot dissolve this object.</span>")
 		return
 
 	if(check_alien_ability(200))

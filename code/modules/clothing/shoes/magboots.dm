@@ -3,18 +3,28 @@
 	name = "magboots"
 	icon_state = "magboots0"
 	species_restricted = null
-	force = 3
-	overshoes = 1
+	force = WEAPON_FORCE_WEAK
+	overslot = 1
 	var/magpulse = 0
+	var/mag_slow = 3
 	var/icon_base = "magboots"
 	action_button_name = "Toggle Magboots"
-	var/obj/item/clothing/shoes/shoes = null	//Undershoes
-	var/mob/living/carbon/human/wearer = null	//For shoe procs
+	armor = list(
+		melee = 30,
+		bullet = 10,
+		energy = 20,
+		bomb = 25,
+		bio = 100,
+		rad = 90
+	)
+	siemens_coefficient = 0 // DAMN BOI
+	//This armor only applies to legs
 
 /obj/item/clothing/shoes/magboots/proc/set_slowdown()
+	var/obj/item/clothing/shoes/shoes = overslot_contents
 	slowdown = shoes? max(SHOES_SLOWDOWN, shoes.slowdown): SHOES_SLOWDOWN	//So you can't put on magboots to make you walk faster.
 	if (magpulse)
-		slowdown += 3
+		slowdown += mag_slow
 
 /obj/item/clothing/shoes/magboots/attack_self(mob/user)
 	if(magpulse)
@@ -23,53 +33,36 @@
 		set_slowdown()
 		force = WEAPON_FORCE_WEAK
 		if(icon_base) icon_state = "[icon_base]0"
-		user << "You disable the mag-pulse traction system."
+		to_chat(user, "You disable the mag-pulse traction system.")
 	else
 		item_flags |= NOSLIP
 		magpulse = 1
 		set_slowdown()
-		force = WEAPON_FORCE_PAINFULL
+		force = WEAPON_FORCE_PAINFUL
 		if(icon_base) icon_state = "[icon_base]1"
-		user << "You enable the mag-pulse traction system."
+		to_chat(user, "You enable the mag-pulse traction system.")
 	user.update_inv_shoes()	//so our mob-overlays update
 	user.update_action_buttons()
-
-/obj/item/clothing/shoes/magboots/mob_can_equip(mob/user)
-	var/mob/living/carbon/human/H = user
-
-	if(H.shoes)
-		shoes = H.shoes
-		if(shoes.overshoes)
-			user << "You are unable to wear \the [src] as \the [H.shoes] are in the way."
-			shoes = null
-			return 0
-		H.drop_from_inventory(shoes)	//Remove the old shoes so you can put on the magboots.
-		shoes.forceMove(src)
-
-	if(!..())
-		if(shoes) 	//Put the old shoes back on if the check fails.
-			if(H.equip_to_slot_if_possible(shoes, slot_shoes))
-				src.shoes = null
-		return 0
-
-	if (shoes)
-		user << "You slip \the [src] on over \the [shoes]."
-	set_slowdown()
-	wearer = H
-	return 1
-
-/obj/item/clothing/shoes/magboots/dropped()
-	..()
-	var/mob/living/carbon/human/H = wearer
-	if(shoes)
-		if(!H.equip_to_slot_if_possible(shoes, slot_shoes))
-			shoes.forceMove(get_turf(src))
-		src.shoes = null
-	wearer = null
+	user.update_floating()
 
 /obj/item/clothing/shoes/magboots/examine(mob/user)
 	..(user)
 	var/state = "disabled"
 	if(item_flags & NOSLIP)
 		state = "enabled"
-	user << "Its mag-pulse traction system appears to be [state]."
+	to_chat(user, "Its mag-pulse traction system appears to be [state].")
+
+
+/*
+	Used by mercenaries
+*/
+/obj/item/clothing/shoes/magboots/merc
+	desc = "Sturdy hiking boots with powerful magnetic soles. Useful in or out of a vessel."
+	name = "military magboots"
+	icon_state = "mercboots0"
+	species_restricted = null
+	can_hold_knife = TRUE
+	overshoes = 0
+	mag_slow = 2
+	icon_base = "mercboots"
+	action_button_name = "Toggle Magboots"

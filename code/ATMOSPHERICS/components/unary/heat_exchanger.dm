@@ -3,6 +3,7 @@
 	icon = 'icons/obj/atmospherics/heat_exchanger.dmi'
 	icon_state = "intact"
 	density = 1
+	layer = LOW_OBJ_LAYER
 
 	name = "Heat Exchanger"
 	desc = "Exchanges heat between two input gases. Setup for fast heat transfer"
@@ -11,14 +12,14 @@
 	var/update_cycle
 
 	update_icon()
-		if(node)
+		if(node1)
 			icon_state = "intact"
 		else
 			icon_state = "exposed"
 
 		return
 
-	initialize()
+	atmos_init()
 		if(!partner)
 			var/partner_connect = turn(dir, 180)
 
@@ -30,16 +31,16 @@
 
 		..()
 
-	process()
+	Process()
 		..()
 		if(!partner)
 			return 0
 
-		if(!air_master || air_master.current_cycle <= update_cycle)
+		if(SSair.times_fired <= update_cycle)
 			return 0
 
-		update_cycle = air_master.current_cycle
-		partner.update_cycle = air_master.current_cycle
+		update_cycle = SSair.times_fired
+		partner.update_cycle = SSair.times_fired
 
 		var/air_heat_capacity = air_contents.heat_capacity()
 		var/other_air_heat_capacity = partner.air_contents.heat_capacity()
@@ -65,25 +66,22 @@
 
 		return 1
 
-	attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
-		if (!istype(W, /obj/item/weapon/wrench))
-			return ..()
-		var/turf/T = src.loc
-		if (level==1 && isturf(T) && !T.is_plating())
-			user << SPAN_WARNING("You must remove the plating first.")
-			return 1
+	attackby(var/obj/item/weapon/tool/tool, var/mob/user)
 		var/datum/gas_mixture/int_air = return_air()
 		var/datum/gas_mixture/env_air = loc.return_air()
 		if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-			user << SPAN_WARNING("You cannot unwrench \the [src], it is too exerted due to internal pressure.")
+			to_chat(user, SPAN_WARNING("You cannot unwrench \the [src], it is too exerted due to internal pressure."))
 			add_fingerprint(user)
 			return 1
-		playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
-		user << SPAN_NOTICE("You begin to unfasten \the [src]...")
-		if (do_after(user, 40, src))
-			user.visible_message( \
-				SPAN_NOTICE("\The [user] unfastens \the [src]."), \
-				SPAN_NOTICE("You have unfastened \the [src]."), \
-				"You hear a ratchet.")
-			new /obj/item/pipe(loc, make_from=src)
-			qdel(src)
+		var/turf/T = src.loc
+		if (level==1 && isturf(T) && !T.is_plating())
+			to_chat(user, SPAN_WARNING("You must remove the plating first."))
+			return 1
+		if (!tool.use_tool(user, src, WORKTIME_NORMAL, QUALITY_BOLT_TURNING, FAILCHANCE_ZERO, required_stat = STAT_MEC))
+			return ..()
+		user.visible_message( \
+			SPAN_NOTICE("\The [user] unfastens \the [src]."), \
+			SPAN_NOTICE("You have unfastened \the [src]."), \
+			"You hear a ratchet.")
+		new /obj/item/pipe(loc, make_from=src)
+		qdel(src)
