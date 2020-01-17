@@ -70,8 +70,9 @@
 *
 * @params M The subject.
 * @params g Gender (m or f)
+* @params fat Fat? (0 or 1)
 */
-/datum/dna/gene/proc/OnDrawUnderlays(var/mob/M, var/g)
+/datum/dna/gene/proc/OnDrawUnderlays(var/mob/M, var/g, var/fat)
 	return 0
 
 

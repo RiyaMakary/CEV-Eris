@@ -8,10 +8,11 @@
 #define XRAY            3
 #define HULK            4
 #define CLUMSY          5
-#define HUSK            6
-#define NOCLONE         7
-#define LASER           8  // Harm intent - click anywhere to shoot lasers from eyes.
-#define HEAL            9 // Healing people with hands.
+#define FAT             6
+#define HUSK            7
+#define NOCLONE         8
+#define LASER           9  // Harm intent - click anywhere to shoot lasers from eyes.
+#define HEAL            10 // Healing people with hands.
 
 #define SKELETON      29
 #define PLANT         30
