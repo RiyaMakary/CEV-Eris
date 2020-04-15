@@ -213,9 +213,9 @@ GLOBAL_LIST_EMPTY(explosion_watcher_list)
 			RD.files.research_points += calculated_research_points
 
 	if(calculated_research_points > 0)
-		autosay("Detected explosion with power level [power], received [calculated_research_points] research points", name ,"Science", freq = radiochannels["Science"])
+		autosay("Detected explosion with power level [power], received [calculated_research_points] research points", name ,"Science")
 	else
-		autosay("Detected explosion with power level [power], R&D console is missing or broken", name ,"Science", freq = radiochannels["Science"])
+		autosay("Detected explosion with power level [power], R&D console is missing or broken", name ,"Science")
 
 // Universal tool to get research points from autopsy reports, virus info reports, archeology reports, slime cores
 /obj/item/device/science_tool
@@ -302,6 +302,7 @@ GLOBAL_LIST_EMPTY(explosion_watcher_list)
 
 /obj/item/weapon/computer_hardware/hard_drive/portable/research_points
 	disk_name = "research data"
+	icon_state = "onestar"
 	var/min_points = 2000
 	var/max_points = 10000
 

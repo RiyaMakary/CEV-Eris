@@ -112,7 +112,8 @@
 		++resting
 		pick_desires()
 		insight -= 100
-	owner.HUDneed["sanity"]?.update_icon()
+	var/obj/screen/sanity/hud = owner.HUDneed["sanity"]
+	hud?.update_icon()
 
 /datum/sanity/proc/handle_level()
 	level_change = SANITY_CHANGE_FADEOFF(level_change)
@@ -161,7 +162,8 @@
 				var/desire_count = 0
 				while(desire_count < 5)
 					var/candidate = pick(ethanol_types)
-					if(subtypesof(candidate).len) //Exclude categories
+					var/list/categories = subtypesof(candidate)
+					if(categories.len) //Exclude categories
 						ethanol_types -= candidate
 						continue
 					desires += candidate
@@ -184,7 +186,7 @@
 
 /datum/sanity/proc/add_rest(type, amount)
 	if(!(type in desires))
-		amount /= 3
+		amount /= 4
 	insight_rest += amount
 	if(insight_rest >= 100)
 		insight_rest = 0
@@ -239,17 +241,17 @@
 /datum/sanity/proc/onAlcohol(datum/reagent/ethanol/E, multiplier)
 	changeLevel(E.sanity_gain_ingest * multiplier)
 	if(resting)
-		add_rest(E.type, 2 * multiplier)
+		add_rest(E.type, 3 * multiplier)
 
 /datum/sanity/proc/onEat(obj/item/weapon/reagent_containers/food/snacks/snack, amount_eaten)
 	changeLevel(snack.sanity_gain * amount_eaten / snack.bitesize)
 	if(snack.cooked && resting)
-		add_rest(snack.type, 15 * amount_eaten / snack.bitesize)
+		add_rest(snack.type, 20 * amount_eaten / snack.bitesize)
 
 /datum/sanity/proc/onSmoke(obj/item/clothing/mask/smokable/S)
-	changeLevel(SANITY_GAIN_SMOKE)
+	changeLevel(SANITY_GAIN_SMOKE * S.quality_multiplier)
 	if(resting)
-		add_rest(INSIGHT_DESIRE_SMOKING, 0.125)
+		add_rest(INSIGHT_DESIRE_SMOKING, 0.4 * S.quality_multiplier)
 
 /datum/sanity/proc/onSay()
 	if(world.time < say_time)
@@ -280,7 +282,8 @@
 	level = new_level
 	if(level == 0 && world.time >= breakdown_time)
 		breakdown()
-	owner.HUDneed["sanity"]?.update_icon()
+	var/obj/screen/sanity/hud = owner.HUDneed["sanity"]
+	hud?.update_icon()
 
 /datum/sanity/proc/breakdown()
 	breakdown_time = world.time + SANITY_COOLDOWN_BREAKDOWN

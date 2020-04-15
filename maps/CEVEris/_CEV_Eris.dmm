@@ -666,14 +666,14 @@
 /obj/item/clothing/suit/armor/heavy/riot/ironhammer,
 /obj/item/clothing/suit/armor/heavy/riot/ironhammer,
 /obj/item/clothing/suit/armor/heavy/riot/ironhammer,
-/obj/item/clothing/head/helmet/riot,
-/obj/item/clothing/head/helmet/riot,
-/obj/item/clothing/head/helmet/riot,
-/obj/item/clothing/head/helmet/riot,
-/obj/item/clothing/head/helmet/riot,
-/obj/item/clothing/head/helmet/riot,
-/obj/item/clothing/head/helmet/riot,
-/obj/item/clothing/head/helmet/riot,
+/obj/item/clothing/head/armor/riot_hud,
+/obj/item/clothing/head/armor/riot_hud,
+/obj/item/clothing/head/armor/riot_hud,
+/obj/item/clothing/head/armor/riot_hud,
+/obj/item/clothing/head/armor/riot_hud,
+/obj/item/clothing/head/armor/riot_hud,
+/obj/item/clothing/head/armor/riot_hud,
+/obj/item/clothing/head/armor/riot_hud,
 /turf/simulated/floor/tiled/dark/cargo,
 /area/eris/security/armory)
 "abQ" = (
@@ -754,7 +754,6 @@
 	name = "Yeetus"
 	},
 /obj/structure/disposalpipe/trunk,
-/obj/machinery/shield_diffuser,
 /turf/simulated/floor/hull{
 	flooring_override = "hullcenter18";
 	icon_state = "hullcenter18";
@@ -852,7 +851,14 @@
 /obj/item/clothing/suit/armor/bulletproof/ironhammer,
 /obj/item/clothing/suit/armor/bulletproof/ironhammer,
 /obj/item/clothing/suit/armor/bulletproof/ironhammer,
-/obj/item/clothing/suit/armor/bulletproof/ironhammer,
+/obj/item/clothing/head/armor/bulletproof/ironhammer_full,
+/obj/item/clothing/head/armor/bulletproof/ironhammer_full,
+/obj/item/clothing/head/armor/bulletproof/ironhammer_full,
+/obj/item/clothing/head/armor/bulletproof/ironhammer_full,
+/obj/item/clothing/head/armor/bulletproof/ironhammer_full,
+/obj/item/clothing/head/armor/bulletproof/ironhammer_full,
+/obj/item/clothing/head/armor/bulletproof/ironhammer_full,
+/obj/item/clothing/head/armor/bulletproof/ironhammer_full,
 /turf/simulated/floor/tiled/dark/cargo,
 /area/eris/security/armory)
 "acm" = (
@@ -865,14 +871,14 @@
 /obj/item/clothing/suit/armor/vest/ironhammer,
 /obj/item/clothing/suit/armor/vest/ironhammer,
 /obj/item/clothing/suit/armor/vest/ironhammer,
-/obj/item/clothing/head/helmet,
-/obj/item/clothing/head/helmet,
-/obj/item/clothing/head/helmet,
-/obj/item/clothing/head/helmet,
-/obj/item/clothing/head/helmet,
-/obj/item/clothing/head/helmet,
-/obj/item/clothing/head/helmet,
-/obj/item/clothing/head/helmet,
+/obj/item/clothing/head/armor/helmet/ironhammer,
+/obj/item/clothing/head/armor/helmet/ironhammer,
+/obj/item/clothing/head/armor/helmet/ironhammer,
+/obj/item/clothing/head/armor/helmet/ironhammer,
+/obj/item/clothing/head/armor/helmet/ironhammer,
+/obj/item/clothing/head/armor/helmet/ironhammer,
+/obj/item/clothing/head/armor/helmet/ironhammer,
+/obj/item/clothing/head/armor/helmet/ironhammer,
 /turf/simulated/floor/tiled/dark/cargo,
 /area/eris/security/armory)
 "acn" = (
@@ -3883,8 +3889,6 @@
 /area/eris/command/commander)
 "aiZ" = (
 /obj/structure/table/woodentable,
-/obj/item/weapon/cartridge/detective,
-/obj/item/weapon/cartridge/detective,
 /obj/item/weapon/tool/tape_roll,
 /turf/simulated/floor/wood,
 /area/eris/command/commander)
@@ -12356,11 +12360,12 @@
 "aCi" = (
 /obj/machinery/atmospherics/unary/vent_pump/high_volume{
 	dir = 1;
-	external_pressure_bound = 140;
-	external_pressure_bound_default = 140;
+	expanded_range = 1;
+	external_pressure_bound = 0;
+	external_pressure_bound_default = 0;
 	icon_state = "map_vent_out";
-	pressure_checks = 1;
-	pressure_checks_default = 1;
+	pressure_checks = 2;
+	pressure_checks_default = 2;
 	use_power = 1
 	},
 /obj/machinery/shield_diffuser,
@@ -12779,7 +12784,7 @@
 "aDm" = (
 /obj/machinery/atmospherics/binary/passive_gate{
 	dir = 1;
-	name = "Plasma to Engines"
+	name = "Plasma to Propulsion"
 	},
 /turf/simulated/floor/plating/under,
 /area/eris/engineering/atmos)
@@ -16074,7 +16079,7 @@
 "aLJ" = (
 /obj/machinery/atmospherics/binary/passive_gate{
 	dir = 4;
-	name = "O2 to Engines"
+	name = "O2 to Propulsion"
 	},
 /turf/simulated/floor/plating/under,
 /area/eris/engineering/atmos)
@@ -16303,11 +16308,12 @@
 "aMm" = (
 /obj/machinery/atmospherics/unary/vent_pump/high_volume{
 	dir = 1;
-	external_pressure_bound = 140;
-	external_pressure_bound_default = 140;
+	expanded_range = 1;
+	external_pressure_bound = 0;
+	external_pressure_bound_default = 0;
 	icon_state = "map_vent_out";
-	pressure_checks = 1;
-	pressure_checks_default = 1;
+	pressure_checks = 2;
+	pressure_checks_default = 2;
 	use_power = 1
 	},
 /turf/simulated/floor/hull,
@@ -16514,9 +16520,9 @@
 "aMQ" = (
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aMR" = (
@@ -16525,9 +16531,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aMS" = (
@@ -16537,9 +16543,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aMT" = (
@@ -16554,9 +16560,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aMV" = (
@@ -16659,9 +16665,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aNk" = (
@@ -16672,9 +16678,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aNl" = (
@@ -16683,9 +16689,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aNm" = (
@@ -16716,9 +16722,9 @@
 /obj/structure/multiz/ladder/up,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aNp" = (
@@ -16744,9 +16750,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aNt" = (
@@ -16765,9 +16771,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "aNu" = (
@@ -17352,7 +17358,7 @@
 "aOP" = (
 /obj/machinery/atmospherics/binary/passive_gate{
 	dir = 2;
-	name = "Core to Space"
+	name = "Wasting to Space"
 	},
 /turf/simulated/floor/tiled/dark/techfloor,
 /area/eris/engineering/wastingroom)
@@ -18632,8 +18638,8 @@
 /area/eris/maintenance/section3deck1central)
 "aRy" = (
 /obj/structure/table/rack,
-/obj/item/weapon/gun/projectile/automatic/IH_heavyrifle,
-/obj/item/weapon/gun/projectile/automatic/IH_heavyrifle,
+/obj/item/weapon/gun/projectile/automatic/wintermute,
+/obj/item/weapon/gun/projectile/automatic/wintermute,
 /obj/machinery/door/blast/shutters/glass{
 	id = "Armoury";
 	name = "Armoury showcase"
@@ -18864,10 +18870,10 @@
 /turf/simulated/floor/tiled/steel/gray_platform,
 /area/eris/security/main)
 "aRX" = (
-/obj/machinery/autolathe/mechfab,
 /obj/structure/noticeboard{
 	pixel_y = 32
 	},
+/obj/machinery/autolathe/mechfab/loaded,
 /turf/simulated/floor/tiled/dark/gray_platform,
 /area/eris/rnd/lab)
 "aRY" = (
@@ -19342,10 +19348,10 @@
 	id = "Armoury";
 	name = "Armoury showcase"
 	},
-/obj/item/weapon/gun/projectile/automatic/IH_smg,
-/obj/item/weapon/gun/projectile/automatic/IH_smg,
-/obj/item/weapon/gun/projectile/automatic/IH_smg,
-/obj/item/weapon/gun/projectile/automatic/IH_smg,
+/obj/item/weapon/gun/projectile/automatic/straylight,
+/obj/item/weapon/gun/projectile/automatic/straylight,
+/obj/item/weapon/gun/projectile/automatic/straylight,
+/obj/item/weapon/gun/projectile/automatic/straylight,
 /turf/simulated/floor/tiled/dark/gray_platform,
 /area/eris/security/warden)
 "aSZ" = (
@@ -20419,7 +20425,6 @@
 /turf/simulated/floor/tiled/dark/gray_platform,
 /area/eris/security/barracks)
 "aVv" = (
-/obj/machinery/computer/telecomms/traffic,
 /turf/simulated/floor/tiled/steel,
 /area/eris/engineering/telecommonitor)
 "aVw" = (
@@ -22209,10 +22214,10 @@
 	id = "Armoury";
 	name = "Armoury showcase"
 	},
-/obj/item/weapon/gun/energy/pulse/cassad,
-/obj/item/weapon/gun/energy/pulse/cassad,
-/obj/item/weapon/gun/energy/pulse/cassad,
-/obj/item/weapon/gun/energy/pulse/cassad,
+/obj/item/weapon/gun/energy/plasma/cassad,
+/obj/item/weapon/gun/energy/plasma/cassad,
+/obj/item/weapon/gun/energy/plasma/cassad,
+/obj/item/weapon/gun/energy/plasma/cassad,
 /turf/simulated/floor/tiled/dark/gray_platform,
 /area/eris/security/warden)
 "aZi" = (
@@ -24776,8 +24781,8 @@
 "bdy" = (
 /obj/structure/table/reinforced,
 /obj/item/weapon/storage/box/beakers,
-/obj/item/weapon/reagent_containers/syringe/antiviral,
-/obj/item/weapon/reagent_containers/syringe/antiviral,
+/obj/item/weapon/reagent_containers/syringe/spaceacillin,
+/obj/item/weapon/reagent_containers/syringe/spaceacillin,
 /turf/simulated/floor/tiled/dark,
 /area/eris/hallway/side/morguehallway)
 "bdz" = (
@@ -26197,9 +26202,9 @@
 /obj/machinery/message_server,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "bgM" = (
@@ -26213,9 +26218,9 @@
 /obj/machinery/blackbox_recorder,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "bgO" = (
@@ -26360,9 +26365,9 @@
 /obj/machinery/r_n_d/server/robotics,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "bhf" = (
@@ -26377,9 +26382,9 @@
 /obj/machinery/r_n_d/server/core,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "bhh" = (
@@ -27135,7 +27140,7 @@
 /turf/simulated/floor/tiled/dark/cargo,
 /area/eris/security/barracks)
 "biW" = (
-/obj/machinery/autolathe,
+/obj/machinery/autolathe/loaded,
 /turf/simulated/floor/tiled/dark/gray_platform,
 /area/eris/rnd/lab)
 "biX" = (
@@ -27881,7 +27886,7 @@
 "bko" = (
 /obj/structure/table/standard,
 /obj/item/weapon/reagent_containers/spray/cleaner,
-/obj/item/weapon/reagent_containers/syringe/antiviral,
+/obj/item/weapon/reagent_containers/syringe/spaceacillin,
 /turf/simulated/floor/tiled/white/brown_perforated,
 /area/eris/medical/virology)
 "bkp" = (
@@ -28702,19 +28707,9 @@
 /area/eris/hallway/side/eschangarb)
 "bmc" = (
 /obj/structure/table/rack,
-/obj/item/stack/material/glass{
-	amount = 120
-	},
-/obj/item/stack/material/steel{
-	amount = 120
-	},
 /obj/item/stack/material/plasteel{
 	amount = 10
 	},
-/obj/item/stack/material/plastic{
-	amount = 120
-	},
-/obj/item/weapon/reagent_containers/glass/beaker,
 /turf/simulated/floor/plating,
 /area/eris/engineering/construction)
 "bmd" = (
@@ -31090,6 +31085,7 @@
 /obj/item/weapon/computer_hardware/hard_drive/portable/design/tools,
 /obj/item/weapon/computer_hardware/hard_drive/portable/design/devices,
 /obj/item/weapon/computer_hardware/hard_drive/portable/design/components,
+/obj/item/weapon/computer_hardware/hard_drive/portable/design/conveyors,
 /obj/item/weapon/computer_hardware/hard_drive/portable/design/circuits,
 /obj/item/weapon/computer_hardware/hard_drive/portable/design/adv_tools,
 /turf/simulated/floor/plating,
@@ -32379,43 +32375,13 @@
 /obj/item/stack/material/glass{
 	amount = 120
 	},
-/obj/item/stack/material/glass{
-	amount = 120
-	},
 /obj/item/stack/material/steel{
 	amount = 120
 	},
 /obj/item/stack/material/steel{
 	amount = 120
 	},
-/obj/item/stack/material/steel{
-	amount = 120
-	},
-/obj/item/stack/material/steel{
-	amount = 120
-	},
-/obj/item/stack/material/steel{
-	amount = 120
-	},
-/obj/item/stack/material/steel{
-	amount = 120
-	},
-/obj/item/weapon/reagent_containers/glass/beaker/sulphuric,
-/obj/item/weapon/reagent_containers/glass/beaker/sulphuric,
-/obj/item/weapon/reagent_containers/glass/beaker/sulphuric,
-/obj/item/weapon/computer_hardware/hard_drive/portable/design/misc,
-/obj/item/weapon/computer_hardware/hard_drive/portable/design/components,
-/obj/item/weapon/computer_hardware/hard_drive/portable/design/medical,
 /obj/item/weapon/reagent_containers/glass/beaker,
-/obj/item/stack/material/plastic{
-	amount = 120
-	},
-/obj/item/stack/material/plastic{
-	amount = 120
-	},
-/obj/item/stack/material/plastic{
-	amount = 120
-	},
 /obj/item/stack/material/plastic{
 	amount = 120
 	},
@@ -32425,6 +32391,9 @@
 	id = "RDWindowsLockdown";
 	name = "RND Window Blast Doors Control"
 	},
+/obj/item/weapon/computer_hardware/hard_drive/portable/design/misc,
+/obj/item/weapon/computer_hardware/hard_drive/portable/design/components,
+/obj/item/weapon/computer_hardware/hard_drive/portable/design/medical,
 /turf/simulated/floor/tiled/dark/gray_perforated,
 /area/eris/rnd/lab)
 "buD" = (
@@ -33956,9 +33925,9 @@
 /obj/structure/multiz/ladder,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/rnd/server)
 "bxU" = (
@@ -35871,9 +35840,9 @@
 /obj/machinery/telecomms/processor/preset_two,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bCh" = (
@@ -35973,9 +35942,9 @@
 /obj/machinery/telecomms/bus/preset_two,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bCu" = (
@@ -37056,18 +37025,18 @@
 /obj/machinery/telecomms/relay/preset/telecomms,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bEW" = (
 /obj/machinery/telecomms/hub/preset,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bEX" = (
@@ -37235,9 +37204,9 @@
 /obj/machinery/telecomms/server/presets/supply,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFo" = (
@@ -37259,9 +37228,9 @@
 /obj/machinery/telecomms/bus/preset_one,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFq" = (
@@ -37277,9 +37246,9 @@
 /obj/machinery/telecomms/server/presets/service,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFs" = (
@@ -37378,54 +37347,54 @@
 /obj/machinery/telecomms/receiver/preset_right,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFA" = (
 /obj/machinery/bluespacerelay,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFB" = (
 /obj/machinery/telecomms/processor/preset_one,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFC" = (
 /obj/machinery/telecomms/server/presets/unused,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFD" = (
 /obj/machinery/telecomms/broadcaster/preset_right,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFE" = (
 /obj/machinery/ntnet_relay,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFF" = (
@@ -37435,18 +37404,18 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFG" = (
 /obj/machinery/telecomms/relay/preset/station,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFH" = (
@@ -37506,9 +37475,9 @@
 /obj/machinery/telecomms/server/presets/medical,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFQ" = (
@@ -37519,9 +37488,9 @@
 /obj/machinery/telecomms/bus/preset_four,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFR" = (
@@ -37546,9 +37515,9 @@
 /obj/machinery/telecomms/processor/preset_four,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFU" = (
@@ -37586,9 +37555,9 @@
 /obj/machinery/telecomms/server/presets/common,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bFZ" = (
@@ -37664,18 +37633,18 @@
 /obj/machinery/telecomms/bus/preset_three,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bGh" = (
 /obj/machinery/telecomms/server/presets/engineering,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bGi" = (
@@ -39215,9 +39184,9 @@
 /obj/machinery/telecomms/server/presets/command,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bJg" = (
@@ -39418,9 +39387,9 @@
 /obj/machinery/telecomms/processor/preset_three,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bJB" = (
@@ -39533,9 +39502,9 @@
 /obj/machinery/telecomms/server/presets/security,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bJM" = (
@@ -39830,9 +39799,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bKr" = (
@@ -46404,9 +46373,9 @@
 "bYx" = (
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bYy" = (
@@ -46514,9 +46483,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bYN" = (
@@ -47066,9 +47035,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "bZX" = (
@@ -47475,9 +47444,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "cbe" = (
@@ -48097,9 +48066,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "ccu" = (
@@ -48805,7 +48774,7 @@
 /obj/machinery/atmospherics/unary/freezer{
 	dir = 4;
 	icon_state = "freezer_1";
-	set_temperature = 73;
+	set_temperature = 240;
 	use_power = 1
 	},
 /turf/simulated/floor/tiled/steel/panels,
@@ -48863,9 +48832,9 @@
 /obj/machinery/atmospherics/unary/vent_pump/on,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "ceb" = (
@@ -48901,9 +48870,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "ced" = (
@@ -49255,9 +49224,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "ceM" = (
@@ -49265,9 +49234,9 @@
 /obj/machinery/atmospherics/pipe/manifold/hidden/black,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "ceN" = (
@@ -49279,9 +49248,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "ceO" = (
@@ -49291,9 +49260,9 @@
 	},
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "ceP" = (
@@ -52439,7 +52408,7 @@
 /turf/simulated/floor/tiled/white/violetcorener,
 /area/eris/medical/medbay/iso)
 "cmt" = (
-/obj/machinery/vending/wallmed1{
+/obj/machinery/vending/wallmed/minor{
 	pixel_x = 28;
 	pixel_y = 0
 	},
@@ -52683,7 +52652,7 @@
 /turf/simulated/floor/tiled/steel/techfloor,
 /area/eris/engineering/engine_room)
 "cmY" = (
-/obj/machinery/vending/wallmed1{
+/obj/machinery/vending/wallmed/minor{
 	pixel_x = 28;
 	pixel_y = 0
 	},
@@ -52694,7 +52663,7 @@
 /area/eris/medical/medbay/iso)
 "cmZ" = (
 /obj/structure/table/standard,
-/obj/item/weapon/folder/white,
+/obj/item/weapon/folder/cyan,
 /obj/item/clothing/accessory/stethoscope,
 /turf/simulated/floor/tiled/white/violetcorener,
 /area/eris/medical/medbay/iso)
@@ -52847,6 +52816,9 @@
 /obj/item/weapon/storage/firstaid/o2{
 	pixel_x = -2;
 	pixel_y = 4
+	},
+/obj/machinery/atmospherics/pipe/simple/hidden/scrubbers{
+	dir = 9
 	},
 /turf/simulated/floor/tiled/white/brown_perforated,
 /area/eris/medical/medbay)
@@ -53872,10 +53844,7 @@
 	layer = 3.3;
 	name = "Maintenance Hatch"
 	},
-/obj/machinery/atmospherics/pipe/simple/hidden/scrubbers{
-	dir = 6
-	},
-/obj/machinery/atmospherics/pipe/simple/hidden/supply,
+/obj/machinery/atmospherics/pipe/simple/visible/universal,
 /turf/simulated/floor/plating,
 /area/eris/medical/medbay)
 "cpF" = (
@@ -53901,9 +53870,7 @@
 	layer = 3.3;
 	name = "Maintenance Hatch"
 	},
-/obj/machinery/atmospherics/pipe/simple/hidden/scrubbers{
-	dir = 9
-	},
+/obj/machinery/atmospherics/pipe/simple/visible/universal,
 /turf/simulated/floor/plating,
 /area/eris/medical/medbay)
 "cpJ" = (
@@ -54265,7 +54232,7 @@
 "cqD" = (
 /obj/machinery/bodyscanner,
 /turf/simulated/floor/tiled/white/gray_platform,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "cqE" = (
 /obj/machinery/door/firedoor,
 /obj/structure/disposalpipe/segment,
@@ -56096,10 +56063,6 @@
 	},
 /turf/simulated/floor/tiled/techmaint_cargo,
 /area/eris/maintenance/oldtele)
-"cvg" = (
-/obj/machinery/computer/telecomms/traffic,
-/turf/simulated/floor/bluegrid,
-/area/eris/command/tcommsat/computer)
 "cvh" = (
 /obj/machinery/atmospherics/pipe/manifold/hidden/supply{
 	dir = 4
@@ -56172,6 +56135,7 @@
 /obj/machinery/atmospherics/unary/vent_pump/on{
 	dir = 8
 	},
+/obj/item/device/eftpos,
 /turf/simulated/floor/carpet/sblucarpet,
 /area/eris/crew_quarters/barbackroom)
 "cvt" = (
@@ -56384,15 +56348,6 @@
 /area/eris/quartermaster/storage)
 "cwa" = (
 /obj/structure/table/standard,
-/obj/item/weapon/cartridge/signal/science,
-/obj/item/weapon/cartridge/signal/science{
-	pixel_x = -4;
-	pixel_y = 2
-	},
-/obj/item/weapon/cartridge/signal/science{
-	pixel_x = 4;
-	pixel_y = 6
-	},
 /obj/item/clothing/glasses/welding/superior,
 /obj/machinery/keycard_auth{
 	pixel_x = 0;
@@ -58097,7 +58052,7 @@
 /turf/simulated/floor/tiled/steel/bluecorner,
 /area/eris/hallway/side/bridgehallway)
 "czF" = (
-/obj/machinery/autolathe,
+/obj/machinery/autolathe/loaded,
 /turf/simulated/floor/tiled/steel/gray_platform,
 /area/eris/quartermaster/storage)
 "czG" = (
@@ -58304,16 +58259,7 @@
 /area/eris/security/lobby)
 "cAc" = (
 /obj/structure/table/standard,
-/obj/item/stack/material/glass{
-	amount = 120
-	},
-/obj/item/stack/material/steel{
-	amount = 120
-	},
-/obj/item/stack/material/plastic{
-	amount = 120
-	},
-/obj/item/weapon/reagent_containers/glass/beaker,
+/obj/item/weapon/computer_hardware/hard_drive/portable/design/nonlethal_ammo,
 /turf/simulated/floor/tiled/steel/gray_platform,
 /area/eris/quartermaster/storage)
 "cAd" = (
@@ -62431,12 +62377,13 @@
 /turf/simulated/open,
 /area/eris/hallway/main/section2)
 "cJi" = (
-/obj/machinery/power/smes{
-	output_attempt = 1
-	},
 /obj/structure/cable{
 	icon_state = "0-4";
 	d2 = 4
+	},
+/obj/machinery/power/smes/buildable{
+	charge = 5e+006;
+	output_attempt = 1
 	},
 /turf/simulated/floor/plating/under,
 /area/eris/engineering/post)
@@ -63278,7 +63225,7 @@
 	pixel_x = -32
 	},
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "cLh" = (
 /obj/machinery/vending/powermat,
 /turf/simulated/floor/tiled/steel/gray_perforated,
@@ -63889,7 +63836,7 @@
 "cMN" = (
 /obj/machinery/atmospherics/binary/passive_gate{
 	dir = 4;
-	name = "Core to Space"
+	name = "Core to Wasting"
 	},
 /turf/simulated/floor/tiled/steel/techfloor,
 /area/eris/engineering/engine_room)
@@ -69369,8 +69316,8 @@
 /turf/simulated/floor/tiled/white/violetcorener,
 /area/eris/rnd/research)
 "cZx" = (
-/obj/machinery/vending/wallmed1{
-	name = "Emergency NanoMed";
+/obj/machinery/vending/wallmed/minor{
+	name = "Emergency MicroMed";
 	pixel_x = 32;
 	pixel_y = 0
 	},
@@ -71631,7 +71578,7 @@
 /obj/item/weapon/tank/jetpack/oxygen,
 /obj/item/clothing/mask/gas,
 /obj/item/clothing/suit/space/captain,
-/obj/item/clothing/head/helmet/space/capspace,
+/obj/item/clothing/head/space/capspace,
 /turf/simulated/floor/carpet/turcarpet,
 /area/eris/command/captain)
 "deJ" = (
@@ -73426,7 +73373,7 @@
 /obj/random/medical,
 /obj/random/medical,
 /turf/simulated/floor/tiled/white/brown_perforated,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "diC" = (
 /obj/machinery/ai_status_display{
 	pixel_x = -32;
@@ -74626,10 +74573,10 @@
 /area/eris/command/mbo/quarters)
 "dlb" = (
 /obj/structure/table/woodentable,
-/obj/item/weapon/cartridge/chemistry{
+/obj/item/weapon/computer_hardware/scanner/reagent{
 	pixel_y = 2
 	},
-/obj/item/weapon/cartridge/medical{
+/obj/item/weapon/computer_hardware/scanner/medical{
 	pixel_x = 6;
 	pixel_y = 3
 	},
@@ -80902,8 +80849,8 @@
 /area/eris/engineering/starboardhallway)
 "dyX" = (
 /obj/structure/table/rack,
-/obj/item/weapon/gun/projectile/deagle,
-/obj/item/weapon/gun/projectile/deagle,
+/obj/item/weapon/gun/projectile/avasarala,
+/obj/item/weapon/gun/projectile/avasarala,
 /obj/machinery/door/blast/shutters/glass{
 	id = "BridgeArmoury";
 	name = "Armoury showcase"
@@ -80989,7 +80936,7 @@
 	dir = 8
 	},
 /turf/simulated/floor/tiled/white/brown_perforated,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dzd" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/scrubbers{
 	dir = 9
@@ -81174,15 +81121,15 @@
 /area/eris/command/mbo)
 "dzB" = (
 /obj/structure/table/standard,
-/obj/item/weapon/cartridge/medical{
+/obj/item/weapon/computer_hardware/scanner/medical{
 	pixel_x = 6;
 	pixel_y = 3
 	},
-/obj/item/weapon/cartridge/medical{
+/obj/item/weapon/computer_hardware/scanner/medical{
 	pixel_x = 6;
 	pixel_y = 3
 	},
-/obj/item/weapon/cartridge/chemistry{
+/obj/item/weapon/computer_hardware/scanner/reagent{
 	pixel_y = 2
 	},
 /turf/simulated/floor/carpet/sblucarpet,
@@ -81359,7 +81306,7 @@
 /area/eris/command/mbo)
 "dzY" = (
 /obj/structure/table/standard,
-/obj/item/weapon/folder/white,
+/obj/item/weapon/folder/cyan,
 /obj/structure/cable/green{
 	d1 = 4;
 	d2 = 8;
@@ -82319,14 +82266,14 @@
 	dir = 1
 	},
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dCc" = (
 /obj/machinery/alarm{
 	pixel_y = 26
 	},
 /obj/machinery/camera/network/medbay,
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dCd" = (
 /obj/structure/closet/crate/freezer,
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
@@ -82436,7 +82383,7 @@
 	dir = 4
 	},
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dCp" = (
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
 	dir = 4
@@ -82549,18 +82496,12 @@
 	},
 /turf/simulated/floor/tiled/steel/cargo,
 /area/eris/quartermaster/misc)
-"dCB" = (
-/obj/machinery/atmospherics/pipe/simple/hidden/scrubbers{
-	dir = 4
-	},
-/turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
 "dCC" = (
 /obj/effect/floor_decal/fact_plaque/med1,
 /obj/machinery/atmospherics/pipe/manifold4w/hidden/scrubbers,
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dCD" = (
 /obj/structure/extinguisher_cabinet{
 	pixel_x = -24
@@ -82589,7 +82530,7 @@
 	dir = 4
 	},
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dCH" = (
 /obj/structure/cable{
 	d1 = 1;
@@ -82790,17 +82731,6 @@
 	},
 /turf/simulated/floor/tiled/steel/orangecorner,
 /area/eris/engineering/foyer)
-"dDe" = (
-/obj/structure/cable/green{
-	d1 = 4;
-	d2 = 8;
-	icon_state = "4-8"
-	},
-/obj/machinery/atmospherics/pipe/simple/hidden/supply{
-	dir = 4
-	},
-/turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
 "dDf" = (
 /obj/effect/floor_decal/fact_plaque/med3,
 /obj/structure/cable/green{
@@ -82816,7 +82746,7 @@
 /obj/machinery/atmospherics/pipe/manifold4w/hidden/supply,
 /obj/machinery/atmospherics/pipe/simple/hidden/scrubbers,
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dDg" = (
 /obj/effect/floor_decal/fact_plaque/med4,
 /obj/structure/cable/green{
@@ -82828,7 +82758,7 @@
 	dir = 4
 	},
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dDh" = (
 /obj/structure/cable/green{
 	d1 = 4;
@@ -83036,7 +82966,7 @@
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /obj/machinery/atmospherics/pipe/simple/hidden/scrubbers,
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dDF" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /turf/simulated/floor/tiled/white,
@@ -83185,7 +83115,7 @@
 	pixel_x = -22
 	},
 /turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
+/area/eris/medical/reception)
 "dDX" = (
 /obj/machinery/light{
 	icon_state = "tube1";
@@ -83200,11 +83130,6 @@
 	},
 /turf/simulated/floor/tiled/dark,
 /area/eris/command/bridge)
-"dDY" = (
-/obj/structure/table/standard,
-/obj/random/medical,
-/turf/simulated/floor/tiled/white,
-/area/eris/medical/medbay)
 "dDZ" = (
 /obj/structure/table/standard,
 /obj/random/medical,
@@ -83282,13 +83207,13 @@
 /obj/machinery/camera/network/engineering{
 	dir = 8
 	},
-/obj/machinery/autolathe,
+/obj/machinery/autolathe/loaded,
 /turf/simulated/floor/plating,
 /area/eris/engineering/construction)
 "dEj" = (
 /obj/structure/table/standard,
-/obj/item/weapon/folder/white,
-/obj/item/weapon/folder/white,
+/obj/item/weapon/folder/cyan,
+/obj/item/weapon/folder/cyan,
 /obj/item/weapon/hand_labeler,
 /obj/item/weapon/reagent_containers/syringe,
 /obj/item/weapon/storage/box/gloves,
@@ -88568,13 +88493,8 @@
 	pixel_y = 28
 	},
 /obj/structure/table/standard,
-/obj/item/stack/material/glass{
-	amount = 120
-	},
-/obj/item/stack/material/steel{
-	amount = 120
-	},
 /obj/machinery/atmospherics/unary/vent_pump/on,
+/obj/random/material,
 /turf/simulated/floor/tiled/steel/gray_platform,
 /area/eris/storage/primary)
 "dPQ" = (
@@ -90347,7 +90267,7 @@
 /turf/simulated/floor/tiled/techmaint,
 /area/eris/maintenance/section2deck1starboard)
 "dTU" = (
-/obj/machinery/autolathe,
+/obj/machinery/autolathe/loaded,
 /turf/simulated/floor/tiled/steel/gray_platform,
 /area/eris/storage/primary)
 "dTV" = (
@@ -91499,16 +91419,16 @@
 	id = "Armoury";
 	name = "Armoury showcase"
 	},
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
-/obj/item/ammo_magazine/ihsrifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
+/obj/item/ammo_magazine/srifle,
 /turf/simulated/floor/tiled/dark/gray_platform,
 /area/eris/security/warden)
 "dWB" = (
@@ -95372,7 +95292,7 @@
 /obj/machinery/light/small{
 	dir = 4
 	},
-/obj/item/weapon/cigbutt,
+/obj/item/trash/cigbutt,
 /obj/machinery/atmospherics/pipe/simple/hidden/scrubbers{
 	dir = 10
 	},
@@ -96296,7 +96216,7 @@
 /turf/simulated/floor/plating/under,
 /area/eris/maintenance/section4deck1central)
 "ehx" = (
-/obj/item/weapon/cigbutt{
+/obj/item/trash/cigbutt{
 	pixel_x = 2;
 	pixel_y = 9
 	},
@@ -97586,7 +97506,7 @@
 /obj/structure/table/rack,
 /obj/item/weapon/storage/belt/archaeology,
 /obj/item/clothing/suit/space/anomaly,
-/obj/item/clothing/head/helmet/space/anomaly,
+/obj/item/clothing/head/space/anomaly,
 /obj/item/clothing/mask/breath,
 /turf/simulated/shuttle/floor/science{
 	icon_state = "11,9"
@@ -97708,14 +97628,14 @@
 	},
 /obj/structure/table/rack,
 /obj/item/clothing/suit/space/anomaly,
-/obj/item/clothing/head/helmet/space/anomaly,
+/obj/item/clothing/head/space/anomaly,
 /turf/simulated/floor/tiled/white,
 /area/eris/rnd/anomal)
 "eko" = (
 /obj/machinery/light,
 /obj/structure/table/rack,
 /obj/item/clothing/suit/space/anomaly,
-/obj/item/clothing/head/helmet/space/anomaly,
+/obj/item/clothing/head/space/anomaly,
 /turf/simulated/floor/tiled/white,
 /area/eris/rnd/anomal)
 "ekp" = (
@@ -97896,7 +97816,7 @@
 /obj/structure/table/rack,
 /obj/item/weapon/storage/belt/archaeology,
 /obj/item/clothing/suit/space/anomaly,
-/obj/item/clothing/head/helmet/space/anomaly,
+/obj/item/clothing/head/space/anomaly,
 /obj/item/clothing/mask/breath,
 /turf/simulated/shuttle/floor/science{
 	icon_state = "11,8"
@@ -98134,7 +98054,7 @@
 /obj/structure/table/rack,
 /obj/item/weapon/storage/belt/archaeology,
 /obj/item/clothing/suit/space/anomaly,
-/obj/item/clothing/head/helmet/space/anomaly,
+/obj/item/clothing/head/space/anomaly,
 /obj/item/clothing/mask/breath,
 /turf/simulated/shuttle/floor/science{
 	icon_state = "11,7"
@@ -99412,7 +99332,7 @@
 "eoF" = (
 /obj/structure/table/standard,
 /obj/item/weapon/tool/wrench,
-/obj/item/weapon/storage/box/botanydisk,
+/obj/item/weapon/storage/box/data_disk/basic,
 /turf/simulated/floor/tiled/white,
 /area/eris/rnd/xenobiology/xenoflora)
 "eoG" = (
@@ -101089,9 +101009,9 @@
 /obj/machinery/telecomms/server/presets/nt,
 /turf/simulated/floor/bluegrid{
 	name = "Server Base";
-	nitrogen = 500;
+	nitrogen = 180;
 	oxygen = 0;
-	temperature = 80
+	temperature = 200
 	},
 /area/eris/command/tcommsat/chamber)
 "esp" = (
@@ -108233,6 +108153,14 @@
 	},
 /turf/simulated/floor/tiled/steel/techfloor,
 /area/eris/engineering/engine_room)
+"fJM" = (
+/obj/structure/table/standard,
+/obj/random/medical,
+/obj/machinery/vending/wallmed/lobby{
+	pixel_y = -28
+	},
+/turf/simulated/floor/tiled/white,
+/area/eris/medical/reception)
 "fZX" = (
 /obj/machinery/atmospherics/pipe/manifold/visible/black{
 	dir = 1
@@ -108258,6 +108186,13 @@
 	},
 /turf/simulated/floor/plating,
 /area/eris/engineering/construction)
+"gPD" = (
+/obj/machinery/atmospherics/pipe/simple/hidden/supply,
+/obj/machinery/atmospherics/pipe/simple/hidden/scrubbers{
+	dir = 6
+	},
+/turf/simulated/floor/tiled/white,
+/area/eris/medical/medbay)
 "gQw" = (
 /obj/machinery/disposal,
 /obj/structure/disposalpipe/trunk{
@@ -108318,7 +108253,7 @@
 "iDJ" = (
 /obj/machinery/atmospherics/binary/passive_gate{
 	dir = 4;
-	name = "Waste to Space"
+	name = "Waste to Wasting"
 	},
 /turf/simulated/floor/tiled/steel/techfloor,
 /area/eris/engineering/engine_room)
@@ -108423,6 +108358,19 @@
 	},
 /turf/simulated/floor/tiled/steel/techfloor_grid,
 /area/eris/medical/chemstor)
+"kEW" = (
+/obj/structure/cable{
+	d1 = 4;
+	d2 = 8;
+	icon_state = "4-8"
+	},
+/obj/structure/cable{
+	d1 = 2;
+	d2 = 8;
+	icon_state = "2-8"
+	},
+/turf/simulated/floor/plating/under,
+/area/eris/maintenance/section3deck5port)
 "kFJ" = (
 /obj/structure/table/standard,
 /obj/item/weapon/storage/box,
@@ -108523,6 +108471,28 @@
 	},
 /turf/simulated/floor/tiled/steel/danger,
 /area/eris/engineering/engine_room)
+"mub" = (
+/obj/structure/disposalpipe/segment{
+	dir = 4
+	},
+/obj/machinery/atmospherics/pipe/simple/hidden/supply{
+	dir = 4
+	},
+/obj/machinery/atmospherics/pipe/simple/hidden/scrubbers{
+	dir = 4
+	},
+/obj/structure/cable/green{
+	d1 = 4;
+	d2 = 8;
+	icon_state = "4-8"
+	},
+/obj/structure/cable/green{
+	d1 = 1;
+	d2 = 8;
+	icon_state = "1-8"
+	},
+/turf/simulated/floor/plating/under,
+/area/eris/maintenance/section3deck5port)
 "mCf" = (
 /obj/machinery/access_button{
 	command = "cycle_exterior";
@@ -108578,6 +108548,10 @@
 	},
 /turf/simulated/floor/tiled/steel/techfloor,
 /area/eris/engineering/engine_room)
+"ntp" = (
+/obj/machinery/hologram/holopad,
+/turf/simulated/floor/tiled/white,
+/area/eris/medical/medbay)
 "nuu" = (
 /obj/structure/lattice,
 /obj/machinery/atmospherics/pipe/simple/heat_exchanging{
@@ -108625,6 +108599,7 @@
 "oih" = (
 /obj/landmark/join/start/chemist,
 /obj/structure/disposalpipe/segment,
+/obj/machinery/hologram/holopad,
 /turf/simulated/floor/tiled/white/brown_platform,
 /area/eris/medical/chemistry)
 "oup" = (
@@ -108748,6 +108723,10 @@
 	},
 /turf/simulated/floor/tiled/steel/techfloor_grid,
 /area/eris/medical/chemistry)
+"qTX" = (
+/obj/machinery/hologram/holopad,
+/turf/simulated/floor/tiled/white,
+/area/eris/medical/surgery)
 "qZr" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/supply{
 	dir = 4
@@ -108788,6 +108767,11 @@
 	},
 /turf/simulated/floor/plating/under,
 /area/eris/maintenance/section3deck4starboard)
+"rGT" = (
+/obj/machinery/atmospherics/pipe/simple/hidden/supply,
+/obj/machinery/atmospherics/pipe/simple/hidden/scrubbers,
+/turf/simulated/floor/tiled/white,
+/area/eris/medical/reception)
 "rHy" = (
 /obj/structure/cable/yellow,
 /turf/simulated/floor/tiled/steel/techfloor,
@@ -122728,7 +122712,7 @@ aaa
 aaa
 aaa
 aaa
-abF
+crY
 abY
 acq
 acS
@@ -127249,8 +127233,8 @@ aCn
 bts
 ceR
 aCn
-bPZ
-bRI
+kEW
+mub
 awR
 alg
 aaa
@@ -164749,8 +164733,8 @@ aKl
 bwy
 aNc
 csS
-aPn
-aPn
+csS
+csS
 csS
 aSn
 aSL
@@ -204375,7 +204359,7 @@ cgI
 cgI
 cda
 cjK
-cjK
+qTX
 cpy
 crS
 coI
@@ -205787,7 +205771,7 @@ aaa
 cvS
 euU
 cpE
-cqq
+gPD
 cqq
 cqq
 cug
@@ -207615,8 +207599,8 @@ dxd
 ckx
 dCb
 dCo
-dCB
-dDe
+cqJ
+cpR
 dCo
 dDW
 csh
@@ -207808,15 +207792,15 @@ cvS
 bUV
 ccj
 cLG
-coL
+ntp
 coL
 dvR
 cKx
 cKx
 cKx
 chB
-cKx
-cKx
+rGT
+rGT
 dCC
 dDf
 dDE
@@ -208017,12 +208001,12 @@ coL
 coL
 dgs
 chA
-coL
-coL
+coS
+coS
 dCG
 dDg
-coL
-coL
+coS
+coS
 clR
 dEo
 diA
@@ -208220,11 +208204,11 @@ dir
 ckx
 ckx
 dCc
-coL
-dCB
-dDe
-coL
-dDY
+coS
+cqJ
+cpR
+coS
+dDZ
 csh
 dEp
 diA
@@ -208424,9 +208408,9 @@ dBN
 djy
 dpp
 cqJ
-dDe
-coL
-dDZ
+cpR
+coS
+fJM
 csh
 dAK
 eBs
@@ -208618,7 +208602,7 @@ chl
 cml
 chl
 cqD
-cqV
+cqB
 cLg
 diB
 dzc
@@ -210998,7 +210982,7 @@ bqs
 bqw
 bqs
 aaa
-aaa
+abF
 abF
 aTG
 aTG
@@ -211200,7 +211184,7 @@ aTG
 bqv
 aTG
 aaa
-aaa
+abF
 abF
 aTG
 bqR
@@ -212010,7 +211994,7 @@ aTG
 aaa
 aaa
 aaa
-aaa
+abF
 bSo
 bfC
 biL
@@ -245362,7 +245346,7 @@ bYo
 dhm
 dhm
 cZA
-cvg
+diG
 diy
 diG
 diG

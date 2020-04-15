@@ -70,24 +70,34 @@
 	build_path = /obj/item/weapon/hatton/moebius
 	sort_string = "TBAAD"
 
+/datum/design/research/item/weapon/katana
+	name = "Moebius \"Muramasa\" Katana"
+	build_path = /obj/item/weapon/tool/sword/katana/nano
+
+
+/datum/design/research/item/weapon/bluespace_dagger
+	name = "Moebius \"Displacement Dagger\""
+	build_path = /obj/item/weapon/tool/knife/dagger/bluespace
 
 // Ammo
 /datum/design/research/item/ammo
 	name_category = "ammunition"
 	category = CAT_WEAPON
 
-/datum/design/research/item/ammo/shotgun_stun
-	name = "shotgun, stun"
-	desc = "A stunning shell for a shotgun."
-	build_path = /obj/item/ammo_casing/shotgun/stunshell
-	sort_string = "TAACB"
-
 /datum/design/research/item/ammo/hatton
 	name = "Moebius BT \"Q-del\" gas tube"
 	build_path = /obj/item/weapon/hatton_magazine/moebius
 	sort_string = "TAACC"
+
 /datum/design/research/item/ammo/c20r_ammo
 	name = "C20R 35 Auto Magazine"
 	desc = "35 Auto SMG magazine for the C-20r"
 	build_path = /obj/item/ammo_magazine/smg
 	sort_string = "TAACD"
+
+/datum/design/research/item/ammo/shotgun_incendiary
+	name = "incendiary shotgun shells"
+	desc = "Insendiary ammunition for shotguns"
+	build_path = /obj/item/ammo_casing/shotgun/incendiary/prespawned
+	sort_string = "TAACF"
+

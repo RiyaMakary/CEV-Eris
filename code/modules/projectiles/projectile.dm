@@ -66,6 +66,8 @@
 	var/tracer_type
 	var/impact_type
 
+	var/proj_color //If defined, is used to change the muzzle, tracer, and impact icon colors through Blend()
+
 	var/datum/plot_vector/trajectory	// used to plot the path of the projectile
 	var/datum/vector_loc/location		// current location of the projectile in pixel space
 	var/matrix/effect_transform			// matrix to rotate and scale projectile effects - putting it here so it doesn't
@@ -570,7 +572,7 @@
 
 	return TRUE
 
-/obj/item/projectile/Bump(atom/A as mob|obj|turf|area, forced=0)
+/obj/item/projectile/Bump(atom/A as mob|obj|turf|area, forced = FALSE)
 	if(A == src)
 		return FALSE
 	if(A == firer)
@@ -593,7 +595,7 @@
 			var/obj/item/weapon/grab/G = locate() in M
 			if(G && G.state >= GRAB_NECK)
 				visible_message(SPAN_DANGER("\The [M] uses [G.affecting] as a shield!"))
-				if(Bump(G.affecting, forced=1))
+				if(Bump(G.affecting, TRUE))
 					return //If Bump() returns 0 (keep going) then we continue on to attack M.
 
 			passthrough = !attack_mob(M, distance)
@@ -716,6 +718,10 @@
 		var/obj/effect/projectile/M = new muzzle_type(get_turf(src))
 
 		if(istype(M))
+			if(proj_color)
+				var/icon/I = new(M.icon, M.icon_state)
+				I.Blend(proj_color)
+				M.icon = I
 			M.set_transform(T)
 			M.pixel_x = location.pixel_x
 			M.pixel_y = location.pixel_y
@@ -731,6 +737,10 @@
 		var/obj/effect/projectile/P = new tracer_type(location.loc)
 
 		if(istype(P))
+			if(proj_color)
+				var/icon/I = new(P.icon, P.icon_state)
+				I.Blend(proj_color)
+				P.icon = I
 			P.set_transform(M)
 			P.pixel_x = location.pixel_x
 			P.pixel_y = location.pixel_y
@@ -744,14 +754,18 @@
 	if (!location)
 		return
 
-	if(ispath(tracer_type))
+	if(ispath(impact_type))
 		var/obj/effect/projectile/P = new impact_type(location.loc)
 
 		if(istype(P))
+			if(proj_color)
+				var/icon/I = new(P.icon, P.icon_state)
+				I.Blend(proj_color)
+				P.icon = I
 			P.set_transform(M)
 			P.pixel_x = location.pixel_x
 			P.pixel_y = location.pixel_y
-			P.activate()
+			P.activate(P.lifetime)
 
 //"Tracing" projectile
 /obj/item/projectile/test //Used to see if you can hit them.
@@ -760,7 +774,7 @@
 	xo = null
 	var/result = 0 //To pass the message back to the gun.
 
-/obj/item/projectile/test/Bump(atom/A as mob|obj|turf|area)
+/obj/item/projectile/test/Bump(atom/A as mob|obj|turf|area, forced)
 	if(A == firer)
 		loc = A.loc
 		return //cannot shoot yourself
@@ -819,3 +833,8 @@
 	var/output = trace.launch(target) //Test it!
 	qdel(trace) //No need for it anymore
 	return output //Send it back to the gun!
+
+/proc/get_proj_icon_by_color(var/obj/item/projectile/P, var/color)
+	var/icon/I = new(P.icon, P.icon_state)
+	I.Blend(color)
+	return I

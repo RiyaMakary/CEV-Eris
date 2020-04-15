@@ -253,6 +253,7 @@
 	item_state = "gas_alt"
 	desc = "It looks like a plain gask mask, but on closer inspection, it seems to have a small dial inside."
 	origin_tech = list(TECH_ILLEGAL = 3)
+	flags_inv = HIDEEYES|HIDEFACE
 	var/global/list/clothing_choices
 
 /obj/item/clothing/mask/chameleon/New()
@@ -315,10 +316,10 @@
 //**Chameleon Gun**
 //*****************
 /obj/item/weapon/gun/energy/chameleon
-	name = "desert eagle"
+	name = "FS HG .40 Magnum \"Avasarala\""
 	desc = "A hologram projector in the shape of a gun. There is a dial on the side to change the gun's disguise."
-	icon = 'icons/obj/guns/projectile/deagle.dmi'
-	icon_state = "deagle"
+	icon = 'icons/obj/guns/projectile/avasarala.dmi'
+	icon_state = "avasarala"
 	w_class = ITEM_SIZE_NORMAL
 	origin_tech = list(TECH_COMBAT = 2, TECH_MATERIAL = 2, TECH_ILLEGAL = 2)
 	matter = list()
@@ -355,9 +356,9 @@
 	return P
 
 /obj/item/weapon/gun/energy/chameleon/emp_act(severity)
-	name = "desert eagle"
-	desc = "It's a desert eagle."
-	icon_state = "deagle"
+	name = "FS HG .40 Magnum \"Avasarala\""
+	desc = "A hologram projector in the shape of a gun. There is a dial on the side to change the gun's disguise."
+	icon_state = "avasarala"
 	update_icon()
 	update_wear_icon()
 
